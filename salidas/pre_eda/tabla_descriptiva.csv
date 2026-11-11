@@ -1,0 +1,7 @@
+"fuente";"esperados";"con_dato";"nulos";"pct_nulos";"ceros";"pct_ceros";"media";"mediana";"moda";"desv_estandar";"minimo";"q1";"q3";"p99";"maximo"
+"Estaciones (mm/día)";3209397;2992694;216703;6,752;1734840;57,969;5,836;0;0;496,925;0;0;5;60;859375
+"Estaciones sin valor imposible";3209397;2992693;216704;6,752;1734840;57,969;5,549;0;0;12,728;0;0;5;60;943
+"Estaciones, solo días con lluvia";NA;1257853;NA;NA;0;0;13,203;8;1;16,864;0,05;3;17;80;943
+"Satélite (mm/péntada)";3428568;3359304;69264;2,02;7;0;48,934;40;18;35,835;0;22;68;163;200
+"Satélite (mm/día)";3428568;3359304;69264;2,02;7;0;9,603;7,8;4;6,931;0;4,333;13,4;31,6;40
+"Satélite, solo péntadas con lluvia";NA;3359297;NA;NA;0;0;9,603;7,8;4;6,931;0,2;4,333;13,4;31,6;40
