@@ -1,40 +1,19 @@
 # =============================================================================
-#  LLUVIA EN EL VALLE DEL CAUCA: SCRIPT ÚNICO DE R DEL PROYECTO
 #  Analítica de Datos 2026-2S, proyecto final
+# Juan Hoyos, Daniela Marin, Miguel Arroyo, Annie Correa, Fabian Gomezcasseres
 # =============================================================================
-#
-#  Qué hay en este archivo (se corre completo, de arriba a abajo):
-#
-#    PARTE 0. Configuración: parámetros, paquetes y funciones de apoyo
-#    PARTE 1. Lectura de los datos (estaciones y satélite), una sola vez
-#    PARTE 2. Pre-EDA: describe los datos tal como llegan, sin cambiar nada
-#    PARTE 3. Preprocesamiento: corte de años, unidades, calendario,
-#             rachas de ceros, cobertura y satélite 1981-2003
-#    PARTE 4. Limpieza: coordenadas, rachas con vecinas, valores a NA,
-#             años aptos para curvas y píxel de cada estación
-#    PARTE 5. Guardar los datos limpios y la trazabilidad
-#
-#  Reglas que sigue todo el script:
-#    - Los datos originales NUNCA se modifican. Lo que se quita queda como NA
-#      en una columna aparte (VALUE_LIMPIO) y con su motivo.
-#    - Todavía NO se imputa. Eso se hará después, con FPCA condicional.
-#    - Las gráficas solo se muestran en pantalla (panel Plots de RStudio).
-#      Las tablas sí se guardan como CSV en la carpeta "salidas".
-#
-#  Cómo correrlo: abrir el proyecto en RStudio (la carpeta del repositorio
-#  debe ser el directorio de trabajo) y ejecutar todo (Ctrl + Shift + Enter).
-#  Tarda unos 5 minutos. Paquetes: readxl (leer Excel) y terra (leer GeoTIFF).
-# =============================================================================
+install.packages("writexl")
+install.packges("terra")
 
+library("writexl")
+library("terra")
 
-# =============================================================================
-# PARTE 0. CONFIGURACIÓN
-# =============================================================================
+setwd("C:/Users/juana/OneDrive/Escritorio/lluvia-valle-kan")
 
 # ---- 0.1 Paquetes ------------------------------------------------------------
-# Solo se usan dos paquetes y únicamente para LEER archivos. Todo el cálculo
-# se hace con R base.
-for (paquete in c("readxl", "terra")) {
+# Solo se usan tres paquetes y únicamente para LEER y ESCRIBIR archivos. Todo
+# el cálculo (incluidos la FPCA y el VAE) se hace con R base.
+for (paquete in c("readxl", "terra", "writexl")) {
   if (!requireNamespace(paquete, quietly = TRUE)) {
     stop("Falta el paquete '", paquete, "'. Instálelo con install.packages('", paquete, "')")
   }
@@ -43,7 +22,8 @@ for (paquete in c("readxl", "terra")) {
 # ---- 0.2 Rutas -----------------------------------------------------------------
 RUTA_DATOS   <- "Datos"
 RUTA_SALIDAS <- "salidas"
-CARPETAS <- c(pre_eda = "pre_eda", prep = "preprocesamiento", limpieza = "limpieza")
+CARPETAS <- c(pre_eda = "pre_eda", prep = "preprocesamiento", limpieza = "limpieza",
+              imputacion = "imputacion")
 for (carpeta in CARPETAS) dir.create(file.path(RUTA_SALIDAS, carpeta), recursive = TRUE, showWarnings = FALSE)
 options(scipen = 999)        # mostrar números sin notación científica
 
@@ -54,11 +34,20 @@ options(scipen = 999)        # mostrar números sin notación científica
 ANIO_INICIO     <- 1970      # antes de 1970 hay muy pocas estaciones (ver Parte 3.1)
 ANIO_FIN        <- 2003      # último año de estaciones (indicado por el profesor)
 PERIODO_COMUN   <- 1981:2003 # años en que hay estaciones Y satélite
-ANIO_REFERENCIA <- 1997      # lo "normal" se calcula solo hasta aquí, para no usar
-# años que podrían quedar de prueba (evita fuga de datos)
+ANIO_REFERENCIA <- ANIO_FIN  # último año de ENTRENAMIENTO: lo "normal" y los modelos de
+# imputación se aprenden solo hasta aquí. Todavía no hay
+# partición oficial, así que se usan todos los años. Cuando
+# el profesor la defina, basta con cambiar este número para
+# que ninguna decisión use datos de prueba.
 
-# Valores raros
-VALOR_IMPOSIBLE <- 859375    # mm en un día: imposible, es un error de digitación
+# Valores imposibles y exagerados (Parte 4.5)
+LIMITE_FISICO     <- 1825    # mm en un día: récord mundial de lluvia en 24 h (OMM, La
+# Reunión, 1966). Más que esto, o negativo, es imposible.
+FACTOR_EXAGERADO  <- 3       # un valor es sospechoso si supera 3 veces el percentil 99
+# de los días con lluvia de su estación...
+RESPALDO_MIN      <- .25     # ...y ninguna vecina (día anterior, mismo día o siguiente)
+# registró al menos el 25 % de ese valor
+FACTOR_SIN_VECINAS <- 5      # si ese día no hay vecinas con dato: exagerado si supera 5 veces el p99
 
 # Rachas de ceros
 RACHA_CEROS     <- 30        # días seguidos en cero para considerar una racha
@@ -77,6 +66,22 @@ MAX_DIAS_MES    <- 5         # mediana de días con dato por mes <= esto: lectur
 COB_MIN         <- 90        # % mínimo de días con dato en el año
 HUECO_MAX       <- 30        # hueco más largo permitido dentro del año (días)
 COB_TEMPORADA   <- 80        # % mínimo en cada temporada de lluvias (mar-may y sep-nov)
+
+# Vecinas por correlación para estaciones sin coordenadas (Parte 4.3)
+MIN_DIAS_COMUNES <- 365      # días con dato en ambas estaciones para calcular su correlación
+N_VECINAS_CORR   <- 5        # vecinas por correlación: las 5 estaciones más parecidas
+# (validado en 4.3: con 5 quedan a ~12 km reales en mediana)
+R_MIN_VECINA     <- .3       # correlación mínima para aceptar una vecina
+
+# Imputación (Parte 5)
+MIN_PENTADAS_IMPUTAR <- 36   # una curva se imputa si tiene al menos la mitad de sus 72 péntadas
+SEMILLA          <- 2026     # para que los sorteos (validación, VAE) den siempre lo mismo
+VAE_OCULTA       <- 32       # neuronas de la capa oculta del VAE
+VAE_LATENTE      <- 4        # dimensión del espacio latente z
+VAE_TASA         <- 1e-3     # tasa de aprendizaje (Adam)
+VAE_LOTE         <- 64       # curvas por lote
+VAE_EPOCAS_MAX   <- 300
+REPETICIONES_VALIDACION <- 20 # sorteos de péntadas escondidas para comparar los métodos
 
 # ---- 0.4 Colores de las gráficas ---------------------------------------------
 COL_PRINCIPAL <- "#1f6fb2"   # azul: dato normal
@@ -125,6 +130,11 @@ moda <- function(x) {
 # para poder contar los nulos (los días que faltan no vienen como fila).
 describir <- function(x, esperados = NA) {
   datos <- x[!is.na(x)]
+  if (!length(datos)) {                     # sin ningún dato: solo se cuentan los nulos
+    return(c(esperados = esperados, con_dato = 0, nulos = esperados, pct_nulos = 100,
+             ceros = NA, pct_ceros = NA, media = NA, mediana = NA, moda = NA, desv_estandar = NA,
+             minimo = NA, q1 = NA, q3 = NA, p99 = NA, maximo = NA))
+  }
   c(esperados     = esperados,
     con_dato      = length(datos),
     nulos         = esperados - length(datos),
@@ -163,17 +173,24 @@ racha_mas_larga <- function(x) {
   if (any(r$values)) max(r$lengths[r$values]) else 0
 }
 
+# Regla de valor imposible: negativo o por encima del récord mundial en 24 h.
+es_imposible <- function(x) !is.na(x) & (x < 0 | x > LIMITE_FISICO)
+
 # Trazabilidad: cada paso que cambia los datos deja una fila con cuántas
-# estaciones, pares estación-año y días quedan. Así se ve qué se perdió y dónde.
+# estaciones, pares estación-año y datos quedan. Así se ve qué se perdió y
+# dónde. "unidad" dice si se cuentan días (datos diarios) o péntadas (curvas).
 trazabilidad <- data.frame()
-registrar <- function(paso, id, anio, valor) {
+registrar <- function(paso, id, anio, valor, unidad = "días") {
   con_dato <- !is.na(valor)
+  clave <- paste(id, anio)
   fila <- data.frame(
     paso                = paso,
+    unidad              = unidad,
     estaciones          = length(unique(id[con_dato])),
-    pares_estacion_anio = nrow(unique(data.frame(id, anio)[con_dato, ])),
-    dias_con_dato       = sum(con_dato),
-    dias_sin_dato       = sum(!con_dato))
+    pares_estacion_anio = length(unique(clave[con_dato])),
+    con_dato            = sum(con_dato),
+    sin_dato            = sum(!con_dato),
+    pct_sin_dato        = round(mean(!con_dato) * 100, 2))
   trazabilidad <<- rbind(trazabilidad, fila)
   print(fila, row.names = FALSE)
 }
@@ -244,7 +261,7 @@ cat("\n######## PARTE 2. PRE-EDA ########\n")
 # ---- 2.1 Días esperados ------------------------------------------------------
 # Un día faltante NO viene como NA: simplemente no hay fila. Por eso los días
 # esperados se cuentan desde la primera hasta la última fecha de cada estación.
-valido <- !is.na(est$VALUE) & est$VALUE != VALOR_IMPOSIBLE
+valido <- !is.na(est$VALUE) & !es_imposible(est$VALUE)
 rango_est <- tapply(as.integer(est$fecha), est$STATION_ID, function(x) max(x) - min(x) + 1)
 esperados_est <- sum(rango_est)
 anios_sat <- sort(unique(anio_sat))
@@ -447,7 +464,7 @@ print(table(UNIDAD = est$UNIDAD, SENSOR = est$SENSOR, useNA = "ifany"))
 
 # Zona según los dos primeros dígitos del código (26 = una zona; 52, 53, 54 = otra)
 est$zona <- ifelse(substr(est$STATION_ID, 1, 2) == "26", "Código 26", "Códigos 52-54")
-lluvioso <- !is.na(est$VALUE) & est$VALUE >= LLUVIA_RED & est$VALUE != VALOR_IMPOSIBLE
+lluvioso <- !is.na(est$VALUE) & est$VALUE >= LLUVIA_RED & !es_imposible(est$VALUE)
 mediana_lluvia <- tapply(est$VALUE[lluvioso], est$STATION_ID[lluvioso], median)
 zona_est <- tapply(est$zona, est$STATION_ID, `[`, 1)        # zona de cada estación
 mediana_zona <- tapply(mediana_lluvia, zona_est[names(mediana_lluvia)], median)
@@ -495,7 +512,7 @@ cal$sin_dato <- is.na(cal$VALUE)
 registrar("3. Calendario completo (días faltantes como NA)", cal$STATION_ID, cal$anio, cal$VALUE)
 
 sin_dato_mes <- tapply(cal$sin_dato, list(cal$anio, cal$mes), mean) * 100
-para_grafica <- !cal$sin_dato & cal$VALUE != VALOR_IMPOSIBLE
+para_grafica <- !cal$sin_dato & !es_imposible(cal$VALUE)
 lluvia_mes <- tapply(cal$VALUE[para_grafica], list(cal$anio[para_grafica], cal$mes[para_grafica]), mean)
 tiempo <- as.vector(t(outer(as.integer(rownames(sin_dato_mes)), (1:12 - .5) / 12, "+")))
 
@@ -536,7 +553,7 @@ ultima_col   <- as.vector(tapply(col_dia, fila_est, max))
 fila_de <- function(k, cols) primera_fila[k] + cols - primera_col[k]   # (estación, columna) -> fila de cal
 
 V <- matrix(NA_real_, length(ids), n_dias, dimnames = list(ids, NULL))
-V[cbind(fila_est, col_dia)] <- ifelse(cal$VALUE == VALOR_IMPOSIBLE, NA, cal$VALUE)
+V[cbind(fila_est, col_dia)] <- ifelse(es_imposible(cal$VALUE), NA, cal$VALUE)
 
 # ---- 3.5 Rachas largas de ceros (primera versión: comparando con la zona) ----
 # Un cero puede ser real (no llovió) o falso (el equipo falló o nadie anotó).
@@ -752,24 +769,111 @@ sin_coord$cuenca <- altura$cuenca[match(sin_coord$STATION_ID, altura$codigo)]
 sin_coord <- sin_coord[order(-sin_coord$cobertura_en_operacion), ]
 guardar_tabla(sin_coord, "limpieza", "estaciones_sin_coordenadas")
 
-# ---- 4.2 Estaciones con lecturas mensuales -----------------------------------
-# Algunas estaciones no anotan cada día: escriben el total del mes en un solo
-# día. Se detectan porque la mitad de sus meses tiene MAX_DIAS_MES días con
-# dato o menos. No sirven para curvas diarias ni como vecinas.
-dias_por_mes <- tapply(!cal$sin_dato, list(cal$STATION_ID, cal$anio * 100 + cal$mes), sum)
-info$mediana_dias_por_mes <- apply(dias_por_mes[ids, , drop = FALSE], 1, function(x) median(x[!is.na(x) & x > 0]))
-info$lecturas_mensuales <- info$mediana_dias_por_mes <= MAX_DIAS_MES
-cat("Estaciones con lecturas mensuales:", paste(ids[info$lecturas_mensuales], collapse = ", "), "\n")
-rm(dias_por_mes)
+# ---- 4.2 Lecturas mensuales en vez de diarias --------------------------------
+# Algunas estaciones (o algunos años de una estación) no anotan cada día:
+# escriben el total del mes en uno o pocos días. Se revisa AÑO POR AÑO:
+#   un año es "mensual" si tiene al menos 3 meses con dato y, en la mitad de
+#   esos meses, MAX_DIAS_MES días con dato o menos.
+# Decisión:
+#   - si la mitad o más de los años de la estación son mensuales, se elimina
+#     la estación completa (no sirve para curvas diarias ni como vecina);
+#   - si solo son algunos años, se quitan solo esos años.
+cat("\n== 4.2 LECTURAS MENSUALES ==\n")
+clave_sy <- paste(cal$STATION_ID, cal$anio)                       # estación-año de cada día
+dias_mes <- tapply(!cal$sin_dato, list(clave_sy, cal$mes), sum)   # filas: estación-año, columnas: mes
+meses_con_dato <- rowSums(dias_mes > 0, na.rm = TRUE)
+mediana_mes <- apply(dias_mes, 1, function(x) { x <- x[!is.na(x) & x > 0]; if (length(x)) median(x) else NA })
+anios_revisados <- data.frame(
+  STATION_ID           = substr(rownames(dias_mes), 1, 10),
+  anio                 = as.integer(substr(rownames(dias_mes), 12, 15)),
+  meses_con_dato       = meses_con_dato,
+  mediana_dias_por_mes = mediana_mes,
+  stringsAsFactors     = FALSE)
+anios_revisados$mensual <- !is.na(mediana_mes) & meses_con_dato >= 3 & mediana_mes <= MAX_DIAS_MES
 
-# ---- 4.3 Rachas de ceros con estaciones vecinas ------------------------------
-# Misma pregunta que en 3.5, pero comparando con las estaciones cercanas en
-# lugar de toda la zona. Vecinas de una estación: las que están a RADIO_KM o
-# menos (hasta RADIO_MAX_KM si hay menos de MIN_VECINAS), con menos de
-# DIF_ALTURA m de diferencia de altura y que no sean de lecturas mensuales.
-cat("\n== 4.3 RACHAS DE CEROS CON VECINAS ==\n")
-vecinas <- lapply(seq_along(ids), function(k) {
-  if (!info$con_coordenadas[k]) return(integer(0))
+lecturas_mensuales <- do.call(rbind, lapply(split(anios_revisados, anios_revisados$STATION_ID), function(d) {
+  data.frame(STATION_ID = d$STATION_ID[1], anios = nrow(d), anios_mensuales = sum(d$mensual),
+             cuales = rangos(d$anio[d$mensual]), stringsAsFactors = FALSE)
+}))
+lecturas_mensuales <- lecturas_mensuales[lecturas_mensuales$anios_mensuales > 0, ]
+lecturas_mensuales$decision <- ifelse(lecturas_mensuales$anios_mensuales / lecturas_mensuales$anios >= .5,
+                                      "Eliminar la estación", "Quitar solo esos años")
+lecturas_mensuales <- lecturas_mensuales[order(-lecturas_mensuales$anios_mensuales), ]
+rownames(lecturas_mensuales) <- NULL
+guardar_tabla(lecturas_mensuales, "limpieza", "lecturas_mensuales")
+cat(sprintf("Estaciones con algún año mensual: %d (años mensuales en total: %d de %d)\n",
+            nrow(lecturas_mensuales), sum(lecturas_mensuales$anios_mensuales), nrow(anios_revisados)))
+print(lecturas_mensuales, row.names = FALSE)
+
+info$lecturas_mensuales <- ids %in% lecturas_mensuales$STATION_ID[lecturas_mensuales$decision == "Eliminar la estación"]
+info$anios_mensuales <- as.vector(tapply(anios_revisados$mensual, anios_revisados$STATION_ID, sum)[ids])
+sy_mensual <- with(anios_revisados[anios_revisados$mensual, ], paste(STATION_ID, anio))
+dia_mensual <- clave_sy %in% sy_mensual | cal$STATION_ID %in% ids[info$lecturas_mensuales]
+# Esos días tampoco se usan como "vecina" ni para buscar acumulados
+V[cbind(fila_est[dia_mensual], col_dia[dia_mensual])] <- NA
+rm(dias_mes, clave_sy)
+
+# ---- 4.3 Vecinas de cada estación: por distancia o por correlación -----------
+# Para revisar los ceros falsos (4.4) y para imputar (Parte 5), cada estación
+# necesita sus "vecinas": estaciones que viven la misma lluvia.
+#   - Estaciones CON coordenadas: vecinas por DISTANCIA. Las que están a
+#     RADIO_KM o menos (hasta RADIO_MAX_KM si hay menos de MIN_VECINAS), con
+#     menos de DIF_ALTURA m de diferencia de altura.
+#   - Estaciones SIN coordenadas: NO se les inventa una ubicación. Sus vecinas
+#     se escogen por CORRELACIÓN de la lluvia diaria (triangulación): dos
+#     estaciones cercanas ven los mismos aguaceros el mismo día, así que la
+#     correlación funciona como una medida de cercanía. Son vecinas las
+#     N_VECINAS_CORR estaciones más correlacionadas (con al menos R_MIN_VECINA).
+# El número N no se escoge a ojo: a las estaciones que SÍ tienen coordenadas se
+# les buscan vecinas por correlación como si no las tuvieran, y se mide a qué
+# distancia real quedaron, para N = 3, 5, 8, 10 y 15. Con pocas vecinas quedan
+# más cerca pero el promedio es más ruidoso; con muchas, se cuelan estaciones
+# lejanas. N = 5 equilibra las dos cosas.
+# (Se probó también un umbral fijo de correlación, r >= 0,38, que es la típica
+# a 20 km: daba hasta 177 vecinas por estación y solo el 62 % a 30 km o menos,
+# porque estaciones lejanas también pueden superar ese umbral.)
+# Las estaciones sin coordenadas no se emparejan con el satélite (ver 4.7):
+# para eso sí hace falta saber en qué píxel están.
+cat("\n== 4.3 VECINAS DE CADA ESTACIÓN ==\n")
+activas  <- which(!info$lecturas_mensuales)
+ubicadas <- which(info$con_coordenadas & !info$lecturas_mensuales)
+
+# a) Correlación de la lluvia diaria entre todos los pares de estaciones.
+#    Raíz cuadrada para que los aguaceros no dominen; solo días con dato en ambas.
+RAIZ  <- sqrt(V)
+TIENE <- !is.na(RAIZ)
+CORR <- matrix(NA_real_, length(ids), length(ids), dimnames = list(ids, ids))
+for (e1 in activas) for (e2 in activas) {
+  if (e2 <= e1) next
+  comun <- TIENE[e1, ] & TIENE[e2, ]
+  if (sum(comun) < MIN_DIAS_COMUNES) next
+  CORR[e1, e2] <- CORR[e2, e1] <- cor(RAIZ[e1, comun], RAIZ[e2, comun])
+}
+rm(RAIZ, TIENE)
+
+# b) Calibración: correlación típica según la distancia (estaciones con coordenadas)
+pares_u <- t(combn(ubicadas, 2))
+calib <- data.frame(
+  d = dist_km(info$lon[pares_u[, 1]], info$lat[pares_u[, 1]], info$lon[pares_u[, 2]], info$lat[pares_u[, 2]]),
+  r = CORR[pares_u])
+calib <- calib[!is.na(calib$r), ]
+BANDAS_KM <- c(0, 5, 10, 20, 30, 50, 100, Inf)
+banda <- cut(calib$d, BANDAS_KM)
+calibracion <- data.frame(distancia_km = levels(banda), pares = as.vector(table(banda)),
+                          correlacion_mediana = round(as.vector(tapply(calib$r, banda, median)), 3))
+guardar_tabla(calibracion, "limpieza", "calibracion_correlacion_distancia")
+cat("Correlación mediana de la lluvia diaria según la distancia entre estaciones:\n")
+print(calibracion, row.names = FALSE)
+
+graficar(function() {   # Gráfica: correlación contra distancia
+  op <- par(mar = c(4.5, 4.5, 3, 1)); on.exit(par(op))
+  boxplot(r ~ banda, data = data.frame(r = calib$r, banda = banda), col = COL_GRIS, border = "#56636f",
+          outline = FALSE, xlab = "Distancia entre estaciones (km)", ylab = "Correlación de la lluvia diaria",
+          main = "Cuanto más cerca, más se parece la lluvia (estaciones con coordenadas)")
+})
+
+# c) Las dos reglas para escoger vecinas
+vecinas_por_distancia <- function(k) {
   d <- dist_km(info$lon[k], info$lat[k], info$lon, info$lat)
   d[k] <- NA
   d[info$lecturas_mensuales] <- NA
@@ -778,11 +882,75 @@ vecinas <- lapply(seq_along(ids), function(k) {
   v <- which(!is.na(d) & altura_ok & d <= RADIO_KM)
   if (length(v) < MIN_VECINAS) v <- which(!is.na(d) & altura_ok & d <= RADIO_MAX_KM)
   v
+}
+vecinas_por_correlacion <- function(k, candidatas, n = N_VECINAS_CORR) {
+  r <- CORR[k, candidatas]
+  ok <- which(!is.na(r) & r >= R_MIN_VECINA)
+  candidatas[ok[order(-r[ok])][seq_len(min(n, length(ok)))]]
+}
+
+# d) Validación: a las estaciones con coordenadas se les buscan vecinas por
+#    correlación (como si no tuvieran coordenadas) y se mide la distancia real,
+#    para varios valores de N
+validacion_vecinas <- do.call(rbind, lapply(c(3, 5, 8, 10, 15), function(n) {
+  medida <- sapply(ubicadas, function(k) {
+    v <- vecinas_por_correlacion(k, setdiff(ubicadas, k), n)
+    if (!length(v)) return(c(NA, NA, NA))
+    d <- dist_km(info$lon[k], info$lat[k], info$lon[v], info$lat[v])
+    c(median(d), mean(d <= RADIO_MAX_KM), mean(v %in% vecinas_por_distancia(k)))
+  })
+  data.frame(N = n, distancia_mediana_km = round(median(medida[1, ], na.rm = TRUE), 1),
+             pct_a_30_km_o_menos = round(mean(medida[2, ], na.rm = TRUE) * 100, 1),
+             pct_tambien_vecina_por_distancia = round(mean(medida[3, ], na.rm = TRUE) * 100, 1))
+}))
+guardar_tabla(validacion_vecinas, "limpieza", "validacion_vecinas_por_correlacion")
+cat("Validación (estaciones con coordenadas, vecinas buscadas solo por correlación):\n")
+print(validacion_vecinas, row.names = FALSE)
+cat(sprintf("Se usa N = %d\n", N_VECINAS_CORR))
+
+# e) Vecinas definitivas de cada estación
+vecinas <- lapply(seq_along(ids), function(k) {
+  if (info$lecturas_mensuales[k]) return(integer(0))
+  if (info$con_coordenadas[k]) vecinas_por_distancia(k) else vecinas_por_correlacion(k, setdiff(activas, k))
 })
+info$tipo_vecinas <- ifelse(info$lecturas_mensuales, "Ninguna (lecturas mensuales)",
+                            ifelse(info$con_coordenadas, "Por distancia", "Por correlación"))
+info$r_max_vecina <- sapply(seq_along(ids), function(k) {
+  r <- CORR[k, vecinas[[k]]]
+  if (length(r) && any(!is.na(r))) round(max(r, na.rm = TRUE), 3) else NA
+})
+
+# f) Localidad de las estaciones sin coordenadas: el código indica la cuenca
+#    (primeros 7 dígitos). El nombre de la cuenca sale del catálogo; si la
+#    estación no está en él, se toma el de otra estación con el mismo código.
+info$codigo_cuenca <- substr(ids, 1, 7)
+info$cuenca <- altura$cuenca[i_alt]
+nombre_cuenca <- tapply(info$cuenca, info$codigo_cuenca, function(x) {
+  x <- x[!is.na(x)]
+  if (length(x)) names(sort(table(x), decreasing = TRUE))[1] else NA
+})
+info$cuenca[is.na(info$cuenca)] <- nombre_cuenca[info$codigo_cuenca[is.na(info$cuenca)]]
+
+vecinas_sin_coordenadas <- data.frame(
+  info[!info$con_coordenadas & !info$lecturas_mensuales, c("STATION_ID", "zona", "nombre", "municipio",
+                                                           "codigo_cuenca", "cuenca", "r_max_vecina")],
+  n_vecinas = lengths(vecinas)[!info$con_coordenadas & !info$lecturas_mensuales],
+  vecinas = sapply(vecinas, function(v) paste(ids[v], collapse = " "))[!info$con_coordenadas & !info$lecturas_mensuales],
+  stringsAsFactors = FALSE)
+guardar_tabla(vecinas_sin_coordenadas, "limpieza", "vecinas_estaciones_sin_coordenadas")
+cat(sprintf("Estaciones sin coordenadas: %d | con vecinas por correlación: %d | sin ninguna vecina: %d\n",
+            nrow(vecinas_sin_coordenadas), sum(vecinas_sin_coordenadas$n_vecinas > 0),
+            sum(vecinas_sin_coordenadas$n_vecinas == 0)))
+cat(sprintf("Estaciones sin coordenadas con nombre de cuenca: %d\n", sum(!is.na(vecinas_sin_coordenadas$cuenca))))
+
+# ---- 4.4 Rachas de ceros con estaciones vecinas ------------------------------
+# Misma pregunta que en 3.5 (¿llovió alrededor mientras esta estación marcaba
+# cero?), pero comparando con las vecinas de 4.3 en lugar de toda la zona.
+cat("\n== 4.4 RACHAS DE CEROS CON VECINAS ==\n")
 info$n_vecinas <- lengths(vecinas)
 info$vecinas <- sapply(vecinas, function(v) paste(ids[v], collapse = " "))
 cat("Vecinas por estación ubicada:\n")
-print(summary(info$n_vecinas[info$con_coordenadas]))
+print(tapply(info$n_vecinas, info$tipo_vecinas, summary))
 
 REPORTA <- !is.na(V)                      # TRUE si la estación tiene dato ese día
 LLUEVE  <- !is.na(V) & V >= LLUVIA_RED    # TRUE si ese día llovió 1 mm o más
@@ -810,13 +978,14 @@ rachas$clasificacion_vecinas <- ifelse(is.na(rachas$razon_vecinas), NA,
                                        ifelse(rachas$razon_vecinas < .5, CLASES[1], ifelse(rachas$razon_vecinas >= .8, CLASES[3], CLASES[2])))
 
 # Clasificación final: con vecinas si se pudo; si no, la de la zona
-rachas$metodo <- ifelse(!is.na(rachas$clasificacion_vecinas), "Vecinas",
-                        ifelse(info$con_coordenadas[rachas$k], "Zona (sin vecinas con dato)", "Zona (sin coordenadas)"))
+rachas$metodo <- ifelse(!is.na(rachas$clasificacion_vecinas),
+                        ifelse(info$con_coordenadas[rachas$k], "Vecinas por distancia", "Vecinas por correlación"),
+                        "Zona (sin vecinas con dato)")
 rachas$clasificacion <- ifelse(is.na(rachas$clasificacion_vecinas), rachas$clasificacion_zona,
                                rachas$clasificacion_vecinas)
 
 cat("Método usado:\n"); print(table(rachas$metodo))
-con_vecinas <- rachas$metodo == "Vecinas"
+con_vecinas <- grepl("^Vecinas", rachas$metodo)
 cambio <- table(zona    = factor(rachas$clasificacion_zona[con_vecinas], CLASES, CLASES_CORTAS),
                 vecinas = factor(rachas$clasificacion_vecinas[con_vecinas], CLASES, CLASES_CORTAS))
 cat("\nClasificación por zona (filas) contra vecinas (columnas):\n"); print(cambio)
@@ -858,7 +1027,7 @@ graficar(function() {   # Gráfica: cuántas rachas hay en cada clase, por zona 
   legend("topright", fill = c(COL_GRIS, COL_PRINCIPAL), legend = rownames(m), bty = "n")
 })
 graficar(function() {   # Gráfica: ejemplo de la racha sospechosa más larga contra sus vecinas
-  s <- rachas[rachas$metodo == "Vecinas" & rachas$clasificacion == CLASES[3], ]
+  s <- rachas[rachas$metodo == "Vecinas por distancia" & rachas$clasificacion == CLASES[3], ]
   s <- s[which.max(s$dias), ]
   d <- max(1, s$c_ini - 30):min(n_dias, s$c_fin + 30)
   N <- vecinas[[s$k]]
@@ -873,10 +1042,10 @@ graficar(function() {   # Gráfica: ejemplo de la racha sospechosa más larga co
          legend = c(sprintf("Promedio de sus %d vecinas", length(N)), "La estación"))
 })
 
-# ---- 4.4 Pasar a NA lo que no es lluvia real ---------------------------------
+# ---- 4.5 Pasar a NA lo que no es lluvia real ---------------------------------
 # VALUE se queda igual. VALUE_LIMPIO es la copia limpia y "motivo" dice por
 # qué un día quedó sin dato. El orden importa: un día se marca una sola vez.
-cat("\n== 4.4 VALORES QUE PASAN A NA ==\n")
+cat("\n== 4.5 VALORES QUE PASAN A NA ==\n")
 cal$VALUE_LIMPIO <- cal$VALUE
 cal$motivo <- ifelse(cal$sin_dato, "Sin dato original", NA_character_)
 marcar <- function(filas, texto) {
@@ -886,14 +1055,23 @@ marcar <- function(filas, texto) {
   cat(sprintf("%-40s %8d días\n", texto, length(filas)))
 }
 
-# a) Estaciones con lecturas mensuales (ver 4.2)
-marcar(which(cal$STATION_ID %in% ids[info$lecturas_mensuales]), "Estación con lecturas mensuales")
+# Cada tipo de dato malo se quita en su propio paso y queda en la trazabilidad.
 
-# b) Valor imposible
-marcar(which(cal$VALUE == VALOR_IMPOSIBLE), "Valor imposible (859375)")
+# a) Lecturas mensuales (ver 4.2): estaciones eliminadas completas y años sueltos.
+#    Se eliminan: son pocas (ver tabla de 4.2) y repartir un total mensual en
+#    días inventaría el momento de cada aguacero.
+marcar(which(cal$STATION_ID %in% ids[info$lecturas_mensuales]), "Estación con lecturas mensuales")
+marcar(which(dia_mensual), "Año con lecturas mensuales")
+registrar("4a. Quitar lecturas mensuales", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
+
+# b) Valores imposibles: negativos o por encima de LIMITE_FISICO (récord mundial)
+marcar(which(es_imposible(cal$VALUE)), "Valor imposible (negativo o > récord mundial)")
+registrar("4b. Quitar valores imposibles", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
 
 # c) Acumulados: tras HUECO_MIN días o más sin dato llega un valor mayor que el
 #    percentil 99 de la estación. Es la lluvia de varios días anotada en uno.
+#    Se revisan antes que los exagerados porque, si el valor viene después de
+#    un hueco, la explicación más probable es que sea un acumulado.
 acumulados <- do.call(rbind, lapply(which(!info$lecturas_mensuales), function(k) {
   cols <- primera_col[k]:ultima_col[k]
   v <- V[k, cols]
@@ -916,10 +1094,51 @@ guardar_tabla(acumulados[, setdiff(names(acumulados), c("k", "col"))], "limpieza
 cat(sprintf("Acumulados tras hueco: %d en %d estaciones (mediana del hueco: %g días)\n",
             nrow(acumulados), length(unique(acumulados$STATION_ID)), median(acumulados$dias_hueco)))
 marcar(fila_de(acumulados$k, acumulados$col), "Acumulado tras un hueco")
+registrar("4c. Quitar acumulados tras un hueco", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
+V[cbind(acumulados$k, acumulados$col)] <- NA
 
-# d) Ceros falsos: los días de las rachas sospechosas
+# d) Valores exagerados (posibles errores de digitación, como un cero de más):
+#    un valor es exagerado si
+#      1. supera FACTOR_EXAGERADO veces el percentil 99 de los días con lluvia
+#         de su estación, Y
+#      2. ninguna vecina registró al menos RESPALDO_MIN de ese valor el día
+#         anterior, el mismo día o el siguiente (un aguacero real de ese tamaño
+#         casi siempre deja rastro alrededor).
+#    Si ese día ninguna vecina tiene dato, se exige más: FACTOR_SIN_VECINAS
+#    veces el percentil 99.
+#    Por qué 3 veces: entre los valores de 150 mm o más, los que pasan de 3
+#    veces el p99 casi nunca tienen respaldo de las vecinas; por debajo de 3
+#    veces, lo normal es que sí lo tengan (ver tabla valores_exagerados).
+p99_est <- apply(V, 1, function(v) {
+  v <- v[!is.na(v) & v >= LLUVIA_RED]
+  if (length(v) < 30) NA else quantile(v, .99, names = FALSE)
+})
+candidatos <- which(V >= FACTOR_EXAGERADO * p99_est, arr.ind = TRUE)   # p99_est se recicla por fila
+exagerados <- do.call(rbind, lapply(seq_len(nrow(candidatos)), function(j) {
+  k <- candidatos[j, 1]; c <- candidatos[j, 2]
+  N <- vecinas[[k]]
+  alrededor <- if (length(N)) V[N, max(1, c - 1):min(n_dias, c + 1)] else NA
+  respaldo <- if (all(is.na(alrededor))) NA else max(alrededor, na.rm = TRUE)
+  valor <- V[k, c]
+  data.frame(STATION_ID = ids[k], k = k, col = c, fecha = fechas[c], valor = valor,
+             p99_estacion = round(p99_est[k], 1), veces_p99 = round(valor / p99_est[k], 1),
+             max_vecinas_alrededor = respaldo,
+             exagerado = if (is.na(respaldo)) valor >= FACTOR_SIN_VECINAS * p99_est[k] else respaldo < RESPALDO_MIN * valor,
+             stringsAsFactors = FALSE)
+}))
+exagerados <- exagerados[order(-exagerados$valor), ]
+guardar_tabla(exagerados[, setdiff(names(exagerados), c("k", "col"))], "limpieza", "valores_exagerados")
+cat(sprintf("Valores de %d veces el p99 o más: %d | exagerados (sin respaldo de vecinas): %d | se conservan: %d\n",
+            FACTOR_EXAGERADO, nrow(exagerados), sum(exagerados$exagerado), sum(!exagerados$exagerado)))
+quitar <- exagerados[exagerados$exagerado, ]
+marcar(fila_de(quitar$k, quitar$col), "Valor exagerado sin respaldo de vecinas")
+registrar("4d. Quitar valores exagerados", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
+V[cbind(quitar$k, quitar$col)] <- NA
+
+# e) Ceros falsos: los días de las rachas sospechosas (4.4). Se borran aquí y
+#    después se imputan en la Parte 5, como cualquier otro hueco.
 marcar(which(!is.na(cal$racha_ceros) & cal$racha_ceros == CLASES[3]), "Cero falso (racha sospechosa)")
-registrar("4. Pasar a NA lo que no es lluvia real", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
+registrar("4e. Quitar ceros falsos", cal$STATION_ID, cal$anio, cal$VALUE_LIMPIO)
 
 motivos <- table(cal$motivo)
 guardar_tabla(data.frame(motivo = names(motivos), dias = as.vector(motivos)), "limpieza", "motivos_de_na")
@@ -945,13 +1164,13 @@ graficar(function() {   # Gráfica: días que pasan a NA por cada motivo
   text(m, bp, format(m, big.mark = ".", decimal.mark = ","), pos = 4, cex = .85)
 })
 
-# ---- 4.5 Pares estación-año aptos para curvas --------------------------------
+# ---- 4.6 Pares estación-año aptos para curvas --------------------------------
 # Una curva anual necesita el año casi completo. Un par estación-año es apto si:
 #   - tiene COB_MIN % o más de días con dato (ya limpio),
 #   - su hueco más largo no pasa de HUECO_MAX días,
 #   - cada temporada de lluvias (mar-may y sep-nov) tiene COB_TEMPORADA % o más.
 # No se borra nada: la columna "apto" servirá de filtro más adelante.
-cat("\n== 4.5 PARES ESTACIÓN-AÑO APTOS ==\n")
+cat("\n== 4.6 PARES ESTACIÓN-AÑO APTOS ==\n")
 OK <- matrix(FALSE, length(ids), n_dias)
 OK[cbind(fila_est, col_dia)] <- !is.na(cal$VALUE_LIMPIO)
 pares <- unique(data.frame(STATION_ID = cal$STATION_ID, anio = cal$anio, stringsAsFactors = FALSE))
@@ -995,33 +1214,40 @@ graficar(function() {   # Gráfica: pares aptos y no aptos en cada año
   legend("topleft", fill = c(COL_PRINCIPAL, COL_GRIS), legend = rownames(m), bty = "n")
 })
 
-# ---- 4.6 Píxel del satélite de cada estación ---------------------------------
-# Cada estación ubicada se empareja con el píxel de 0,05° que la contiene.
-# Estas parejas son las que se comparan en la sección 3 del proyecto y con las
-# que la red KAN aprende a corregir el satélite.
-cat("\n== 4.6 ESTACIÓN Y PÍXEL DEL SATÉLITE ==\n")
+# ---- 4.7 Píxel del satélite de cada estación ---------------------------------
+# Regla de asignación: cada estación CON coordenadas se empareja con el píxel
+# de 0,05° que contiene su punto (terra::cellFromXY). Estas parejas son las
+# que se comparan en la sección 3 del proyecto y con las que la red KAN
+# aprende a corregir el satélite. Las estaciones sin coordenadas no se
+# emparejan: no se sabe en qué píxel están.
+cat("\n== 4.7 ESTACIÓN Y PÍXEL DEL SATÉLITE ==\n")
 celda  <- terra::cellFromXY(plantilla_sat, cbind(info$lon, info$lat))
 centro <- terra::xyFromCell(plantilla_sat, ifelse(is.na(celda), 1, celda))
 info$pixel <- ifelse(is.na(celda), NA, sprintf("P%04d", celda))
 info$km_al_centro_pixel <- ifelse(is.na(celda), NA,
                                   round(dist_km(info$lon, info$lat, centro[, 1], centro[, 2]), 2))
-info$ubicacion <- ifelse(!info$con_coordenadas, "Sin coordenadas",
+info$ubicacion <- ifelse(!info$con_coordenadas, "Sin coordenadas: no se empareja con el satélite",
                          ifelse(is.na(celda), "Fuera de la imagen", "Dentro de la imagen"))
+info$comparte_pixel <- !is.na(info$pixel) & info$pixel %in% info$pixel[duplicated(info$pixel) & !is.na(info$pixel)]
 print(table(info$ubicacion))
-cat(sprintf("Píxeles distintos con estación: %d | píxeles con 2 o más estaciones: %d\n",
-            length(unique(na.omit(info$pixel))), sum(table(info$pixel) >= 2)))
+cat(sprintf("Píxeles distintos con estación: %d | píxeles con 2 o más estaciones: %d (%d estaciones)\n",
+            length(unique(na.omit(info$pixel))), sum(table(info$pixel) >= 2), sum(info$comparte_pixel)))
 cat(sprintf("Estaciones dentro de la imagen y con algún año apto en %d-%d: %d\n",
             min(PERIODO_COMUN), max(PERIODO_COMUN),
             length(unique(pares$STATION_ID[pares$apto & pares$anio %in% PERIODO_COMUN &
                                              pares$STATION_ID %in% ids[!is.na(info$pixel)]]))))
+emparejamiento <- info[!is.na(info$pixel), c("STATION_ID", "nombre", "lon", "lat", "altitud", "pixel",
+                                             "km_al_centro_pixel", "comparte_pixel")]
+emparejamiento <- emparejamiento[order(emparejamiento$pixel), ]
+guardar_tabla(emparejamiento, "limpieza", "emparejamiento_estacion_pixel")
 
-graficar(function() {   # Gráfica: mapa de estaciones y área del satélite
+graficar(function() {   # Gráfica: mapa de estaciones con coordenadas y área del satélite
   e <- terra::ext(plantilla_sat)
   u <- info[info$con_coordenadas, ]
   op <- par(mar = c(4, 4, 4, 1)); on.exit(par(op))
   plot(u$lon, u$lat, type = "n", asp = 1, xlab = "Longitud", ylab = "Latitud",
        xlim = range(u$lon, e[1:2]), ylim = range(u$lat, e[3:4]),
-       main = sprintf("Estaciones ubicadas (%d de %d) y área del satélite", nrow(u), nrow(info)))
+       main = sprintf("Estaciones con coordenadas (%d de %d) y área del satélite", nrow(u), nrow(info)))
   rect(e[1], e[3], e[2], e[4], border = COL_CERO, lwd = 2, lty = 2)
   apto <- !is.na(u$anios_aptos) & u$anios_aptos > 0
   points(u$lon, u$lat, pch = 19, cex = .9,
@@ -1033,21 +1259,543 @@ graficar(function() {   # Gráfica: mapa de estaciones y área del satélite
 
 
 # =============================================================================
-# PARTE 5. GUARDAR
+# PARTE 5. IMPUTACIÓN: FPCA CONDICIONAL Y VAE
 # =============================================================================
-# Estos archivos son la entrada de los pasos siguientes (imputación, curvas).
-cat("\n######## PARTE 5. GUARDAR ########\n")
-guardar_tabla(info[, c("STATION_ID", "zona", "nombre", "municipio", "lon", "lat", "altitud", "ubicacion",
-                       "pixel", "km_al_centro_pixel", "n_vecinas", "vecinas", "mediana_dias_por_mes",
-                       "lecturas_mensuales", "anios_aptos")], "limpieza", "estaciones_info")
+# Escala: PÉNTADAS, igual que el satélite (6 por mes, 72 por año), en mm/día.
+# Una "curva" es un año de una estación: 72 valores.
+#
+# Modelo que usan los dos métodos (en raíz cuadrada, para que la lluvia sea
+# menos asimétrica):
+#     raíz(lluvia) = climatología de la estación
+#                  + a · anomalía de sus vecinas ese mismo año
+#                  + residuo
+#   - climatología: la curva media de la estación (años de entrenamiento).
+#   - vecinas: lo que llovió de más o de menos en las estaciones cercanas en
+#     esas mismas péntadas. Es la pista más fuerte para rellenar un hueco.
+#   - residuo: lo que las vecinas no explican. ESTO es lo que imputan la FPCA
+#     y el VAE, usando las péntadas observadas de la propia curva.
+#
+# Imputación oficial: FPCA condicional (ganó en la validación y es más simple
+# e interpretable). El VAE se mantiene solo como COMPARACIÓN.
+#
+# Reglas contra la fuga de datos: la climatología, el coeficiente a, las
+# componentes de la FPCA y los pesos del VAE se aprenden SOLO con las curvas
+# de ajuste (años hasta ANIO_REFERENCIA, sin las curvas apartadas para validar).
+cat("\n######## PARTE 5. IMPUTACIÓN ########\n")
+set.seed(SEMILLA)
 
-estaciones_limpias <- cal[, c("STATION_ID", "zona", "fecha", "anio", "mes", "dia", "VALUE", "VALUE_LIMPIO",
-                              "motivo", "racha_ceros", "apto")]
+# ---- 5.1 De días a péntadas --------------------------------------------------
+# Péntada del día: días 1-5 -> 1, 6-10 -> 2, ..., 26 al fin de mes -> 6.
+# Una péntada cuenta como observada si tiene al menos el 60 % de sus días con
+# dato limpio; su valor es el promedio de esos días (mm/día).
+cal$pentada <- (cal$mes - 1) * 6 + pmin(ceiling(cal$dia / 5), 6)
+usar <- !cal$STATION_ID %in% ids[info$lecturas_mensuales]
+curvas <- unique(data.frame(STATION_ID = cal$STATION_ID[usar], anio = cal$anio[usar], stringsAsFactors = FALSE))
+curvas <- curvas[order(curvas$STATION_ID, curvas$anio), ]
+rownames(curvas) <- NULL
+clave_curva <- paste(curvas$STATION_ID, curvas$anio)
+fila_curva <- match(paste(cal$STATION_ID, cal$anio), clave_curva)
+con_valor <- !is.na(cal$VALUE_LIMPIO) & !is.na(fila_curva)
+casilla <- (fila_curva[con_valor] - 1) * 72 + cal$pentada[con_valor]     # posición en la matriz curva x péntada
+n_casillas <- nrow(curvas) * 72
+dias_con_dato <- tabulate(casilla, n_casillas)
+suma <- rowsum(cal$VALUE_LIMPIO[con_valor], casilla)
+total <- numeric(n_casillas)
+total[as.integer(rownames(suma))] <- suma[, 1]
+Y <- matrix(total / dias_con_dato, ncol = 72, byrow = TRUE)               # mm/día; filas = curvas
+largo_pent <- sapply(anios, function(a) dias_pentada(a, 1:72))            # 72 x años
+dias_largo <- t(largo_pent[, match(curvas$anio, anios)])
+Y[matrix(dias_con_dato, ncol = 72, byrow = TRUE) < ceiling(.6 * dias_largo)] <- NA
+rm(suma, total, casilla)
+
+curvas$n_obs <- rowSums(!is.na(Y))
+curvas$imputable <- curvas$n_obs >= MIN_PENTADAS_IMPUTAR
+curvas$entrenamiento <- curvas$anio <= ANIO_REFERENCIA
+cat(sprintf("Curvas (estación-año): %d | completas: %d | imputables (>= %d péntadas): %d | no imputables: %d\n",
+            nrow(curvas), sum(curvas$n_obs == 72), MIN_PENTADAS_IMPUTAR, sum(curvas$imputable),
+            sum(!curvas$imputable)))
+registrar("6. Pasar a péntadas (antes de imputar)", rep(curvas$STATION_ID, 72), rep(curvas$anio, 72),
+          as.vector(Y), unidad = "péntadas")
+
+# ---- 5.2 Conjuntos para aprender y para validar ------------------------------
+# Para saber qué tan bien imputa cada método se ESCONDEN péntadas que sí se
+# conocen (un bloque de 6 seguidas, como un mes perdido, y 6 sueltas) y se
+# mide qué tan bien se recuperan. Así se compara con datos reales.
+#   - prueba:  curvas completas que ningún método ve al aprender. Mientras no
+#              haya partición oficial, son el 15 % de las curvas completas,
+#              sorteadas. Si ANIO_REFERENCIA < ANIO_FIN, son las curvas
+#              completas de los años posteriores.
+#   - interna: otro 15 % de las curvas completas, para escoger K (FPCA) y
+#              saber cuándo parar el VAE.
+#   - ajuste:  todas las demás curvas imputables, con las que se aprende.
+esconder <- function(observado) {
+  H <- observado & FALSE
+  for (i in seq_len(nrow(observado))) {
+    inicio <- sample(1:67, 1)
+    H[i, inicio:(inicio + 5)] <- TRUE
+    H[i, sample(72, 6)] <- TRUE
+  }
+  H & observado
+}
+entrena <- which(curvas$entrenamiento & curvas$imputable)
+completas <- entrena[curvas$n_obs[entrena] == 72]
+if (any(!curvas$entrenamiento)) {
+  prueba <- which(!curvas$entrenamiento & curvas$n_obs == 72)
+} else {
+  prueba <- sample(completas, round(.15 * length(completas)))
+}
+interna <- sample(setdiff(completas, prueba), round(.15 * length(completas)))
+ajuste  <- setdiff(entrena, c(prueba, interna))
+cat(sprintf("Curvas para aprender: %d | para ajustar parámetros: %d | de prueba: %d\n",
+            length(ajuste), length(interna), length(prueba)))
+
+# ---- 5.3 Climatología de cada estación y anomalías ---------------------------
+# La climatología se calcula SOLO con las curvas de ajuste (si una estación
+# tiene menos de 3, con todas sus curvas imputables que no sean de prueba).
+RAIZ_Y <- sqrt(Y)
+clim <- t(sapply(split(seq_len(nrow(curvas)), curvas$STATION_ID), function(i) {
+  j <- intersect(i, ajuste)
+  if (length(j) < 3) j <- setdiff(i[curvas$imputable[i]], prueba)
+  if (length(j) == 0) j <- setdiff(i, prueba)
+  if (length(j) == 0) j <- i
+  colMeans(RAIZ_Y[j, , drop = FALSE], na.rm = TRUE)
+}))
+clim_red <- colMeans(clim, na.rm = TRUE)                  # si a una estación le falta una péntada, se usa la red
+for (j in 1:72) clim[is.na(clim[, j]), j] <- clim_red[j]
+CLIM <- clim[curvas$STATION_ID, ]                         # climatología de cada curva
+X <- RAIZ_Y - CLIM                                        # anomalía: cuánto se aparta de lo normal
+
+# ---- 5.4 Lo que dicen las vecinas --------------------------------------------
+# Vecinas de imputación: las mismas de 4.3 (por distancia si la estación tiene
+# coordenadas, por correlación si no). Si una estación se quedó sin ninguna,
+# se usan sus 5 estaciones más correlacionadas.
+vecinas_imp <- lapply(seq_along(ids), function(k) {
+  if (length(vecinas[[k]])) return(ids[vecinas[[k]]])
+  r <- CORR[k, ]
+  o <- order(-r)
+  ids[head(o[!is.na(r[o])], 5)]
+})
+names(vecinas_imp) <- ids
+# Curva de las vecinas: promedio de sus anomalías en el mismo año, péntada a péntada
+VEC <- t(sapply(seq_len(nrow(curvas)), function(i) {
+  f <- match(paste(vecinas_imp[[curvas$STATION_ID[i]]], curvas$anio[i]), clave_curva)
+  f <- f[!is.na(f)]
+  if (!length(f)) return(rep(NA_real_, 72))
+  m <- colMeans(X[f, , drop = FALSE], na.rm = TRUE)
+  m[is.nan(m)] <- NA
+  m
+}))
+VEC0 <- ifelse(is.na(VEC), 0, VEC)                        # sin información de vecinas = 0 (no mueve nada)
+cat(sprintf("Curvas con información de vecinas: %d de %d\n", sum(rowSums(!is.na(VEC)) > 0), nrow(curvas)))
+H_int <- esconder(!is.na(X[interna, ]))
+H_pru <- esconder(!is.na(X[prueba, ]))
+
+# ---- 5.5 Coeficiente a: cuánto se parece la estación a sus vecinas -----------
+# Mínimos cuadrados por estación: a = suma(x·v) / suma(v²). Si la estación
+# tiene pocos datos de entrenamiento, se usa el a de toda la red.
+filas_aj <- split(ajuste, curvas$STATION_ID[ajuste])
+num <- sapply(filas_aj, function(i) sum(X[i, ] * VEC0[i, ], na.rm = TRUE))
+den <- sapply(filas_aj, function(i) sum(VEC0[i, ]^2 * !is.na(X[i, ])))
+a_red <- sum(num) / sum(den)
+a_est <- ifelse(den >= 50, num / den, a_red)
+a_curva <- ifelse(is.na(a_est[curvas$STATION_ID]), a_red, a_est[curvas$STATION_ID])
+cat(sprintf("Coeficiente a de la red: %.2f (mediana por estación: %.2f)\n", a_red, median(a_est)))
+ESPACIAL <- as.vector(a_curva) * VEC0                     # lo que explican las vecinas
+RES <- X - ESPACIAL                                       # residuo que imputan FPCA y VAE
+
+# Devuelve la lluvia (mm/día) a partir del residuo: se deshace la raíz y se
+# suma "corr", la varianza que se pierde al elevar al cuadrado (si no, la
+# lluvia imputada sale sistemáticamente baja).
+a_lluvia <- function(idx, residuo, corr) pmax(CLIM[idx, , drop = FALSE] + ESPACIAL[idx, , drop = FALSE] + residuo, 0)^2 + corr
+varianza_perdida <- function(idx, H, residuo) {
+  mean(((CLIM[idx, ] + ESPACIAL[idx, ] + residuo)[H] - RAIZ_Y[idx, ][H])^2)
+}
+error_rmse <- function(idx, H, y_est) sqrt(mean((y_est[H] - Y[idx, ][H])^2))
+
+# ---- 5.6 FPCA condicional ----------------------------------------------------
+# 1. Covarianza del residuo entre péntadas, C(s, t), con las curvas de ajuste.
+# 2. Ruido (como en PACE): la diagonal de C trae además el ruido de cada
+#    péntada. Se estima comparando la diagonal con sus vecinos inmediatos,
+#    sigma² = promedio de [C(t, t) - (C(t, t-1) + C(t, t+1)) / 2].
+# 3. Autofunciones y autovalores de la covarianza sin ruido (malla regular de
+#    72 péntadas, pesos iguales).
+# 4. Para una curva con péntadas observadas O, los puntajes se estiman con la
+#    esperanza condicional:
+#       puntajes = (Psi_O' Psi_O + sigma² Lambda^-1)^-1 Psi_O' (r_O - mu_O)
+#    y las péntadas faltantes son mu + Psi · puntajes.
+fpca_ajustar <- function(R) {
+  mu <- colMeans(R, na.rm = TRUE)
+  C <- cov(R, use = "pairwise.complete.obs")
+  p <- ncol(C)
+  sin_ruido <- sapply(1:p, function(t) mean(C[t, c(t - 1, t + 1)[c(t > 1, t < p)]]))
+  sigma2 <- max(mean(diag(C) - sin_ruido), 1e-6)
+  diag(C) <- sin_ruido
+  e <- eigen(C, symmetric = TRUE)
+  positivos <- e$values > 0
+  list(mu = mu, lambda = e$values[positivos], psi = e$vectors[, positivos, drop = FALSE], sigma2 = sigma2)
+}
+fpca_imputar <- function(modelo, R, K) {
+  psi <- modelo$psi[, 1:K, drop = FALSE]
+  t(sapply(seq_len(nrow(R)), function(i) {
+    r <- R[i, ]
+    O <- !is.na(r)
+    if (all(O)) return(r)
+    psi_O <- psi[O, , drop = FALSE]
+    puntajes <- solve(crossprod(psi_O) + modelo$sigma2 * diag(1 / modelo$lambda[1:K], K),
+                      crossprod(psi_O, r[O] - modelo$mu[O]))
+    r[!O] <- (modelo$mu + psi %*% puntajes)[!O]
+    r
+  }))
+}
+con_huecos <- function(idx, H) { R <- RES[idx, ]; R[H] <- NA; R }
+
+fpca <- fpca_ajustar(RES[ajuste, ])
+cat(sprintf("\nFPCA: sigma² del ruido = %.3f | componentes con varianza positiva: %d\n",
+            fpca$sigma2, length(fpca$lambda)))
+cat("Varianza explicada acumulada (%) por 1, 2, 3, 5 y 10 componentes:",
+    round(cumsum(fpca$lambda)[c(1, 2, 3, 5, 10)] / sum(fpca$lambda) * 100, 1), "\n")
+K_PROBAR <- c(1:8, 10, 15, 20)
+error_K <- sapply(K_PROBAR, function(K) {
+  r_est <- fpca_imputar(fpca, con_huecos(interna, H_int), K)
+  corr <- varianza_perdida(interna, H_int, r_est)
+  error_rmse(interna, H_int, a_lluvia(interna, r_est, corr))
+})
+K_FPCA <- K_PROBAR[which.min(error_K)]
+corr_fpca <- varianza_perdida(interna, H_int, fpca_imputar(fpca, con_huecos(interna, H_int), K_FPCA))
+cat(sprintf("K escogido: %d componentes (error en el conjunto interno: %.3f mm/día)\n", K_FPCA, min(error_K)))
+
+graficar(function() {   # Gráfica: primeras autofunciones del residuo
+  op <- par(mfrow = c(1, 2), mar = c(4.5, 4.5, 3, 1)); on.exit(par(op))
+  hasta <- min(length(fpca$lambda), max(15, K_FPCA + 3))
+  plot(1:hasta, cumsum(fpca$lambda)[1:hasta] / sum(fpca$lambda) * 100, type = "b", pch = 19, col = COL_PRINCIPAL,
+       xlab = "Número de componentes", ylab = "% de varianza explicada", main = "Varianza explicada (FPCA)")
+  abline(v = K_FPCA, lty = 2)
+  legend("bottomright", lty = 2, bty = "n", legend = sprintf("K escogido = %d (%.0f %%)", K_FPCA,
+                                                             sum(fpca$lambda[1:K_FPCA]) / sum(fpca$lambda) * 100))
+  matplot(1:72, fpca$psi[, 1:3], type = "l", lty = 1, lwd = 2, col = c(COL_PRINCIPAL, COL_CERO, COL_ROJO),
+          xlab = "Péntada del año", ylab = "Autofunción", main = "Tres primeras autofunciones")
+  abline(h = 0, col = COL_GRIS)
+  legend("topright", lty = 1, lwd = 2, col = c(COL_PRINCIPAL, COL_CERO, COL_ROJO), bty = "n",
+         legend = paste("Componente", 1:3))
+})
+
+# ---- 5.7 VAE (autocodificador variacional) -----------------------------------
+# Red neuronal escrita a mano en R base (sin paquetes):
+#   codificador: [residuo con huecos en 0, máscara de observado] -> capa oculta
+#                (tanh) -> media y log-varianza de z (espacio latente)
+#   z = media + exp(logvar/2) · ruido normal      (truco de reparametrización)
+#   decodificador: z -> capa oculta (tanh) -> curva de 72 péntadas
+# Pérdida (ELBO negativo): error cuadrático SOLO en las péntadas observadas
+#   + divergencia KL de z contra una normal estándar.
+# Para que aprenda a rellenar, en cada lote se le esconden péntadas que sí se
+# conocen (como en la validación) y se le pide reconstruirlas.
+# Los gradientes se calculan con retropropagación y los pesos se actualizan con
+# Adam. Se para cuando el error del conjunto interno deja de mejorar.
+vae_iniciar <- function(p, h, q) {
+  w <- function(a, b) matrix(rnorm(a * b, sd = sqrt(2 / (a + b))), a, b)   # inicialización de Xavier
+  list(W1 = w(2 * p, h), b1 = rep(0, h),    # codificador
+       Wm = w(h, q),     bm = rep(0, q),    # media de z
+       Wv = w(h, q),     bv = rep(0, q),    # log-varianza de z
+       W2 = w(q, h),     b2 = rep(0, h),    # decodificador
+       W3 = w(h, p),     b3 = rep(0, p))    # salida
+}
+vae_adelante <- function(red, Z, M, ruido = NULL) {
+  entrada <- cbind(Z * M, M)
+  h1 <- tanh(sweep(entrada %*% red$W1, 2, red$b1, "+"))
+  mu <- sweep(h1 %*% red$Wm, 2, red$bm, "+")
+  lv <- sweep(h1 %*% red$Wv, 2, red$bv, "+")
+  z  <- if (is.null(ruido)) mu else mu + exp(lv / 2) * ruido
+  h2 <- tanh(sweep(z %*% red$W2, 2, red$b2, "+"))
+  salida <- sweep(h2 %*% red$W3, 2, red$b3, "+")
+  list(entrada = entrada, h1 = h1, mu = mu, lv = lv, z = z, h2 = h2, salida = salida)
+}
+# M_entra: lo que la red ve; M_eval: lo observado de verdad (donde se mide el error)
+vae_gradientes <- function(red, Z, M_entra, M_eval, ruido) {
+  n <- nrow(Z)
+  a <- vae_adelante(red, Z, M_entra, ruido)
+  err <- M_eval * (a$salida - Z)
+  d_sal <- err / n
+  g <- list()
+  g$W3 <- t(a$h2) %*% d_sal;  g$b3 <- colSums(d_sal)
+  d_a2 <- (d_sal %*% t(red$W3)) * (1 - a$h2^2)
+  g$W2 <- t(a$z) %*% d_a2;    g$b2 <- colSums(d_a2)
+  d_z  <- d_a2 %*% t(red$W2)
+  d_mu <- d_z + a$mu / n
+  d_lv <- d_z * ruido * 0.5 * exp(a$lv / 2) + 0.5 * (exp(a$lv) - 1) / n
+  g$Wm <- t(a$h1) %*% d_mu;   g$bm <- colSums(d_mu)
+  g$Wv <- t(a$h1) %*% d_lv;   g$bv <- colSums(d_lv)
+  d_a1 <- (d_mu %*% t(red$Wm) + d_lv %*% t(red$Wv)) * (1 - a$h1^2)
+  g$W1 <- t(a$entrada) %*% d_a1; g$b1 <- colSums(d_a1)
+  g[names(red)]
+}
+# Escala del VAE: residuo centrado y dividido por su desviación estándar
+centro_vae <- fpca$mu
+escala_vae <- sd(RES[entrena, ], na.rm = TRUE)
+Z_vae <- sweep(RES, 2, centro_vae) / escala_vae
+OBS <- !is.na(Z_vae) * 1
+Z_vae[is.na(Z_vae)] <- 0
+vae_imputar <- function(red, idx, H = NULL) {
+  M <- OBS[idx, , drop = FALSE]; Z <- Z_vae[idx, , drop = FALSE]
+  if (!is.null(H)) { M[H] <- 0; Z[H] <- 0 }
+  rec <- vae_adelante(red, Z, M)$salida * escala_vae + rep(centro_vae, each = length(idx))
+  r <- RES[idx, , drop = FALSE]
+  if (!is.null(H)) r[H] <- NA
+  r[is.na(r)] <- rec[is.na(r)]
+  r
+}
+
+red <- vae_iniciar(72, VAE_OCULTA, VAE_LATENTE)
+m1 <- lapply(red, function(x) x * 0); m2 <- m1; paso <- 0      # memorias de Adam
+mejor_error <- Inf; mejor_red <- red; sin_mejorar <- 0; historia <- c()
+for (epoca in 1:VAE_EPOCAS_MAX) {
+  orden <- sample(ajuste)
+  for (lote in split(orden, ceiling(seq_along(orden) / VAE_LOTE))) {
+    M_eval <- OBS[lote, ]
+    M_entra <- M_eval * !esconder(M_eval == 1)              # se esconden péntadas conocidas
+    ruido <- matrix(rnorm(length(lote) * VAE_LATENTE), length(lote))
+    g <- vae_gradientes(red, Z_vae[lote, ], M_entra, M_eval, ruido)
+    paso <- paso + 1
+    for (w in names(red)) {                                  # Adam
+      m1[[w]] <- .9 * m1[[w]] + .1 * g[[w]]
+      m2[[w]] <- .999 * m2[[w]] + .001 * g[[w]]^2
+      red[[w]] <- red[[w]] - VAE_TASA * (m1[[w]] / (1 - .9^paso)) / (sqrt(m2[[w]] / (1 - .999^paso)) + 1e-8)
+    }
+  }
+  if (epoca %% 10 == 0) {                                    # cada 10 épocas: ¿mejoró?
+    r_est <- vae_imputar(red, interna, H_int)
+    e <- error_rmse(interna, H_int, a_lluvia(interna, r_est, varianza_perdida(interna, H_int, r_est)))
+    historia <- c(historia, e)
+    if (e < mejor_error - 1e-4) { mejor_error <- e; mejor_red <- red; sin_mejorar <- 0 }
+    else { sin_mejorar <- sin_mejorar + 1; if (sin_mejorar >= 4) break }
+  }
+}
+red <- mejor_red
+corr_vae <- varianza_perdida(interna, H_int, vae_imputar(red, interna, H_int))
+cat(sprintf("VAE: %d épocas | error en el conjunto interno: %.3f mm/día\n", epoca, mejor_error))
+
+graficar(function() {   # Gráfica: aprendizaje del VAE
+  op <- par(mar = c(4.5, 4.5, 3, 1)); on.exit(par(op))
+  plot(seq_along(historia) * 10, historia, type = "b", pch = 19, col = COL_PRINCIPAL,
+       xlab = "Época", ylab = "Error en el conjunto interno (mm/día)", main = "Entrenamiento del VAE")
+})
+
+# ---- 5.8 Validación: péntadas escondidas de las curvas de prueba -------------
+# Se comparan cuatro formas de rellenar las péntadas escondidas de prueba:
+#   climatología sola, climatología + vecinas, + FPCA, + VAE.
+cat("\n== 5.8 VALIDACIÓN (péntadas escondidas de las curvas de prueba) ==\n")
+corr_vec <- varianza_perdida(interna, H_int, matrix(0, length(interna), 72))
+imputar_prueba <- function(H) list(
+  "Climatología de la estación"  = CLIM[prueba, ]^2,
+  "Climatología + vecinas"       = a_lluvia(prueba, matrix(0, length(prueba), 72), corr_vec),
+  "FPCA condicional (+ vecinas)" = a_lluvia(prueba, fpca_imputar(fpca, con_huecos(prueba, H), K_FPCA), corr_fpca),
+  "VAE (+ vecinas)"              = a_lluvia(prueba, vae_imputar(red, prueba, H), corr_vae))
+y_pru <- imputar_prueba(H_pru)
+verdad <- Y[prueba, ][H_pru]
+validacion <- data.frame(
+  metodo      = names(y_pru),
+  RMSE        = sapply(y_pru, function(y) sqrt(mean((y[H_pru] - verdad)^2))),
+  MAE         = sapply(y_pru, function(y) mean(abs(y[H_pru] - verdad))),
+  sesgo       = sapply(y_pru, function(y) mean(y[H_pru] - verdad)),
+  correlacion = sapply(y_pru, function(y) cor(y[H_pru], verdad)),
+  row.names = NULL)
+validacion[, -1] <- round(validacion[, -1], 3)
+print(validacion, row.names = FALSE)
+guardar_tabla(validacion, "imputacion", "validacion_imputacion")
+
+# Validación repetida: se esconden otras péntadas REPETICIONES_VALIDACION veces
+# (los modelos ya entrenados no cambian) para ver si la diferencia entre
+# métodos se mantiene o fue suerte del sorteo. Se reporta el intervalo que
+# contiene el 95 % de las diferencias de RMSE.
+rmse_rep <- t(sapply(seq_len(REPETICIONES_VALIDACION), function(r) {
+  H <- esconder(!is.na(X[prueba, ]))
+  y <- imputar_prueba(H)
+  sapply(y, function(m) sqrt(mean((m[H] - Y[prueba, ][H])^2)))
+}))
+resumir_dif <- function(d) c(media = mean(d), ic_inferior = quantile(d, .025, names = FALSE),
+                             ic_superior = quantile(d, .975, names = FALSE), sorteos_que_gana_el_primero = sum(d < 0))
+diferencias <- data.frame(
+  comparacion = c("FPCA - VAE", "FPCA - Climatología + vecinas", "VAE - Climatología + vecinas"),
+  round(rbind(resumir_dif(rmse_rep[, 3] - rmse_rep[, 4]),
+              resumir_dif(rmse_rep[, 3] - rmse_rep[, 2]),
+              resumir_dif(rmse_rep[, 4] - rmse_rep[, 2])), 4),
+  row.names = NULL)
+cat(sprintf("\nValidación repetida (%d sorteos). Diferencia de RMSE (negativa = gana el primero):\n",
+            REPETICIONES_VALIDACION))
+print(diferencias, row.names = FALSE)
+guardar_tabla(diferencias, "imputacion", "validacion_repetida")
+
+graficar(function() {   # Gráfica: error de cada método en la validación
+  op <- par(mar = c(4.5, 15, 3, 2)); on.exit(par(op))
+  bp <- barplot(rev(validacion$RMSE), names.arg = rev(validacion$metodo), horiz = TRUE, las = 1,
+                col = rev(c(COL_GRIS, COL_GRIS, COL_PRINCIPAL, COL_CERO)), border = NA,
+                xlim = c(0, max(validacion$RMSE) * 1.15), xlab = "RMSE (mm/día) en péntadas escondidas",
+                main = "¿Qué tan bien se recuperan datos reales escondidos?")
+  text(rev(validacion$RMSE), bp, format(rev(validacion$RMSE), decimal.mark = ","), pos = 4, cex = .85)
+})
+graficar(function() {   # Gráfica: RMSE de cada sorteo de la validación repetida
+  op <- par(mar = c(4.5, 15, 3, 2)); on.exit(par(op))
+  boxplot(rmse_rep[, 4:1], horizontal = TRUE, las = 1, col = c(COL_CERO, COL_PRINCIPAL, COL_GRIS, COL_GRIS),
+          names = rev(colnames(rmse_rep)), xlab = "RMSE (mm/día)",
+          main = sprintf("Validación repetida (%d sorteos de péntadas escondidas)", REPETICIONES_VALIDACION))
+})
+graficar(function() {   # Gráfica: ejemplo de una curva con un mes escondido
+  i <- which.max(rowSums(H_pru))
+  op <- par(mar = c(4.5, 4.5, 3, 1)); on.exit(par(op))
+  plot(1:72, Y[prueba[i], ], type = "h", lwd = 3, col = COL_GRIS, xlab = "Péntada del año", ylab = "mm/día",
+       ylim = c(0, max(Y[prueba[i], ], y_pru[[3]][i, ], y_pru[[4]][i, ], na.rm = TRUE)),
+       main = sprintf("Estación %s, año %d: péntadas escondidas y su imputación",
+                      curvas$STATION_ID[prueba[i]], curvas$anio[prueba[i]]))
+  escondidas <- which(H_pru[i, ])
+  points(escondidas, Y[prueba[i], escondidas], pch = 19, col = 1)
+  points(escondidas, y_pru[[3]][i, escondidas], pch = 17, col = COL_PRINCIPAL, cex = 1.2)
+  points(escondidas, y_pru[[4]][i, escondidas], pch = 15, col = COL_CERO, cex = 1.1)
+  legend("topright", bty = "n", pch = c(NA, 19, 17, 15), lty = c(1, NA, NA, NA), lwd = c(3, NA, NA, NA),
+         col = c(COL_GRIS, 1, COL_PRINCIPAL, COL_CERO),
+         legend = c("Observado", "Valor real escondido", "FPCA", "VAE"))
+})
+
+# ---- 5.9 Imputación final con FPCA -------------------------------------------
+# Se rellenan con FPCA las péntadas faltantes de TODAS las curvas imputables.
+# Lo observado no se toca. Las curvas no imputables (menos de la mitad de las
+# péntadas) se quedan con sus huecos. El VAE también se aplica, pero solo
+# para comparar sus estadísticas con las de la FPCA (5.10).
+cat("\n== 5.9 IMPUTACIÓN FINAL (FPCA) ==\n")
+imp <- which(curvas$imputable & curvas$n_obs < 72)
+Y_FPCA <- Y; Y_VAE <- Y
+falta <- is.na(Y[imp, , drop = FALSE])
+Y_FPCA[imp, ][falta] <- a_lluvia(imp, fpca_imputar(fpca, RES[imp, , drop = FALSE], K_FPCA), corr_fpca)[falta]
+Y_VAE[imp, ][falta]  <- a_lluvia(imp, vae_imputar(red, imp), corr_vae)[falta]
+IMPUTADA <- is.na(Y) & !is.na(Y_FPCA)
+
+# Por qué faltaba cada péntada: el motivo más frecuente entre sus días sin dato
+sin_valor <- is.na(cal$VALUE_LIMPIO) & !is.na(fila_curva)
+casilla_na <- (fila_curva[sin_valor] - 1) * 72 + cal$pentada[sin_valor]
+motivo_casilla <- tapply(cal$motivo[sin_valor], casilla_na, function(x) names(which.max(table(x))))
+pos <- as.integer(names(motivo_casilla))
+MOTIVO <- matrix(NA_character_, nrow(curvas), 72)
+MOTIVO[cbind((pos - 1) %/% 72 + 1, (pos - 1) %% 72 + 1)] <- motivo_casilla
+# Péntadas sin ningún día en el calendario: caen antes del primer o después del
+# último registro de la estación (en su primer o último año de operación)
+MOTIVO[IMPUTADA & is.na(MOTIVO)] <- "Fuera del periodo de operación de la estación"
+imputado_por_motivo <- as.data.frame(table(motivo = MOTIVO[IMPUTADA]), stringsAsFactors = FALSE)
+names(imputado_por_motivo)[2] <- "pentadas_imputadas"
+imputado_por_motivo <- imputado_por_motivo[order(-imputado_por_motivo$pentadas_imputadas), ]
+cat("Péntadas imputadas según por qué faltaban:\n")
+print(imputado_por_motivo, row.names = FALSE)
+guardar_tabla(imputado_por_motivo, "imputacion", "imputado_por_motivo")
+
+resumen_imputacion <- data.frame(
+  concepto = c("Curvas (estación-año)", "Curvas completas sin imputar", "Curvas imputadas",
+               "Curvas no imputables (menos de la mitad de las péntadas)",
+               "Péntadas observadas", "Péntadas imputadas con FPCA", "Péntadas que siguen sin dato"),
+  valor = c(nrow(curvas), sum(curvas$n_obs == 72), length(imp), sum(!curvas$imputable),
+            sum(!is.na(Y)), sum(IMPUTADA), sum(is.na(Y_FPCA))))
+print(resumen_imputacion, row.names = FALSE)
+guardar_tabla(resumen_imputacion, "imputacion", "resumen_imputacion")
+
+# Trazabilidad de la imputación (en péntadas)
+registrar("7. Imputar con FPCA (curvas con al menos la mitad de sus péntadas)",
+          rep(curvas$STATION_ID, 72), rep(curvas$anio, 72), as.vector(Y_FPCA), unidad = "péntadas")
+completa_final <- rowSums(is.na(Y_FPCA)) == 0
+registrar("8. Curvas completas listas para construir datos funcionales",
+          rep(curvas$STATION_ID, 72), rep(curvas$anio, 72),
+          ifelse(rep(completa_final, 72), as.vector(Y_FPCA), NA), unidad = "péntadas")
+
+# ---- 5.10 Tablas descriptivas en Excel: antes, FPCA y VAE --------------------
+# Un libro de Excel con:
+#   Resumen      estadísticos de toda la red: antes (diario y péntadas), FPCA y VAE
+#   Antes / FPCA / VAE   los mismos estadísticos por estación (péntadas, mm/día)
+#   Por_mes      lluvia media de cada mes en las tres versiones
+#   Validacion   error de cada método con datos escondidos (y repetida)
+#   Imputacion   cuántas péntadas se observaron e imputaron, y por qué faltaban
+#   Trazabilidad todos los pasos, de los datos originales a las curvas completas
+# La imputación oficial es la FPCA; el VAE aparece solo para comparar.
+cat("\n== 5.10 TABLAS DESCRIPTIVAS (Excel) ==\n")
+NOMBRES_ESTAD <- c("esperados", "con_dato", "nulos", "pct_nulos", "ceros", "pct_ceros", "media", "mediana",
+                   "moda", "desv_estandar", "minimo", "q1", "q3", "p99", "maximo")
+por_estacion <- function(M) {
+  t(sapply(split(seq_len(nrow(curvas)), curvas$STATION_ID), function(i) describir(as.vector(M[i, ]), length(i) * 72)))
+}
+tabla_estacion <- function(M) {
+  d <- por_estacion(M)
+  data.frame(STATION_ID = rownames(d), round(d, 3), row.names = NULL, check.names = FALSE)
+}
+resumen_excel <- data.frame(
+  version = c("Antes de imputar (diario)", "Antes de imputar (péntadas)", "Imputado con FPCA (péntadas)",
+              "Imputado con VAE (péntadas)"),
+  round(rbind(describir(cal$VALUE_LIMPIO[usar], sum(usar)),
+              describir(as.vector(Y), length(Y)),
+              describir(as.vector(Y_FPCA), length(Y)),
+              describir(as.vector(Y_VAE), length(Y))), 3),
+  check.names = FALSE)
+mes_de_pentada <- rep(ceiling(1:72 / 6), each = nrow(curvas))
+por_mes <- data.frame(
+  mes          = month.abb,
+  antes        = round(tapply(as.vector(Y), mes_de_pentada, mean, na.rm = TRUE), 3),
+  FPCA         = round(tapply(as.vector(Y_FPCA), mes_de_pentada, mean, na.rm = TRUE), 3),
+  VAE          = round(tapply(as.vector(Y_VAE), mes_de_pentada, mean, na.rm = TRUE), 3),
+  pct_imputado = round(tapply(as.vector(is.na(Y) & !is.na(Y_FPCA)), mes_de_pentada, mean) * 100, 2))
+print(resumen_excel, row.names = FALSE)
+writexl::write_xlsx(
+  list(Resumen = resumen_excel, Antes = tabla_estacion(Y), FPCA = tabla_estacion(Y_FPCA),
+       VAE = tabla_estacion(Y_VAE), Por_mes = por_mes, Validacion = validacion,
+       Validacion_repetida = diferencias, Imputacion = resumen_imputacion,
+       Imputado_por_motivo = imputado_por_motivo, Trazabilidad = trazabilidad),
+  file.path(RUTA_SALIDAS, CARPETAS[["imputacion"]], "estadisticas_descriptivas.xlsx"))
+# Segundo libro: revisión de estaciones (para el informe y para el profesor)
+writexl::write_xlsx(
+  list(Lecturas_mensuales = lecturas_mensuales,
+       Valores_exagerados = exagerados[, setdiff(names(exagerados), c("k", "col"))],
+       Calibracion_correlacion = calibracion,
+       Validacion_vecinas = validacion_vecinas, Vecinas_sin_coordenadas = vecinas_sin_coordenadas,
+       Emparejamiento_pixel = emparejamiento, Sin_coordenadas = sin_coord),
+  file.path(RUTA_SALIDAS, CARPETAS[["limpieza"]], "revision_estaciones.xlsx"))
+
+graficar(function() {   # Gráfica: lluvia media por mes antes y después de imputar
+  op <- par(mar = c(4.5, 4.5, 3, 1)); on.exit(par(op))
+  m <- t(as.matrix(por_mes[, c("antes", "FPCA", "VAE")]))
+  barplot(m, beside = TRUE, names.arg = por_mes$mes, col = c(COL_GRIS, COL_PRINCIPAL, COL_CERO), border = NA,
+          ylab = "mm/día", main = "Lluvia media por mes: antes y después de imputar")
+  legend("topleft", fill = c(COL_GRIS, COL_PRINCIPAL, COL_CERO), legend = c("Antes", "FPCA", "VAE"), bty = "n")
+})
+
+
+# =============================================================================
+# PARTE 6. GUARDAR
+# =============================================================================
+# Estos archivos son la entrada de los pasos siguientes (curvas, comparación, KAN).
+cat("\n######## PARTE 6. GUARDAR ########\n")
+guardar_tabla(info[, c("STATION_ID", "zona", "nombre", "municipio", "codigo_cuenca", "cuenca", "lon", "lat",
+                       "altitud", "ubicacion", "pixel", "km_al_centro_pixel", "comparte_pixel",
+                       "tipo_vecinas", "n_vecinas", "r_max_vecina", "vecinas", "lecturas_mensuales",
+                       "anios_mensuales", "anios_aptos")], "limpieza", "estaciones_info")
+
+# Datos diarios limpios (sin imputar)
+estaciones_limpias <- cal[, c("STATION_ID", "zona", "fecha", "anio", "mes", "dia", "pentada", "VALUE",
+                              "VALUE_LIMPIO", "motivo", "racha_ceros", "apto")]
 carpeta <- file.path(RUTA_SALIDAS, CARPETAS[["limpieza"]])
 saveRDS(estaciones_limpias, file.path(carpeta, "estaciones_limpias_1970_2003.rds"))
 write.csv(estaciones_limpias, gzfile(file.path(carpeta, "estaciones_limpias_1970_2003.csv.gz")), row.names = FALSE)
 saveRDS(satelite, file.path(carpeta, "satelite_1981_2003.rds"))
 write.csv(satelite, gzfile(file.path(carpeta, "satelite_1981_2003.csv.gz")), row.names = FALSE)
+
+# Péntadas: el dato observado y el imputado con FPCA, en columnas separadas
+pentadas <- data.frame(
+  STATION_ID      = rep(curvas$STATION_ID, times = 72),
+  anio            = rep(curvas$anio, times = 72),
+  pentada         = rep(1:72, each = nrow(curvas)),
+  mm_dia_obs      = round(as.vector(Y), 4),
+  mm_dia_imputado = round(as.vector(Y_FPCA), 4),       # observado + FPCA donde faltaba
+  imputado        = as.vector(IMPUTADA),
+  motivo_hueco    = as.vector(MOTIVO),
+  curva_completa  = rep(completa_final, times = 72),
+  curva_apta      = rep(pares$apto[match(clave_curva, paste(pares$STATION_ID, pares$anio))], times = 72),
+  stringsAsFactors = FALSE)
+pentadas$motivo_hueco[!is.na(pentadas$mm_dia_obs)] <- NA
+pentadas <- pentadas[order(pentadas$STATION_ID, pentadas$anio, pentadas$pentada), ]
+carpeta <- file.path(RUTA_SALIDAS, CARPETAS[["imputacion"]])
+saveRDS(pentadas, file.path(carpeta, "estaciones_pentadas_imputadas.rds"))
+write.csv(pentadas, gzfile(file.path(carpeta, "estaciones_pentadas_imputadas.csv.gz")), row.names = FALSE)
 guardar_tabla(trazabilidad, "limpieza", "trazabilidad")
 
 cat("\nTrazabilidad:\n")
