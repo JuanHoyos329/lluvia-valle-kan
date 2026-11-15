@@ -12,6 +12,8 @@
 #   7. Calcula sigma^2, la covarianza residual y las bandas de confianza PUNTO A PUNTO.
 #   8. Guarda los coeficientes de todas las curvas para las fases 2, 3 y 4.
 #
+# Las gráficas se imprimen en pantalla (panel Plots de RStudio) y no se guardan como archivos.
+#
 # La librería fda se usa SOLO para verificar que lo programado a mano da lo mismo.
 #
 # Decisiones:
@@ -42,9 +44,6 @@ ENTRENA <- 1981:1995                   # partición: train 1981-1995 / val 1996-
 ORDEN   <- 4                           # B-splines cúbicos
 RANGO   <- c(0, 365)                   # dominio anual común
 
-guardar_png <- function(nombre, ancho = 9, alto = 5) {
-  png(file.path(OUT, nombre), width = ancho, height = alto, units = "in", res = 150)
-}
 
 
 #####################################################################################
@@ -154,12 +153,11 @@ base_bspline <- function(t, K, orden = ORDEN, rango = RANGO) {
 Phi_ej <- base_bspline(t_fino, 8)
 stopifnot(max(abs(rowSums(Phi_ej) - 1)) < 1e-12)       # las piezas suman 1 en todo t
 
-guardar_png("fase1_fig01_bases_bspline.png")
 matplot(t_fino, Phi_ej, type = "l", lty = 1, lwd = 2, col = rainbow(8),
         xlab = "Día del año", ylab = "Valor de la función base",
         main = "Base B-spline cúbica con K = 8 (programada con Cox-de Boor)")
 abline(v = nudos_bspline(8), lty = 3, col = "grey50")
-dev.off()
+par(mfrow = c(1, 1))
 
 
 #####################################################################################
@@ -235,12 +233,10 @@ grafica_K <- function(tabla, K_elegido, fuente) {
   abline(h = min(tabla$VCG), lty = 2, col = "red")
   grid(5, 5, lwd = 2)
 }
-guardar_png("fase1_fig02_seleccion_K_estaciones.png", ancho = 12, alto = 4)
 grafica_K(tabla_est, K_est, "estaciones")
-dev.off()
-guardar_png("fase1_fig03_seleccion_K_satelite.png", ancho = 12, alto = 4)
+par(mfrow = c(1, 1))
 grafica_K(tabla_sat, K_sat, "satélite")
-dev.off()
+par(mfrow = c(1, 1))
 # Nota: el ECM baja siempre al subir K (sobreajuste). La VC y la VCG penalizan la complejidad
 # y tienen un mínimo interior. Con datos diarios la lluvia es muy intermitente: la VCG prefiere
 # curvas suaves (K pequeño) y la curva conserva los dos picos del régimen bimodal (ver sección 8).
@@ -281,7 +277,6 @@ Phi_fino_sat <- base_bspline(t_fino, K_sat)
 curvas_est <- Phi_fino_est %*% C_est               # 731 x N
 curvas_sat <- Phi_fino_sat %*% C_sat
 
-guardar_png("fase1_fig04_curvas_ambas_fuentes.png", ancho = 12, alto = 5)
 par(mfrow = c(1, 2))
 set.seed(2026)
 m <- sample(which(tr), 200)
@@ -293,7 +288,7 @@ matplot(t_fino, curvas_sat[, m], type = "l", lty = 1, col = adjustcolor("darkora
         xlab = "Día del año", ylab = "sqrt(mm/péntada)",
         main = paste0("Satélite: las mismas 200 curvas (K = ", K_sat, ")"))
 lines(t_fino, rowMeans(curvas_sat[, tr]), lwd = 3, col = "darkred")
-dev.off()
+par(mfrow = c(1, 1))
 
 
 #####################################################################################
@@ -325,10 +320,9 @@ Cor_res <- cor(t(E_est))                                   # 365 x 365
 cor_lag1 <- mean(diag(Cor_res[-1, -365]))
 cat("Correlación media entre residuos de días consecutivos (estaciones):", round(cor_lag1, 3), "\n")
 
-guardar_png("fase1_fig05_covarianza_residual.png", ancho = 6, alto = 5.5)
 image(t_est, t_est, Cor_res, col = hcl.colors(50, "Blue-Red 3"), zlim = c(-1, 1),
       xlab = "Día s", ylab = "Día t", main = "Correlación residual entre días (estaciones, 1981-1995)")
-dev.off()
+par(mfrow = c(1, 1))
 
 # Ejemplo de bandas: una estación-año de entrenamiento, ambas fuentes
 j <- which(tr)[1]
@@ -342,13 +336,12 @@ grafica_banda <- function(t_obs, y_obs, curva, sig2, h, titulo, unidad) {
   legend("topleft", c("Observado", "Curva estimada", "Banda +/- 2 EE (punto a punto)"),
          pch = c(19, NA, NA), lty = c(NA, 1, 2), col = c("grey40", "blue", "blue"), bty = "n", cex = 0.8)
 }
-guardar_png("fase1_fig06_bandas_ejemplo.png", ancho = 12, alto = 4.5)
 par(mfrow = c(1, 2))
 grafica_banda(t_est, Y[, j], curvas_est[, j], sig2_est[j], h_est,
               paste("Estación", claves$STATION_ID[j], "-", claves$YEAR[j]), "sqrt(mm/día)")
 grafica_banda(t_sat, X[, j], curvas_sat[, j], sig2_sat[j], h_sat,
               paste("Satélite en su píxel -", claves$YEAR[j]), "sqrt(mm/péntada)")
-dev.off()
+par(mfrow = c(1, 1))
 
 
 #####################################################################################
