@@ -21,5 +21,5 @@ other attached packages:
 loaded via a namespace (and not attached):
  [1] Matrix_1.7-3       lattice_0.22-7     ks_1.15.3          mclust_6.1.3      
  [5] KernSmooth_2.23-26 hdrcde_3.5.0       mvtnorm_1.3-3      grid_4.5.1        
- [9] compiler_4.5.1     rstudioapi_0.17.1  tools_4.5.1        cluster_2.1.8.1   
-[13] pracma_2.4.6       colorspace_2.1-2  
+ [9] compiler_4.5.1     tools_4.5.1        cluster_2.1.8.1    pracma_2.4.6      
+[13] colorspace_2.1-2  

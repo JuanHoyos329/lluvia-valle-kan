@@ -79,10 +79,13 @@ claves_sat <- unique(p[, c("STATION_ID", "YEAR")])
 rownames(claves_sat) <- NULL
 stopifnot(identical(claves$STATION_ID, claves_sat$STATION_ID),
           identical(claves$YEAR, claves_sat$YEAR))  # misma curva en la misma columna
-stopifnot(nrow(p) == 72 * N, !anyNA(p$satelite_mm))
+stopifnot(nrow(p) == 72 * N, !anyNA(p$satelite_mm), all(p$dias %in% 3:6))
 
-# Matriz X: filas = péntadas (72), columnas = las mismas curvas de Y. Escala sqrt(mm)
-X <- matrix(sqrt(p$satelite_mm), nrow = 72)
+#Matriz X: filas = péntadas (72), columnas = las mismas curvas de Y
+#El satélite trae el total de la péntada; se divide por sus días (3 a 6) para que quede en
+#mm/día, la misma escala de las estaciones. Si no, la sexta péntada de cada mes (hasta 6 días)
+#sale más alta solo por tener más días, y estación - satélite no se podría comparar
+X <- matrix(sqrt(p$satelite_mm / p$dias), nrow = 72)
 
 # Años de entrenamiento
 tr <- claves$YEAR %in% ENTRENA
@@ -285,7 +288,7 @@ matplot(t_fino, curvas_est[, m], type = "l", lty = 1, col = adjustcolor("steelbl
         main = paste0("Estaciones: 200 curvas (K = ", K_est, ")"))
 lines(t_fino, rowMeans(curvas_est[, tr]), lwd = 3, col = "navy")
 matplot(t_fino, curvas_sat[, m], type = "l", lty = 1, col = adjustcolor("darkorange", 0.25),
-        xlab = "Día del año", ylab = "sqrt(mm/péntada)",
+        xlab = "Día del año", ylab = "sqrt(mm/día)",
         main = paste0("Satélite: las mismas 200 curvas (K = ", K_sat, ")"))
 lines(t_fino, rowMeans(curvas_sat[, tr]), lwd = 3, col = "darkred")
 par(mfrow = c(1, 1))
@@ -340,7 +343,7 @@ par(mfrow = c(1, 2))
 grafica_banda(t_est, Y[, j], curvas_est[, j], sig2_est[j], h_est,
               paste("Estación", claves$STATION_ID[j], "-", claves$YEAR[j]), "sqrt(mm/día)")
 grafica_banda(t_sat, X[, j], curvas_sat[, j], sig2_sat[j], h_sat,
-              paste("Satélite en su píxel -", claves$YEAR[j]), "sqrt(mm/péntada)")
+              paste("Satélite en su píxel -", claves$YEAR[j]), "sqrt(mm/día)")
 par(mfrow = c(1, 1))
 
 
