@@ -1,0 +1,8 @@
+"evento","estaciones_dia","estaciones_fecha","satelite_dia","satelite_fecha","estaciones_umbral","satelite_umbral"
+"inicio1",62,"3 mar",94,"5 abr","6 mar","22 mar"
+"pico1",115,"26 abr",122,"2 may",NA,NA
+"fin1",170,"19 jun",154,"4 jun","9 jun","9 jun"
+"valle",212,"1 ago",208,"28 jul",NA,NA
+"inicio2",256,"14 sep",260,"18 sep","14 sep","16 sep"
+"pico2",299,"27 oct",302,"30 oct",NA,NA
+"fin2",NA,NA,332,"29 nov","12 dic","9 dic"

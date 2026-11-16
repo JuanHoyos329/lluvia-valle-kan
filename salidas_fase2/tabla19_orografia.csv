@@ -1,0 +1,6 @@
+"franja","estaciones","curvas","lluvia_anual_mediana_mm","pico1","pico2","razon_pico_valle"
+"< 800 m",16,207,6814,"28 may","20 oct",1.24
+"800-1100 m",77,1187,1247,"22 abr","25 oct",2.72
+"1100-1500 m",57,896,1599,"23 abr","27 oct",3.01
+"1500-2000 m",62,1078,1631,"23 abr","28 oct",2.98
+"> 2000 m",32,461,1693,"25 abr","5 nov",2.37
