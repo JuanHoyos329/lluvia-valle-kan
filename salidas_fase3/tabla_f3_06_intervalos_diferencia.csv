@@ -1,0 +1,20 @@
+"analisis","sentido","desde","hasta","dias","d_media","d_mediana","toca_borde"
+"mm/día - Todas","satélite subestima (d > 0)","1 ene","18 abr",107,0.932,0.126,TRUE
+"mm/día - Todas","satélite subestima (d > 0)","15 jul","2 oct",79,0.824,-0.271,FALSE
+"mm/día - Todas","satélite subestima (d > 0)","3 nov","3 dic",30,0.695,-0.522,FALSE
+"mm/día - Solo catálogo","satélite subestima (d > 0)","1 ene","3 feb",33,0.59,0.074,TRUE
+"mm/día - Solo catálogo","satélite subestima (d > 0)","6 feb","25 mar",47,0.412,0.031,FALSE
+"mm/día - Solo catálogo","satélite sobreestima (d < 0)","29 abr","7 jul",69,-0.64,-0.874,FALSE
+"mm/día - Solo catálogo","satélite sobreestima (d < 0)","18 dic","31 dic",14,-0.859,-1.269,TRUE
+"mm/día - Cauca","satélite subestima (d > 0)","1 ene","1 abr",90,0.419,0.098,TRUE
+"mm/día - Cauca","satélite sobreestima (d < 0)","29 abr","28 jul",90,-0.517,-0.712,FALSE
+"mm/día - Cauca","satélite sobreestima (d < 0)","5 sep","1 nov",57,-0.344,-0.609,FALSE
+"mm/día - Cauca","satélite sobreestima (d < 0)","6 dic","31 dic",26,-0.789,-0.939,TRUE
+"mm/día - Cauca - catálogo","satélite subestima (d > 0)","1 ene","24 ene",23,0.537,0.116,TRUE
+"mm/día - Cauca - catálogo","satélite subestima (d > 0)","19 feb","22 mar",31,0.335,0.134,FALSE
+"mm/día - Cauca - catálogo","satélite sobreestima (d < 0)","26 abr","27 jul",92,-0.567,-0.722,FALSE
+"mm/día - Cauca - catálogo","satélite sobreestima (d < 0)","26 ago","2 nov",68,-0.41,-0.62,FALSE
+"mm/día - Cauca - catálogo","satélite sobreestima (d < 0)","9 dic","31 dic",23,-0.867,-1.111,TRUE
+"mm/día - Pacífico","satélite subestima (d > 0)","1 ene","5 may",124,2.705,0.748,TRUE
+"mm/día - Pacífico","satélite subestima (d > 0)","10 jun","31 dic",205,3.726,0.433,TRUE
+"sqrt(mm/día) - Todas","satélite sobreestima (d < 0)","9 ene","31 dic",357,-0.28,-0.429,TRUE

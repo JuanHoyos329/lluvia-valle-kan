@@ -1,0 +1,245 @@
+"STATION_ID","nombre","region","fuente_coord","confianza","altitud","Lon","lat","pixel","curvas","estacion_mm_dia","satelite_mm_dia","d_mm_dia","razon_est_sat","top10"
+5300900102,NA,"Pacífico","lluvia","baja",1329,-76.443,3.809,"F24-C23",11,35.73,3.63,32.1,9.83,TRUE
+5300000203,NA,"Pacífico","lluvia + altitud","baja",50,-76.792,3.846,"F24-C16",15,33.43,8.79,24.64,3.8,TRUE
+5300000202,NA,"Pacífico","lluvia","baja",1331,-76.506,3.665,"F27-C21",9,21.15,3.69,17.46,5.73,TRUE
+5421200112,NA,"Pacífico","ID","baja",1010,-76.551,3.977,"F21-C20",3,21.17,7.38,13.8,2.87,TRUE
+5421240201,NA,"Pacífico","lluvia + altitud","baja",380,-76.749,3.922,"F22-C17",10,21.77,9.42,12.35,2.31,TRUE
+5301300101,NA,"Pacífico","lluvia","baja",947,-76.442,3.556,"F29-C23",15,15.45,3.17,12.28,4.87,TRUE
+5421200110,"EL ESPANTO","Pacífico","catálogo","catálogo",515,-76.696,3.947,"F22-C18",5,20.76,8.56,12.2,2.43,TRUE
+5301500108,"ESCALERETE","Pacífico","catálogo","catálogo",150,-76.863,3.814,"F24-C14",8,21.75,10.8,10.95,2.01,TRUE
+5400000201,NA,"Pacífico","lluvia","baja",1823,-76.619,3.971,"F21-C19",18,19.07,8.33,10.74,2.29,TRUE
+5421200201,NA,"Pacífico","lluvia","baja",741,-76.852,3.779,"F25-C14",16,20.26,10.1,10.16,2.01,TRUE
+5301500106,"TRIANA","Pacífico","catálogo","catálogo",232,-76.806,3.857,"F23-C15",16,19.75,10.85,8.9,1.82,FALSE
+5300000201,NA,"Pacífico","lluvia","baja",784,-76.851,3.773,"F25-C14",20,18.89,10.12,8.77,1.87,FALSE
+5301000103,NA,"Pacífico","lluvia + altitud","baja",350,-76.55,3.554,"F29-C21",11,10.97,3.75,7.22,2.92,FALSE
+5301400101,NA,"Pacífico","lluvia","alta",766,-76.86,3.643,"F28-C14",15,15.07,8.92,6.15,1.69,FALSE
+5421200102,NA,"Pacífico","lluvia + altitud","baja",1870,-76.443,3.96,"F21-C23",1,11,4.97,6.02,2.21,FALSE
+5300600101,NA,"Pacífico","lluvia","baja",198,-77.191,3.357,"F33-C8",16,19.2,13.31,5.89,1.44,FALSE
+5301100101,"YURUMANGUI","Pacífico","catálogo","catálogo",140,-77.358,3.373,"F33-C4",10,20.54,14.8,5.74,1.39,FALSE
+2622100104,"PEÑA MONA","Cauca","catálogo","catálogo",2100,-76.653,3.252,"F35-C18",14,12.07,6.76,5.3,1.78,FALSE
+2613200105,"LA PATAGONIA","Cauca","catálogo","catálogo",1950,-76.21,3.84,"F24-C27",19,7.85,3.22,4.63,2.44,FALSE
+2621500104,NA,"Cauca","lluvia","baja",1639,-76.611,3.374,"F33-C19",2,10.17,5.86,4.32,1.74,FALSE
+5300800101,NA,"Pacífico","lluvia","baja",365,-77.087,3.348,"F34-C10",10,16.61,12.44,4.17,1.34,FALSE
+2624000103,NA,"Cauca","lluvia","alta",1957,-76.43,4.15,"F18-C23",1,11.38,7.34,4.04,1.55,FALSE
+5301500102,"LOBOGUERRERO","Pacífico","catálogo","catálogo",702,-76.664,3.762,"F25-C18",11,2.37,6.19,-3.82,0.38,FALSE
+5420410115,"PUERTO NUEVO","Pacífico","catálogo","catálogo",990,-76.268,4.596,"F9-C26",20,3.07,6.82,-3.75,0.45,FALSE
+5301400105,NA,"Pacífico","lluvia","alta",838,-76.841,3.574,"F29-C15",14,11.28,7.97,3.31,1.41,FALSE
+5420410118,"MORAVITO","Pacífico","catálogo","catálogo",1640,-76.382,4.299,"F15-C24",20,3.6,6.9,-3.3,0.52,FALSE
+5301420201,NA,"Pacífico","lluvia","alta",1294,-76.757,3.545,"F30-C16",13,4.13,7.42,-3.29,0.56,FALSE
+2621500301,NA,"Cauca","lluvia + altitud","alta",1527,-76.649,3.16,"F37-C19",23,9.41,6.16,3.26,1.53,FALSE
+5421200204,NA,"Pacífico","lluvia","alta",1294,-76.652,3.948,"F22-C18",14,5.52,8.55,-3.03,0.65,FALSE
+5420410116,"EL BALSAL","Pacífico","catálogo","catálogo",1524,-76.233,4.666,"F7-C27",21,3.64,6.66,-3.02,0.55,FALSE
+2613600104,"EL JANEIRO","Cauca","catálogo","catálogo",2000,-76.184,3.85,"F23-C28",8,6.46,3.5,2.96,1.85,FALSE
+5421200111,"EL CUSUMBO","Pacífico","catálogo","catálogo",913,-76.692,3.936,"F22-C18",15,11.44,8.55,2.88,1.34,FALSE
+2624700203,NA,"Cauca","lluvia","baja",1090,-76.11,4.506,"F10-C29",9,2.57,5.44,-2.87,0.47,FALSE
+2624700120,"LA DESPENSA","Cauca","catálogo","catálogo",1380,-76.147,4.511,"F10-C29",14,2.73,5.45,-2.72,0.5,FALSE
+5420410107,"BETANIA","Pacífico","catálogo","catálogo",1750,-76.308,4.436,"F12-C25",22,4.09,6.81,-2.72,0.6,FALSE
+5300900101,NA,"Pacífico","lluvia","baja",2654,-76.773,3.326,"F34-C16",1,11.74,9.04,2.7,1.3,FALSE
+2621500105,NA,"Cauca","lluvia","baja",2223,-76.656,3.399,"F33-C18",3,9.18,6.49,2.69,1.42,FALSE
+5420410117,"EL CAIRO","Pacífico","catálogo","catálogo",1850,-76.225,4.756,"F5-C27",19,4.56,7.23,-2.67,0.63,FALSE
+5421200207,NA,"Pacífico","lluvia","alta",1587,-76.577,3.874,"F23-C20",4,3.26,5.78,-2.52,0.56,FALSE
+5421200206,NA,"Pacífico","ID","baja",1500,-76.551,3.977,"F21-C20",5,4.95,7.41,-2.47,0.67,FALSE
+5420410112,"LA MARIA","Pacífico","catálogo","catálogo",1376,-76.243,4.516,"F10-C27",15,3.47,5.92,-2.45,0.59,FALSE
+2624600103,"LA HERRADURA","Cauca","catálogo","catálogo",951,-76.218,4.279,"F15-C27",18,3.04,5.45,-2.41,0.56,FALSE
+2624700104,"EL PORVENIR","Cauca","catálogo","catálogo",1020,-76.116,4.543,"F10-C29",22,3.07,5.48,-2.41,0.56,FALSE
+2612810109,"SAN NICOLAS","Cauca","catálogo","catálogo",2100,-76.162,3.53,"F30-C28",19,5.54,3.16,2.38,1.75,FALSE
+2624700301,NA,"Cauca","lluvia + altitud","alta",1643,-76.146,4.541,"F10-C29",23,3.12,5.5,-2.38,0.57,FALSE
+2624700202,NA,"Cauca","lluvia","alta",924,-76.06,4.523,"F10-C30",21,3.08,5.44,-2.37,0.56,FALSE
+2624600101,"BOLIVAR","Cauca","catálogo","catálogo",1074,-76.19,4.331,"F14-C28",9,3.17,5.5,-2.33,0.58,FALSE
+2624700115,"EL OREGANO","Cauca","catálogo","catálogo",1460,-76.174,4.451,"F11-C28",22,3.27,5.6,-2.33,0.58,FALSE
+5301500107,"DAGUA","Pacífico","catálogo","catálogo",910,-76.688,3.653,"F27-C18",18,3.17,5.48,-2.31,0.58,FALSE
+2613600102,"EL DILUVIO","Cauca","catálogo","catálogo",2360,-76.15,3.878,"F23-C29",22,5.91,3.7,2.2,1.6,FALSE
+2612810112,"AUSTRIA","Cauca","catálogo","catálogo",1750,-76.173,3.579,"F29-C28",22,5.3,3.11,2.19,1.7,FALSE
+2624700112,"EL BOHIO","Cauca","catálogo","catálogo",957,-76.069,4.603,"F8-C30",10,3.26,5.45,-2.18,0.6,FALSE
+2622320102,NA,"Cauca","lluvia + altitud","alta",2580,-76.649,3.39,"F33-C19",5,8.66,6.49,2.17,1.33,FALSE
+2614500101,"EL GUABITO","Cauca","catálogo","catálogo",960,-76.077,4.302,"F14-C30",1,2.95,5.11,-2.16,0.58,FALSE
+2624700121,"LA QUIEBRA","Cauca","catálogo","catálogo",1514,-76.115,4.631,"F8-C29",23,3.43,5.59,-2.16,0.61,FALSE
+2614200101,"VENUS","Cauca","catálogo","catálogo",1560,-76.076,4.028,"F20-C30",22,6.39,4.27,2.12,1.5,FALSE
+2622100301,NA,"Cauca","lluvia + altitud","alta",1567,-76.623,3.24,"F36-C19",20,8.26,6.14,2.12,1.34,FALSE
+2624700114,"BUENAVISTA","Cauca","catálogo","catálogo",1750,-76.159,4.471,"F11-C28",23,3.47,5.59,-2.12,0.62,FALSE
+5421200108,"BERLIN","Pacífico","catálogo","catálogo",1812,-76.531,3.924,"F22-C21",15,3.72,5.81,-2.09,0.64,FALSE
+5420410114,"ARABIA","Pacífico","catálogo","catálogo",1395,-76.198,4.618,"F8-C28",20,3.76,5.83,-2.07,0.64,FALSE
+5421220101,NA,"Pacífico","lluvia + altitud","alta",850,-76.67,3.935,"F22-C18",9,6.36,8.43,-2.07,0.75,FALSE
+2610000104,"LA VICTORIA","Cauca","catálogo","catálogo",922,-76.043,4.525,"F10-C31",20,3.3,5.33,-2.04,0.62,FALSE
+2624700116,"LA PLANTA","Cauca","catálogo","catálogo",1346,-76.107,4.55,"F9-C29",10,3.44,5.48,-2.04,0.63,FALSE
+2624700117,"EL LUCERO","Cauca","catálogo","catálogo",976,-76.109,4.514,"F10-C29",23,3.46,5.5,-2.04,0.63,FALSE
+2622400102,"LA LEONERA","Cauca","catálogo","catálogo",1869,-76.633,3.453,"F31-C19",9,3.66,5.68,-2.03,0.64,FALSE
+2624700119,NA,"Cauca","lluvia + altitud","baja",1220,-76.129,4.544,"F10-C29",10,3.46,5.45,-1.98,0.64,FALSE
+2613000103,"EL CASTILLO","Cauca","catálogo","catálogo",1424,-76.192,3.665,"F27-C28",23,5.04,3.16,1.88,1.6,FALSE
+2614100104,"LOS BANCOS","Cauca","catálogo","catálogo",1956,-76.02,3.9,"F22-C31",23,2.29,4.17,-1.88,0.55,FALSE
+2622400104,"BRASILIA","Cauca","catálogo","catálogo",1864,-76.628,3.453,"F31-C19",23,3.96,5.81,-1.85,0.68,FALSE
+2624700110,"EL AGUACATE","Cauca","catálogo","catálogo",1400,-76.2,4.395,"F13-C27",22,3.76,5.6,-1.84,0.67,FALSE
+2622420103,"AGUACATAL","Cauca","catálogo","catálogo",1649,-76.606,3.507,"F30-C19",22,3.47,5.3,-1.83,0.65,FALSE
+2612810108,"TENJO","Cauca","catálogo","catálogo",1500,-76.171,3.521,"F30-C28",21,4.95,3.14,1.81,1.58,FALSE
+5421200202,NA,"Pacífico","lluvia","alta",1489,-76.531,3.872,"F23-C21",5,3.23,5.03,-1.8,0.64,FALSE
+2612810101,"LA ZAPATA","Cauca","catálogo","catálogo",1250,-76.214,3.515,"F30-C27",16,4.85,3.06,1.79,1.59,FALSE
+2624700103,"EL VESUBIO","Cauca","catálogo","catálogo",990,-76.09,4.609,"F8-C30",23,3.75,5.54,-1.79,0.68,FALSE
+2624700118,"PATIO BONITO","Cauca","catálogo","catálogo",1727,-76.134,4.589,"F9-C29",23,3.74,5.53,-1.79,0.68,FALSE
+5421200109,"SAMARIA","Pacífico","catálogo","catálogo",1764,-76.442,4.027,"F20-C23",14,7.53,5.8,1.74,1.3,FALSE
+5420410111,"LA BELLITA","Pacífico","catálogo","catálogo",1693,-76.242,4.732,"F6-C27",6,5.09,6.82,-1.73,0.75,FALSE
+5421200105,"LA CRISTALINA","Pacífico","catálogo","catálogo",1673,-76.444,3.998,"F21-C23",13,6.86,5.13,1.73,1.34,FALSE
+2610000202,NA,"Cauca","lluvia + altitud","baja",925,-75.917,4.713,"F6-C33",21,3.99,5.69,-1.7,0.7,FALSE
+2610000110,"SAN PEDRO","Cauca","catálogo","catálogo",923,-76.038,4.508,"F10-C31",5,3.91,5.6,-1.69,0.7,FALSE
+2622320201,NA,"Cauca","lluvia","alta",1239,-76.579,3.381,"F33-C20",19,3.96,5.65,-1.69,0.7,FALSE
+2624700113,"EL OSO","Cauca","catálogo","catálogo",1240,-76.1,4.577,"F9-C30",23,3.78,5.47,-1.69,0.69,FALSE
+5421200205,NA,"Pacífico","lluvia","alta",1121,-76.668,3.945,"F22-C18",3,6.61,8.29,-1.69,0.8,FALSE
+2610000115,"ANACARO","Cauca","catálogo","catálogo",908,-75.969,4.783,"F5-C32",8,4.32,6,-1.68,0.72,FALSE
+2612810107,"AMBERES","Cauca","catálogo","catálogo",2070,-76.095,3.524,"F30-C30",2,5.52,3.84,1.68,1.44,FALSE
+2613100107,"COSTA RICA","Cauca","catálogo","catálogo",1192,-76.231,3.755,"F25-C27",19,4.82,3.14,1.68,1.53,FALSE
+2620000105,"LA INMACULADA","Cauca","catálogo","catálogo",1024,-75.989,4.797,"F5-C32",17,4.27,5.93,-1.66,0.72,FALSE
+2624700109,"MONTECRISTO","Cauca","catálogo","catálogo",1357,-76.192,4.417,"F12-C28",23,3.89,5.52,-1.64,0.7,FALSE
+5421200106,NA,"Pacífico","lluvia","baja",963,-76.373,3.809,"F24-C24",13,5.09,3.44,1.64,1.48,FALSE
+2613100103,"LA SELVA","Cauca","catálogo","catálogo",1704,-76.195,3.745,"F26-C28",23,4.82,3.21,1.61,1.5,FALSE
+2615400202,NA,"Cauca","lluvia","baja",1567,-75.929,4.211,"F16-C33",21,6.55,4.95,1.6,1.32,FALSE
+2620000106,NA,"Cauca","lluvia","baja",906,-76.006,4.625,"F8-C31",19,3.93,5.52,-1.59,0.71,FALSE
+2612710105,"LA SOLEDAD","Cauca","catálogo","catálogo",2160,-76.154,3.354,"F33-C28",21,5.21,3.63,1.58,1.44,FALSE
+2614400104,"IRLANDA","Cauca","catálogo","catálogo",1663,-75.927,4.191,"F17-C33",23,6.43,4.85,1.58,1.33,FALSE
+2622420101,"MONTEBELLO","Cauca","catálogo","catálogo",1260,-76.55,3.487,"F31-C20",23,3.45,4.98,-1.53,0.69,FALSE
+2614900102,"LA ELVIRA","Cauca","catálogo","catálogo",962,-76.047,4.388,"F13-C31",20,3.61,5.13,-1.52,0.7,FALSE
+2622410102,"YANACONAS","Cauca","catálogo","catálogo",1730,-76.601,3.438,"F32-C19",22,4.71,6.23,-1.52,0.76,FALSE
+2610000105,"PUERTO MOLINA","Cauca","catálogo","catálogo",939,-76.023,4.623,"F8-C31",22,4.02,5.5,-1.49,0.73,FALSE
+2612810201,NA,"Cauca","lluvia + altitud","alta",1272,-76.211,3.536,"F30-C27",23,4.51,3.04,1.46,1.48,FALSE
+2624000102,"RIOFRIO","Cauca","catálogo","catálogo",1000,-76.277,4.141,"F18-C26",22,3.59,5.05,-1.46,0.71,FALSE
+2612810122,"PLANTA NIMA","Cauca","catálogo","catálogo",1170,-76.218,3.548,"F30-C27",21,4.46,3.01,1.45,1.48,FALSE
+2622100103,"SAN VICENTE","Cauca","catálogo","catálogo",1442,-76.626,3.269,"F35-C19",22,7.74,6.29,1.45,1.23,FALSE
+2613600103,"LA PRIMAVERA","Cauca","catálogo","catálogo",1644,-76.197,3.919,"F22-C28",23,4.98,3.55,1.43,1.4,FALSE
+2622110201,NA,"Cauca","lluvia + altitud","alta",1676,-76.624,3.338,"F34-C19",23,7.83,6.41,1.42,1.22,FALSE
+5301400104,"LA CASCADA","Pacífico","catálogo","catálogo",848,-76.841,3.593,"F29-C15",13,9.51,8.09,1.42,1.18,FALSE
+2615000102,"LA ARBOLEDA","Cauca","catálogo","catálogo",1275,-75.921,4.583,"F9-C33",19,3.92,5.33,-1.41,0.73,FALSE
+2615000101,"OBANDO","Cauca","catálogo","catálogo",1014,-75.955,4.575,"F9-C32",14,4.06,5.43,-1.37,0.75,FALSE
+2612200103,"LOS ALPES","Cauca","catálogo","catálogo",2380,-76.108,3.263,"F35-C29",20,5.27,3.93,1.35,1.34,FALSE
+2612810202,NA,"Cauca","lluvia + altitud","alta",2100,-76.162,3.469,"F31-C28",3,4.74,3.39,1.35,1.4,FALSE
+2621500101,"VILLACOLOMBIA","Cauca","catálogo","catálogo",1505,-76.659,3.187,"F37-C18",23,7.97,6.63,1.34,1.2,FALSE
+2624600102,"EL RETIRO","Cauca","catálogo","catálogo",1640,-76.235,4.396,"F13-C27",21,4.31,5.61,-1.3,0.77,FALSE
+2614400102,"BUGALAGRANDE","Cauca","catálogo","catálogo",942,-76.141,4.213,"F16-C29",23,3.67,4.94,-1.27,0.74,FALSE
+2612810121,"LAS VERANERAS","Cauca","catálogo","catálogo",1482,-76.19,3.522,"F30-C28",5,4.43,3.17,1.26,1.4,FALSE
+2610000101,NA,"Cauca","lluvia","baja",957,-75.964,4.804,"F4-C32",8,4.72,5.97,-1.25,0.79,FALSE
+2610000116,"JUANCHITO","Cauca","catálogo","catálogo",941,-76.475,3.452,"F31-C22",2,2.13,3.38,-1.25,0.63,FALSE
+2624700111,NA,"Cauca","lluvia + altitud","baja",1678,-76.197,4.468,"F11-C28",9,4.26,5.5,-1.24,0.78,FALSE
+2612700106,"EL LLANITO","Cauca","catálogo","catálogo",945,-76.406,3.521,"F30-C23",1,1.91,3.13,-1.22,0.61,FALSE
+2622330101,"COLEGIO SAN JUAN BOSCO","Cauca","catálogo","catálogo",1000,-76.533,3.442,"F32-C21",22,3.26,4.48,-1.22,0.73,FALSE
+2622500102,"LLOREDA GRASAS","Cauca","catálogo","catálogo",1032,-76.501,3.519,"F30-C21",22,2.75,3.93,-1.18,0.7,FALSE
+2613000102,"EL PARAISO","Cauca","catálogo","catálogo",1430,-76.2,3.65,"F28-C28",21,4.3,3.13,1.17,1.37,FALSE
+2613100102,"SAN LORENZO","Cauca","catálogo","catálogo",953,-76.36,3.758,"F25-C24",1,2.09,3.24,-1.15,0.65,FALSE
+2614400201,NA,"Cauca","lluvia","baja",2873,-76.025,3.757,"F25-C31",19,2.7,3.84,-1.14,0.7,FALSE
+2622330102,"CAÑAVERALEJO PG","Cauca","catálogo","catálogo",1056,-76.578,3.411,"F32-C20",22,4.3,5.44,-1.14,0.79,FALSE
+2622110101,"LA ARGENTINA","Cauca","catálogo","catálogo",1794,-76.651,3.327,"F34-C18",23,8.09,6.96,1.13,1.16,FALSE
+2613600101,"DOSQUEBRADAS","Cauca","catálogo","catálogo",1650,-76.181,3.909,"F22-C28",23,4.67,3.55,1.12,1.31,FALSE
+2623900102,"CALABAZAS","Cauca","catálogo","catálogo",1093,-76.371,4.039,"F20-C24",9,6.11,4.99,1.12,1.23,FALSE
+2613600301,NA,"Cauca","lluvia + altitud","baja",1360,-76.221,3.711,"F26-C27",23,4.21,3.1,1.11,1.36,FALSE
+2614900101,"EL SOCORRO","Cauca","catálogo","catálogo",1025,-75.96,4.48,"F11-C32",16,4,5.11,-1.11,0.78,FALSE
+5301500105,NA,"Pacífico","lluvia","baja",1453,-76.542,3.631,"F28-C21",2,2.84,3.94,-1.1,0.72,FALSE
+2624700108,"LAS PEÑAS","Cauca","catálogo","catálogo",1807,-76.107,4.663,"F7-C29",23,4.67,5.72,-1.05,0.82,FALSE
+2610000103,"CRUCES","Cauca","catálogo","catálogo",968,-75.918,4.651,"F7-C33",21,4.53,5.56,-1.03,0.81,FALSE
+2620000202,NA,"Cauca","lluvia + altitud","baja",942,-76.321,4.023,"F20-C25",22,3.56,4.57,-1.01,0.78,FALSE
+2613100106,"JUNTAS","Cauca","catálogo","catálogo",2087,-76.166,3.773,"F25-C28",21,4.29,3.29,1,1.3,FALSE
+2622400101,"COLEGIO SAN LUIS","Cauca","catálogo","catálogo",1053,-76.536,3.46,"F31-C21",21,3.2,4.2,-1,0.76,FALSE
+2622400201,NA,"Cauca","lluvia + altitud","alta",1950,-76.622,3.474,"F31-C19",21,4.86,5.86,-1,0.83,FALSE
+5420410202,NA,"Pacífico","lluvia","baja",926,-76.15,4.289,"F15-C29",14,4.07,5.07,-1,0.8,FALSE
+2612810111,NA,"Cauca","lluvia + altitud","alta",2600,-76.122,3.464,"F31-C29",1,4.65,3.66,0.99,1.27,FALSE
+5301400103,NA,"Pacífico","lluvia + altitud","baja",1050,-76.827,3.599,"F29-C15",7,8.61,7.65,0.96,1.13,FALSE
+2623300201,NA,"Cauca","lluvia + altitud","alta",1700,-76.465,3.91,"F22-C22",19,4.05,4.99,-0.94,0.81,FALSE
+2614100103,"LA GITANA","Cauca","catálogo","catálogo",2783,-76.009,3.946,"F22-C31",23,5.08,4.17,0.91,1.22,FALSE
+2622310101,"LA LADRILLERA","Cauca","catálogo","catálogo",1180,-76.572,3.357,"F33-C20",18,4.73,5.64,-0.91,0.84,FALSE
+2622410104,"PEÑAS BLANCAS","Cauca","catálogo","catálogo",2158,-76.662,3.416,"F32-C18",20,5.87,6.78,-0.9,0.87,FALSE
+2612730201,NA,"Cauca","lluvia","baja",974,-76.484,3.518,"F30-C22",11,2.62,3.51,-0.89,0.75,FALSE
+5421200114,"LA GRANJITA","Pacífico","catálogo","catálogo",2244,-76.5,4.039,"F20-C22",13,7.48,6.59,0.89,1.13,FALSE
+2615400102,"HERACLIO URIBE","Cauca","catálogo","catálogo",1432,-75.902,4.285,"F15-C33",15,5.94,5.07,0.87,1.17,FALSE
+2612720301,NA,"Cauca","lluvia + altitud","alta",1350,-76.211,3.484,"F31-C27",23,4.01,3.16,0.85,1.27,FALSE
+2620000103,"PLANTA RIO CAUCA","Cauca","catálogo","catálogo",956,-76.493,3.447,"F32-C22",23,3.04,3.88,-0.84,0.78,FALSE
+2615400111,"PIEDRAS DE MOLER","Cauca","catálogo","catálogo",1100,-75.851,4.712,"F6-C34",21,4.82,5.64,-0.82,0.85,FALSE
+5421210101,"RIOBRAVO","Pacífico","catálogo","catálogo",1520,-76.554,3.969,"F21-C20",13,6.7,7.52,-0.82,0.89,FALSE
+2614500201,NA,"Cauca","lluvia","alta",1096,-75.989,4.25,"F16-C32",16,4.14,4.95,-0.81,0.84,FALSE
+5420410113,"EL BOSQUE","Pacífico","catálogo","catálogo",1561,-76.142,4.677,"F7-C29",19,4.9,5.71,-0.81,0.86,FALSE
+2612700105,"MATAPALO","Cauca","catálogo","catálogo",947,-76.434,3.576,"F29-C23",21,2.39,3.19,-0.8,0.75,FALSE
+2622100201,NA,"Cauca","lluvia","alta",1183,-76.6,3.247,"F36-C19",11,5.34,6.14,-0.8,0.87,FALSE
+2622600201,NA,"Cauca","lluvia + altitud","alta",1500,-76.538,3.605,"F28-C21",22,2.86,3.66,-0.8,0.78,FALSE
+2614500102,"EL ALCAZAR","Cauca","catálogo","catálogo",1010,-76.019,4.307,"F14-C31",18,4.25,5.04,-0.79,0.84,FALSE
+2622420102,"SAN PABLO","Cauca","catálogo","catálogo",1871,-76.62,3.517,"F30-C19",23,4.51,5.3,-0.79,0.85,FALSE
+5301500109,"LA ROSITA","Pacífico","catálogo","catálogo",1515,-76.601,3.602,"F28-C19",3,3.69,4.47,-0.78,0.83,FALSE
+2612810114,"ALBANIA","Cauca","catálogo","catálogo",2050,-76.145,3.545,"F30-C29",3,4.37,3.6,0.77,1.21,FALSE
+2614100202,NA,"Cauca","lluvia + altitud","baja",1014,-76.182,4.076,"F19-C28",23,3.56,4.32,-0.76,0.82,FALSE
+2622420104,"VILLA ARACELLY","Cauca","catálogo","catálogo",2040,-76.588,3.53,"F30-C20",22,3.8,4.56,-0.76,0.83,FALSE
+5421200203,NA,"Pacífico","lluvia","baja",1422,-76.461,3.896,"F23-C22",12,3.65,4.41,-0.76,0.83,FALSE
+2612800104,"AUJI","Cauca","catálogo","catálogo",1555,-76.108,3.622,"F28-C29",18,2.64,3.34,-0.7,0.79,FALSE
+2624000301,NA,"Cauca","lluvia","baja",952,-76.174,4.314,"F14-C28",18,4.63,5.33,-0.7,0.87,FALSE
+2622400103,"PLANTA RIO CALI","Cauca","catálogo","catálogo",1070,-76.546,3.445,"F32-C21",23,3.82,4.51,-0.69,0.85,FALSE
+2622330104,NA,"Cauca","lluvia + altitud","alta",1172,-76.58,3.389,"F33-C20",10,4.95,5.61,-0.66,0.88,FALSE
+2612000202,NA,"Cauca","lluvia","baja",946,-76.466,3.276,"F35-C22",15,4.11,4.77,-0.65,0.86,FALSE
+2612800202,NA,"Cauca","lluvia","baja",2869,-76.056,3.802,"F24-C30",23,3.18,3.8,-0.63,0.84,FALSE
+2622600103,"YUMBILLO","Cauca","catálogo","catálogo",1730,-76.55,3.58,"F29-C21",17,3.11,3.74,-0.63,0.83,FALSE
+2622500101,"DAPA","Cauca","catálogo","catálogo",1716,-76.554,3.56,"F29-C20",21,3.63,4.25,-0.62,0.85,FALSE
+2622330107,NA,"Cauca","lluvia + altitud","alta",985,-76.546,3.42,"F32-C21",20,3.87,4.46,-0.6,0.87,FALSE
+2612700203,NA,"Cauca","lluvia","alta",964,-76.352,3.557,"F29-C24",22,2.41,3,-0.59,0.8,FALSE
+2622400105,"VIVERO CALI","Cauca","catálogo","catálogo",960,-76.513,3.464,"F31-C21",11,3.57,4.16,-0.59,0.86,FALSE
+2610000108,"SANTA ANITA","Cauca","catálogo","catálogo",973,-76.336,3.599,"F29-C25",10,2.37,2.93,-0.56,0.81,FALSE
+2611800201,NA,"Cauca","lluvia + altitud","alta",990,-76.54,3.11,"F38-C21",21,4.82,5.38,-0.56,0.9,FALSE
+2612710301,NA,"Cauca","lluvia + altitud","alta",1960,-76.169,3.457,"F31-C28",23,3.82,3.27,0.55,1.17,FALSE
+2612720105,"LOS MINCHOS","Cauca","catálogo","catálogo",1370,-76.183,3.421,"F32-C28",8,3.96,3.41,0.55,1.16,FALSE
+2610000107,"LA OLGA","Cauca","catálogo","catálogo",963,-76.361,3.616,"F28-C24",10,2.48,3.02,-0.54,0.82,FALSE
+2612200202,NA,"Cauca","lluvia","alta",1189,-76.222,3.255,"F35-C27",18,4.43,3.89,0.54,1.14,FALSE
+2612710101,"FLORIDA","Cauca","catálogo","catálogo",1060,-76.243,3.321,"F34-C27",22,4.23,3.69,0.53,1.14,FALSE
+2621500103,"EL SILENCIOSO","Cauca","catálogo","catálogo",1520,-76.734,3.138,"F38-C17",19,7.6,7.08,0.52,1.07,FALSE
+2614900201,NA,"Cauca","lluvia + altitud","alta",1233,-75.923,4.485,"F11-C33",23,4.65,5.16,-0.51,0.9,FALSE
+2622900301,NA,"Cauca","lluvia + altitud","alta",990,-76.418,3.63,"F28-C23",22,2.71,3.22,-0.51,0.84,FALSE
+2612800106,"LA CEJA","Cauca","catálogo","catálogo",3052,-76.016,3.706,"F26-C31",17,3.32,3.81,-0.49,0.87,FALSE
+2614100102,NA,"Cauca","lluvia","baja",2520,-76.082,3.56,"F29-C30",20,4.07,3.58,0.49,1.14,FALSE
+2614400103,"PUERTO FRAZADAS","Cauca","catálogo","catálogo",1976,-75.995,4.054,"F19-C32",20,5.13,4.64,0.49,1.11,FALSE
+2612700102,NA,"Cauca","lluvia","alta",1047,-76.255,3.579,"F29-C26",1,3.39,2.93,0.47,1.16,FALSE
+2612710107,NA,"Cauca","lluvia","baja",2434,-76.13,3.278,"F35-C29",5,4.46,3.98,0.47,1.12,FALSE
+2612700103,NA,"Cauca","lluvia","alta",981,-76.32,3.584,"F29-C25",1,2.36,2.81,-0.46,0.84,FALSE
+2613100104,"GUACARI","Cauca","catálogo","catálogo",962,-76.332,3.77,"F25-C25",20,2.74,3.2,-0.46,0.86,FALSE
+2612800102,"EL PORVENIR I","Cauca","catálogo","catálogo",1063,-76.243,3.615,"F28-C27",10,3.43,2.98,0.44,1.15,FALSE
+2612710103,"ING LA QUINTA","Cauca","catálogo","catálogo",980,-76.346,3.417,"F32-C25",21,2.86,3.27,-0.42,0.87,FALSE
+2612710108,"EL AVELINO","Cauca","catálogo","catálogo",3380,-76.063,3.297,"F35-C30",9,4.38,3.96,0.41,1.1,FALSE
+2612810203,NA,"Cauca","lluvia + altitud","alta",2605,-76.121,3.451,"F31-C29",16,3.87,3.46,0.41,1.12,FALSE
+2622100102,"EL PALACIO","Cauca","catálogo","catálogo",950,-76.524,3.289,"F35-C21",22,4.66,5.07,-0.41,0.92,FALSE
+5301500104,"LA CUMBRE","Pacífico","catálogo","catálogo",1457,-76.57,3.653,"F27-C20",2,4.54,4.14,0.4,1.1,FALSE
+2622110102,"EL GUANABANO","Cauca","catálogo","catálogo",1365,-76.599,3.356,"F33-C20",8,6.01,5.63,0.39,1.07,FALSE
+2623300101,"BUENOS AIRES","Cauca","catálogo","catálogo",1566,-76.43,3.841,"F24-C23",20,3.95,3.56,0.39,1.11,FALSE
+5301420101,NA,"Pacífico","lluvia + altitud","baja",1800,-76.648,3.489,"F31-C19",3,6.64,6.25,0.39,1.06,FALSE
+2614500103,"EL JIGUAL","Cauca","catálogo","catálogo",1433,-76.003,4.177,"F17-C31",10,5.07,4.69,0.38,1.08,FALSE
+2621500102,NA,"Cauca","lluvia + altitud","baja",1402,-76.671,3.161,"F37-C18",5,7.22,6.84,0.38,1.06,FALSE
+2622330105,"LOS CRISTALES","Cauca","catálogo","catálogo",1312,-76.568,3.428,"F32-C20",22,5.01,5.38,-0.37,0.93,FALSE
+5301400106,NA,"Pacífico","lluvia + altitud","alta",542,-76.857,3.601,"F28-C14",6,9.48,9.13,0.35,1.04,FALSE
+2612710106,"GUACHAZAMBOLO","Cauca","catálogo","catálogo",941,-76.444,3.497,"F31-C23",20,2.98,3.3,-0.32,0.9,FALSE
+2612720103,"BOLO BLANCO","Cauca","catálogo","catálogo",2410,-76.108,3.458,"F31-C29",17,3.77,3.45,0.32,1.09,FALSE
+2614400101,"ALEGRIAS","Cauca","catálogo","catálogo",2290,-75.863,4.08,"F19-C34",20,4.37,4.69,-0.32,0.93,FALSE
+2613200101,"ING PICHICHI","Cauca","catálogo","catálogo",1068,-76.273,3.778,"F25-C26",16,2.87,3.18,-0.31,0.9,FALSE
+2612700101,NA,"Cauca","lluvia","baja",940,-76.431,3.516,"F30-C23",8,2.89,3.19,-0.3,0.91,FALSE
+2614400105,"PARDO","Cauca","catálogo","catálogo",1273,-76.101,4.087,"F19-C29",19,4.62,4.31,0.3,1.07,FALSE
+2624000101,"VENECIA","Cauca","catálogo","catálogo",1756,-76.42,4.112,"F18-C23",16,6.5,6.79,-0.29,0.96,FALSE
+2612700202,NA,"Cauca","lluvia","baja",977,-76.321,3.548,"F30-C25",13,2.78,3.04,-0.27,0.91,FALSE
+2615400107,"QUEBRADANUEVA","Cauca","catálogo","catálogo",1024,-75.943,4.381,"F13-C33",19,4.84,5.11,-0.27,0.95,FALSE
+2620000109,NA,"Cauca","lluvia","baja",956,-76.337,3.866,"F23-C25",23,3.21,3.48,-0.27,0.92,FALSE
+2614100203,NA,"Cauca","lluvia + altitud","baja",1861,-76.054,3.966,"F21-C30",21,3.93,4.19,-0.25,0.94,FALSE
+2622900101,"VILLAMARIA","Cauca","catálogo","catálogo",1698,-76.48,3.719,"F26-C22",21,3.18,3.42,-0.24,0.93,FALSE
+2612810102,"SANTA TERESA","Cauca","catálogo","catálogo",3690,-76.023,3.481,"F31-C31",20,4.11,3.89,0.22,1.06,FALSE
+2613000101,"LA SIBERIA","Cauca","catálogo","catálogo",1009,-76.274,3.687,"F27-C26",9,3.2,2.98,0.22,1.07,FALSE
+2622310201,"SAN SEBASTIAN","Cauca","catálogo","catálogo",1435,-76.595,3.374,"F33-C20",2,5.34,5.56,-0.22,0.96,FALSE
+2622600101,"SANTA INES","Cauca","catálogo","catálogo",1511,-76.547,3.625,"F28-C21",23,3.44,3.66,-0.22,0.94,FALSE
+5301400108,"ALTO - ANCHICAYA","Pacífico","catálogo","catálogo",650,-76.871,3.582,"F29-C14",22,8.89,8.66,0.22,1.03,FALSE
+5301420102,"DIGUITA","Pacífico","catálogo","catálogo",1237,-76.776,3.536,"F30-C16",14,7.19,7.4,-0.22,0.97,FALSE
+2612710202,NA,"Cauca","lluvia","alta",991,-76.279,3.45,"F32-C26",22,3.09,3.28,-0.19,0.94,FALSE
+2612810118,"CASETEJA","Cauca","catálogo","catálogo",3520,-76.063,3.48,"F31-C30",17,3.84,3.65,0.19,1.05,FALSE
+2612700201,NA,"Cauca","lluvia","alta",1026,-76.267,3.589,"F29-C26",23,3.1,2.94,0.17,1.06,FALSE
+2613600105,"ACUEDUCTO BUGA","Cauca","catálogo","catálogo",960,-76.285,3.892,"F23-C26",23,3.14,3.31,-0.16,0.95,FALSE
+2615400106,"COROZAL","Cauca","catálogo","catálogo",1140,-75.917,4.386,"F13-C33",16,5.29,5.12,0.16,1.03,FALSE
+2615400104,"LA CAMELIA","Cauca","catálogo","catálogo",1206,-75.835,4.332,"F14-C35",21,5.21,5.06,0.15,1.03,FALSE
+2610000109,"HDA REAL","Cauca","catálogo","catálogo",993,-76.304,3.584,"F29-C25",1,2.67,2.81,-0.14,0.95,FALSE
+2613100101,"LORENA","Cauca","catálogo","catálogo",1110,-76.265,3.764,"F25-C26",1,2.92,3.06,-0.14,0.95,FALSE
+2612720101,"YUNDE CARRIZAL","Cauca","catálogo","catálogo",946,-76.399,3.462,"F31-C24",22,3.03,3.15,-0.12,0.96,FALSE
+2612200105,"CAJONES","Cauca","catálogo","catálogo",3372,-76.069,3.227,"F36-C30",19,4.13,4.02,0.11,1.03,FALSE
+2613800101,"ANGOSTURAS","Cauca","catálogo","catálogo",1221,-76.181,3.973,"F21-C28",15,3.91,3.8,0.11,1.03,FALSE
+2615400105,"ALCALA","Cauca","catálogo","catálogo",1173,-75.786,4.676,"F7-C36",22,5.66,5.56,0.1,1.02,FALSE
+2622330106,"LAS BRISAS","Cauca","catálogo","catálogo",1228,-76.588,3.405,"F32-C20",20,5.54,5.46,0.09,1.02,FALSE
+2614500104,"GALICIA","Cauca","catálogo","catálogo",1167,-76.056,4.172,"F17-C30",22,4.64,4.72,-0.07,0.98,FALSE
+2622320103,"ALTO DE LAS IGLESIAS","Cauca","catálogo","catálogo",1705,-76.621,3.373,"F33-C19",21,6.42,6.49,-0.07,0.99,FALSE
+2612800107,"ESPERANZA PRADERA","Cauca","catálogo","catálogo",1038,-76.258,3.432,"F32-C26",14,3.28,3.32,-0.05,0.99,FALSE
+2625500102,"EL AGUILA EL GRANARIO","Cauca","catálogo","catálogo",1813,-76.05,4.901,"F2-C30",21,6.64,6.69,-0.04,0.99,FALSE
+2612800201,NA,"Cauca","lluvia","baja",991,-76.306,3.611,"F28-C25",9,2.93,2.9,0.03,1.01,FALSE
+2622320101,"LA FONDA","Cauca","catálogo","catálogo",1298,-76.59,3.391,"F33-C20",20,5.67,5.64,0.03,1.01,FALSE
+2622330103,"EL FARO","Cauca","catálogo","catálogo",1616,-76.606,3.429,"F32-C19",1,6.2,6.23,-0.03,1,FALSE
+2623500101,"EL CANEY","Cauca","catálogo","catálogo",1433,-76.418,3.93,"F22-C23",21,4.43,4.45,-0.02,1,FALSE
+2612710201,NA,"Cauca","lluvia","baja",981,-76.293,3.468,"F31-C26",8,3.15,3.14,0.01,1,FALSE
+2622900102,"OCACHE","Cauca","catálogo","catálogo",1490,-76.508,3.699,"F27-C21",20,3.61,3.61,0,1,FALSE

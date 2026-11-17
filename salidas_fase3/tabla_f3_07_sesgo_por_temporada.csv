@@ -1,0 +1,6 @@
+"temporada","lluvia_estacion_mm_dia","d_mm_dia","IC95_inf","IC95_sup","sesgo_pct","pct_estaciones_subestima"
+"Dic-Feb (seca)",4.82,0.756,0.295,1.218,15.7,46.7
+"Mar-May (lluvias)",6.67,0.461,0.011,0.91,6.9,42.2
+"Jun-Ago (seca)",4,0.496,-0.04,1.031,12.4,34
+"Sep-Nov (lluvias)",7.39,0.712,0.072,1.352,9.6,41
+"Año completo",5.72,0.605,0.1,1.111,10.6,43

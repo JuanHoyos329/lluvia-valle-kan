@@ -1,0 +1,7 @@
+"analisis","curvas","var_total_estacion","var_total_satelite","razon_var_total_sat_est","razon_DE_DicFeb","razon_DE_MarMay","razon_DE_JunAgo","razon_DE_SepNov","pct_comp1_estacion","pct_comp1_satelite","pct_3comp_estacion","pct_3comp_satelite","autocor30_estacion","autocor30_satelite"
+"Todas - total",3828,9114,1579,0.173,0.41,0.47,0.35,0.43,79.7,80.4,89.3,91.2,0.921,0.915
+"Todas - anomalías",3804,1902,304,0.16,0.43,0.44,0.27,0.42,27.8,31.3,58.3,72,0.714,0.683
+"Cauca - total",3166,2285,795,0.348,0.53,0.6,0.65,0.62,51.2,67.9,72.7,84.9,0.791,0.873
+"Cauca - anomalías",3148,1254,248,0.198,0.47,0.46,0.34,0.48,25.7,29.4,58.7,71.3,0.682,0.678
+"Pacífico - total",662,30506,2864,0.094,0.32,0.34,0.24,0.32,85,82.9,92.8,92.6,0.945,0.918
+"Pacífico - anomalías",656,5015,576,0.115,0.37,0.4,0.21,0.36,33.8,39.2,61.7,74.9,0.749,0.689
