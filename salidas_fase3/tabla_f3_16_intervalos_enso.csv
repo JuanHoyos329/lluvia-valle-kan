@@ -1,0 +1,6 @@
+"analisis","sentido","desde","hasta","dias","d_media","d_mediana","toca_borde"
+"Cauca: Niño - Neutro","satélite subestima (d > 0)","1 ene","6 ene",5,0.488,0.186,TRUE
+"Cauca: Niño - Neutro","satélite sobreestima (d < 0)","15 ene","16 dic",335,-0.517,-0.534,FALSE
+"Cauca: Niño - Neutro","satélite subestima (d > 0)","22 dic","31 dic",10,0.703,0.624,TRUE
+"Cauca: Niña - Neutro","satélite subestima (d > 0)","1 ene","23 ene",22,0.554,0.403,TRUE
+"Cauca: Niña - Neutro","satélite subestima (d > 0)","18 feb","31 dic",317,0.668,0.631,TRUE

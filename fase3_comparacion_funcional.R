@@ -8,8 +8,8 @@
 #   2. Curva de diferencia d(t) = estación - satélite con banda +- 2EE.
 #   3. Correlación cruzada funcional y su diagonal.
 #   4. Comparación de las covarianzas de cada fuente.
-#   5. Sesgo por altitud / región y por fase ENSO.                             (pendiente)
-#   6. Regresión funcional función-función (modelo de referencia).             (pendiente)
+#   5. Sesgo por altitud / región y por fase ENSO.
+#   6. Regresión funcional función-función (modelo de referencia).
 #
 # Por qué no se restan directamente las curvas de la fase 1:
 #   la estación se suavizó con 365 valores diarios de sqrt(mm) y el satélite con 72 valores de
@@ -581,10 +581,12 @@ figura("fig_f3_08_covarianzas", {
   par(mfrow = c(2, 2), mar = c(4.2, 4.2, 2.5, 1))
   CY <- cov_grupo[["Cauca - total"]]$Y; CX <- cov_grupo[["Cauca - total"]]$X
   niveles <- pretty(range(CY, CX), 12)
-  contour(t_eval, t_eval, CY, levels = niveles, labcex = 0.6, xlab = "s (día)", ylab = "t (día)",
-          main = "Covarianza estación - Cauca, total (mm²/día²)", cex.main = 0.95)
-  contour(t_eval, t_eval, CX, levels = niveles, labcex = 0.6, xlab = "s (día)", ylab = "t (día)",
-          main = "Covarianza satélite - Cauca, total (mismos niveles)", cex.main = 0.95)
+  for (q in list(list(CY, "Covarianza estación - Cauca, total (mm²/día²)"),
+                 list(CX, "Covarianza satélite - Cauca, total (misma escala)"))) {
+    image(t_eval, t_eval, q[[1]], zlim = range(niveles), col = hcl.colors(40, "YlOrRd", rev = TRUE),
+          xlab = "s (día)", ylab = "t (día)", main = q[[2]], cex.main = 0.95)
+    contour(t_eval, t_eval, q[[1]], levels = niveles, labcex = 0.6, add = TRUE)
+  }
   de <- sapply(c("Cauca - total", "Cauca - anomalías"), function(a)
     cbind(sqrt(diag(cov_grupo[[a]]$Y)), sqrt(diag(cov_grupo[[a]]$X))))
   de <- matrix(de, ncol = 4)
@@ -599,5 +601,405 @@ figura("fig_f3_08_covarianzas", {
               pct_componentes(cov_grupo[["Cauca - anomalías"]]$X)[1:6])
   barplot(pc, beside = TRUE, names.arg = 1:6, col = c("slategray", "darkturquoise"),
           xlab = "Componente", ylab = "% de varianza", main = "Componentes de la covarianza - Cauca, anomalías",
-          cex.main = 0.95, legend.text = c("Estación", "Satélite"), args.legend = list(bty = "n"))
+          cex.main = 0.95, legend.text = c("Estación", "Satélite"), args.legend = list(x = "topright", bty = "n"))
+}, ancho = 12, alto = 9)
+
+
+#####################################################################################
+# 5. Sesgo por altitud y por fase ENSO
+#####################################################################################
+# 5A. Altitud: se analiza DENTRO del valle del Cauca, porque en todo el conjunto la altitud se
+#     confunde con la región (casi todas las estaciones bajas son del Pacífico). Franjas iguales a la
+#     fase 2 (Annie). Prueba: ANOVA funcional por permutación sobre las curvas promedio por estación
+#     (script de clase), con F_max para controlar el error en todo el año.
+# 5B. ENSO: fase de cada año según el ONI (NOAA CPC; tabla de Fabián, fase 4). Como una estación
+#     aporta años de las tres fases, la comparación es PAREADA dentro de cada estación:
+#     Delta_i(t) = d_i(t) en años Niño (o Niña) - d_i(t) en años neutros. Así se quita el efecto del sitio.
+
+# ---- 5.0 Resumen de sesgo para cualquier grupo de estaciones (columnas = estaciones)
+resumen_sesgo <- function(Gd, Gy, etiqueta) {
+  do.call(rbind, lapply(c(temporadas, "Año completo"), function(s) {
+    f  <- interior & (if (s == "Año completo") TRUE else temp_t == s)
+    dy <- colMeans(Gd[1:365, , drop = FALSE][f, , drop = FALSE])
+    yy <- colMeans(Gy[1:365, , drop = FALSE][f, , drop = FALSE])
+    ee <- if (length(dy) > 1) sd(dy) / sqrt(length(dy)) else NA
+    data.frame(grupo = etiqueta, temporada = s, estaciones = length(dy),
+               lluvia_estacion_mm_dia   = round(mean(yy), 2),
+               d_media                  = round(mean(dy), 3),
+               IC95_inf                 = round(mean(dy) - 2 * ee, 3),
+               IC95_sup                 = round(mean(dy) + 2 * ee, 3),
+               d_mediana                = round(median(dy), 3),
+               sesgo_pct                = round(100 * mean(dy) / mean(yy), 1),
+               pct_estaciones_subestima = round(100 * mean(dy > 0), 1))
+  }))
+}
+cauca <- info_est$region == "Cauca"
+
+# ---- 5A.1 Franjas de altitud
+cortes_alt     <- c(-Inf, 800, 1100, 1500, 2000, Inf)
+nombres_franja <- c("< 800 m", "800-1100 m", "1100-1500 m", "1500-2000 m", "> 2000 m")
+info_est$altitud <- emp$altitud[ie]
+info_est$franja  <- cut(info_est$altitud, cortes_alt, labels = nombres_franja, right = FALSE)
+print(table(info_est$region, info_est$franja))
+
+franjas_cauca <- nombres_franja[sapply(nombres_franja, function(fr) sum(cauca & info_est$franja == fr) >= 3)]
+tabla_alt <- do.call(rbind, c(
+  lapply(franjas_cauca, function(fr) {
+    k <- cauca & info_est$franja == fr
+    resumen_sesgo(G_dmm[, k, drop = FALSE], G_ymm[, k, drop = FALSE], paste("Cauca", fr))
+  }),
+  list(resumen_sesgo(G_dmm[, !cauca], G_ymm[, !cauca], "Pacífico (todas las altitudes)"))))
+print(tabla_alt[tabla_alt$temporada %in% c("Jun-Ago (seca)", "Año completo"), ], row.names = FALSE)
+guardar(tabla_alt, "tabla_f3_11_sesgo_por_altitud")
+
+# ---- 5A.2 Sesgo anual por estación vs. altitud y vs. lluvia de la estación
+info_est$d_anual    <- d_anual
+info_est$sesgo_pct  <- 100 * d_anual / y_anual
+info_est$lluvia_est <- y_anual
+info_est$razon      <- y_anual / x_anual
+info_est$no_conf    <- info_est$STATION_ID %in% NO_CONFIABLES
+cor_alt <- cor.test(info_est$altitud[cauca], info_est$sesgo_pct[cauca], method = "spearman", exact = FALSE)
+# Compresión espacial: ¿el satélite reproduce las diferencias de lluvia entre sitios?
+# Se ajusta log(satélite) ~ log(estación) con la lluvia media de cada estación (sin las no confiables).
+# Pendiente = 1: el satélite reproduce las diferencias; pendiente < 1: las comprime (sobreestima los
+# sitios secos y subestima los lluviosos). No se correlaciona la razón est/sat con la lluvia de la
+# estación porque esa correlación es en parte espuria (la estación está en los dos lados).
+ok_conf  <- !info_est$no_conf
+fit_comp <- lm(log(x_anual[ok_conf]) ~ log(y_anual[ok_conf]))
+ic_comp  <- confint(fit_comp)[2, ]
+tabla_cor_alt <- data.frame(
+  relacion   = c("Cauca: altitud vs. sesgo anual (%) - rho de Spearman",
+                 "Todas sin no confiables: pendiente de log(satélite) ~ log(estación)"),
+  estaciones = c(sum(cauca), sum(ok_conf)),
+  valor      = round(c(cor_alt$estimate, coef(fit_comp)[2]), 3),
+  IC95_inf   = c(NA, round(ic_comp[1], 3)),
+  IC95_sup   = c(NA, round(ic_comp[2], 3)),
+  valor_p    = signif(c(cor_alt$p.value, summary(fit_comp)$coefficients[2, 4]), 3))
+print(tabla_cor_alt, row.names = FALSE)
+guardar(tabla_cor_alt, "tabla_f3_12_correlacion_sesgo_altitud_lluvia")
+
+# ---- 5A.3 ANOVA funcional por franja (Cauca), por permutación (script de clase ANOVA funcional)
+anova_funcional <- function(X, grupo, B = 2000) {
+  grupo <- droplevels(factor(grupo)); k <- nlevels(grupo); n <- ncol(X)
+  Z  <- model.matrix(~ grupo - 1)
+  Mg <- rowMeans(X); SST <- rowSums((X - Mg)^2)
+  ssr <- function(Zb) { Mb <- X %*% Zb %*% diag(1 / colSums(Zb)); as.numeric((Mb - Mg)^2 %*% colSums(Zb)) }
+  Fdet <- function(S) (S / (k - 1)) / ((SST - S) / (n - k))
+  F_t <- Fdet(ssr(Z))
+  Fmax_nulos <- replicate(B, max(Fdet(ssr(Z[sample(n), ]))))
+  list(F_t = F_t, c_max = unname(quantile(Fmax_nulos, 0.95)),
+       p_global = (1 + sum(Fmax_nulos >= max(F_t))) / (B + 1), k = k, n = n)
+}
+# Con B permutaciones el menor valor p posible es 1/(B+1); si se alcanza se reporta como "< 0,001"
+texto_p <- function(p, B = 2000) if (p <= 1 / (B + 1) + 1e-12) "< 0,001" else as.character(signif(p, 3))
+t_int <- t_eval[1:365][interior]
+X_alt <- G_dmm[1:365, cauca, drop = FALSE][interior, , drop = FALSE]
+g_alt <- info_est$franja[cauca]
+mantener <- g_alt %in% franjas_cauca
+an_alt <- anova_funcional(X_alt[, mantener], g_alt[mantener])
+sig <- an_alt$F_t > an_alt$c_max
+r <- rle(sig); fin <- cumsum(r$lengths); ini <- fin - r$lengths + 1; kk <- which(r$values)
+tabla_anova_alt <- data.frame(prueba = "ANOVA funcional d(t) ~ franja de altitud (Cauca)",
+                              grupos = an_alt$k, estaciones = an_alt$n, F_max_obs = round(max(an_alt$F_t), 2),
+                              F_critico_max_5pct = round(an_alt$c_max, 2), p_global = texto_p(an_alt$p_global),
+                              dias_significativos = if (length(kk) == 0) "ninguno" else
+                                paste(paste(dia_a_fecha(t_int[ini[kk]]), "-", dia_a_fecha(t_int[fin[kk]])), collapse = "; "))
+print(tabla_anova_alt, row.names = FALSE)
+guardar(tabla_anova_alt, "tabla_f3_13_anova_altitud")
+
+# ---- 5B.1 Fase ENSO de cada curva
+enso <- read.csv(file.path(".", "salidas_fase4", "fase_enso_por_anio.csv"), fileEncoding = "UTF-8")
+fase_curva <- enso$fase_enso[match(claves$YEAR, enso$YR)]
+stopifnot(!anyNA(fase_curva))
+fases <- c("Niño", "Neutro", "Niña")
+print(tapply(enso$YR, enso$fase_enso, paste, collapse = ", "))
+
+promedio_sub <- function(M, sel) {
+  sapply(split(which(sel), claves$STATION_ID[sel]), function(j) rowMeans(M[, j, drop = FALSE]))
+}
+G_fase_d <- lapply(setNames(fases, fases), function(f) promedio_sub(Dmm, fase_curva == f))
+G_fase_y <- lapply(setNames(fases, fases), function(f) promedio_sub(Ymm, fase_curva == f))
+es_cauca <- function(G) substr(colnames(G), 1, 2) == "26"
+
+tabla_enso <- do.call(rbind, c(
+  lapply(fases, function(f) resumen_sesgo(G_fase_d[[f]][, es_cauca(G_fase_d[[f]]), drop = FALSE],
+                                          G_fase_y[[f]][, es_cauca(G_fase_y[[f]]), drop = FALSE], paste("Cauca -", f))),
+  lapply(fases, function(f) resumen_sesgo(G_fase_d[[f]][, !es_cauca(G_fase_d[[f]]), drop = FALSE],
+                                          G_fase_y[[f]][, !es_cauca(G_fase_y[[f]]), drop = FALSE], paste("Pacífico -", f)))))
+print(tabla_enso[tabla_enso$temporada %in% c("Jun-Ago (seca)", "Año completo"), ], row.names = FALSE)
+guardar(tabla_enso, "tabla_f3_14_sesgo_por_fase_enso")
+
+# ---- 5B.2 Comparación pareada dentro de cada estación (Cauca): Niño - Neutro y Niña - Neutro
+pareada <- function(f) {
+  comunes <- intersect(colnames(G_fase_d[[f]]), colnames(G_fase_d[["Neutro"]]))
+  comunes <- comunes[substr(comunes, 1, 2) == "26"]
+  list(D = G_fase_d[[f]][, comunes] - G_fase_d[["Neutro"]][, comunes], Y = G_fase_y[["Neutro"]][, comunes])
+}
+par_nino <- pareada("Niño"); par_nina <- pareada("Niña")
+b_nino <- banda(par_nino$D); b_nina <- banda(par_nina$D)
+tabla_par <- rbind(resumen_sesgo(par_nino$D, par_nino$Y, "Cauca: cambio del sesgo Niño - Neutro"),
+                   resumen_sesgo(par_nina$D, par_nina$Y, "Cauca: cambio del sesgo Niña - Neutro"))
+names(tabla_par)[names(tabla_par) == "d_media"]   <- "cambio_d_media"
+names(tabla_par)[names(tabla_par) == "sesgo_pct"] <- "cambio_pct_de_lluvia_neutra"
+print(tabla_par, row.names = FALSE)
+guardar(tabla_par, "tabla_f3_15_cambio_sesgo_enso_pareado")
+
+# ¿Cuál fuente responde al ENSO? Cambio de la lluvia de cada fuente respecto a los años neutros,
+# pareado por estación (Cauca, año completo sin bordes). Satélite = estación - d.
+respuesta_enso <- function(f) {
+  com <- intersect(colnames(G_fase_y[[f]]), colnames(G_fase_y[["Neutro"]])); com <- com[substr(com, 1, 2) == "26"]
+  cy  <- colMeans((G_fase_y[[f]][, com] - G_fase_y[["Neutro"]][, com])[1:365, ][interior, ])
+  cx  <- colMeans(((G_fase_y[[f]][, com] - G_fase_d[[f]][, com]) -
+                   (G_fase_y[["Neutro"]][, com] - G_fase_d[["Neutro"]][, com]))[1:365, ][interior, ])
+  ic  <- function(v) paste0("[", round(mean(v) - 2 * sd(v) / sqrt(length(v)), 3), "; ",
+                            round(mean(v) + 2 * sd(v) / sqrt(length(v)), 3), "]")
+  data.frame(comparacion = paste(f, "- Neutro"), estaciones = length(com),
+             cambio_estacion_mm_dia = round(mean(cy), 3), IC95_estacion = ic(cy),
+             cambio_satelite_mm_dia = round(mean(cx), 3), IC95_satelite = ic(cx))
+}
+tabla_resp_enso <- rbind(respuesta_enso("Niño"), respuesta_enso("Niña"))
+print(tabla_resp_enso, row.names = FALSE)
+guardar(tabla_resp_enso, "tabla_f3_17_respuesta_enso_por_fuente")
+tabla_int_enso <- rbind(intervalos(b_nino, "Cauca: Niño - Neutro"), intervalos(b_nina, "Cauca: Niña - Neutro"))
+print(tabla_int_enso, row.names = FALSE)
+guardar(tabla_int_enso, "tabla_f3_16_intervalos_enso")
+
+# ---- 5.4 Figuras
+cols_fr <- setNames(hcl.colors(length(franjas_cauca), "Viridis"), franjas_cauca)
+figura("fig_f3_09_sesgo_altitud", {
+  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 2.5, 1))
+  med_fr <- sapply(franjas_cauca, function(fr) rowMeans(G_dmm[, cauca & info_est$franja == fr, drop = FALSE]))
+  yl <- range(med_fr); yl[2] <- yl[2] + 0.6 * diff(yl)
+  matplot(t_eval, med_fr, type = "l", lty = 1, lwd = 2.5, col = cols_fr, xlab = "Día del año", ylab = "mm/día",
+          ylim = yl, main = "Cauca: d(t) medio por franja de altitud", cex.main = 0.95)
+  rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = adjustcolor("grey90", 0.6), border = NA)
+  abline(h = 0, lty = 3)
+  legend("topright", paste0(franjas_cauca, " (n = ", sapply(franjas_cauca, function(fr) sum(cauca & info_est$franja == fr)), ")"),
+         col = cols_fr, lwd = 2.5, bty = "n", cex = 0.75, ncol = 2)
+  plot(t_int, an_alt$F_t, type = "l", lwd = 2, xlab = "Día del año", ylab = "F(t)",
+       main = paste0("ANOVA funcional por franja (p global ", texto_p(an_alt$p_global), ")"), cex.main = 0.95,
+       ylim = c(0, max(an_alt$F_t, an_alt$c_max) * 1.45))
+  abline(h = an_alt$c_max, lty = 2, col = "red")
+  legend("topright", c("F(t) observado", "valor crítico máximo (5 %)"), col = c("black", "red"), lty = 1:2, bty = "n", cex = 0.75)
+  plot(info_est$altitud, info_est$sesgo_pct, pch = ifelse(info_est$no_conf, 4, 19), cex = 0.8,
+       col = ifelse(cauca, "grey40", "orange"), xlab = "Altitud (m)", ylab = "Sesgo anual (%)",
+       main = paste0("Sesgo anual por estación (Cauca: rho = ", round(cor_alt$estimate, 2), ")"), cex.main = 0.95)
+  abline(h = 0, lty = 3)
+  legend("bottomright", c("valle del Cauca", "vertiente pacífica", "coordenadas no confiables"),
+         col = c("grey40", "orange", "black"), pch = c(19, 19, 4), bg = "white", cex = 0.75)
+  plot(y_anual, x_anual, log = "xy", pch = ifelse(info_est$no_conf, 4, 19), cex = 0.8,
+       col = ifelse(cauca, "grey40", "orange"), xlab = "Lluvia media de la estación (mm/día, log)",
+       ylab = "Lluvia media del satélite en su píxel (mm/día, log)",
+       main = paste0("Compresión espacial: pendiente = ", round(coef(fit_comp)[2], 2), " (1 = sin compresión)"),
+       cex.main = 0.95)
+  abline(0, 1, lty = 3)
+  xs <- range(y_anual[ok_conf]); lines(xs, exp(coef(fit_comp)[1]) * xs^coef(fit_comp)[2], lwd = 2, col = "darkred")
+  legend("topleft", c("1:1 (sin sesgo)", "ajuste sin no confiables"), lty = c(3, 1), lwd = c(1, 2),
+         col = c("black", "darkred"), bty = "n", cex = 0.75)
+}, ancho = 12, alto = 9)
+
+cols_fase <- c("Niño" = "firebrick", "Neutro" = "grey40", "Niña" = "steelblue")
+figura("fig_f3_10_sesgo_enso", {
+  par(mfrow = c(1, 3))
+  med_fase <- sapply(fases, function(f) rowMeans(G_fase_d[[f]][, es_cauca(G_fase_d[[f]]), drop = FALSE]))
+  matplot(t_eval, med_fase, type = "l", lty = 1, lwd = 2.5, col = cols_fase, xlab = "Día del año", ylab = "mm/día",
+          main = "Cauca: d(t) medio por fase ENSO", cex.main = 0.95)
+  rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = adjustcolor("grey90", 0.6), border = NA)
+  abline(h = 0, lty = 3)
+  legend("topright", fases, col = cols_fase, lwd = 2.5, bty = "n", cex = 0.8)
+  dibujar_banda(b_nino, "mm/día", paste0("Cauca: Niño - Neutro, pareado (n = ", ncol(par_nino$D), ")"), col = "firebrick")
+  dibujar_banda(b_nina, "mm/día", paste0("Cauca: Niña - Neutro, pareado (n = ", ncol(par_nina$D), ")"), col = "steelblue")
+}, ancho = 15, alto = 5)
+
+
+#####################################################################################
+# 6. Regresión funcional función-función (modelo de referencia de la fase 4)
+#####################################################################################
+# Y_i(t) = beta0(t) + ∫ beta1(s, t) X_i(s) ds + e_i(t)       (script de clase: linmod)
+#
+# Para que sea comparable con las redes de la fase 4 se usan EXACTAMENTE sus entradas y su métrica:
+#   - X = curva satelital de la fase 1 (K = 12, sqrt(mm/día)); Y = curva de la estación de la fase 1
+#     (K = 8, sqrt(mm), diaria). Mismo orden de curvas y misma partición.
+#   - Error L² relativo = 100 * sqrt( suma ||y_hat - y||² / suma ||y||² ), con la matriz de Gram de la
+#     base de las estaciones (igual que error_L2 y L2_relativo en fase4_red_funcional.py).
+# beta1 en base B-spline (12 en s x 8 en t), penalización de la segunda derivada en s y en t con un
+# lambda común elegido con VALIDACIÓN (1996-2000). La prueba (2001-2003) solo se usa para reportar.
+# Diferencia con la cabeza lineal de Fabián: linmod no admite covariables escalares (altitud, ONI).
+
+# ---- 6.1 Curvas de la fase 1
+cs1   <- read.csv(file.path(ENT1, "coeficientes_satelite.csv"))
+info1 <- read.csv(file.path(ENT1, "base_info.csv"), fileEncoding = "UTF-8")
+stopifnot(all(cs1$STATION_ID == ce$STATION_ID), all(cs1$YEAR == ce$YEAR))
+K_e1 <- info1$K[info1$fuente == "estaciones"]; K_s1 <- info1$K[info1$fuente != "estaciones"]
+base_e1 <- create.bspline.basis(c(0, 365), nbasis = K_e1, norder = 4)
+base_s1 <- create.bspline.basis(c(0, 365), nbasis = K_s1, norder = 4)
+C_e1 <- t(as.matrix(ce[,  paste0("c", 1:K_e1)]))        # K_e1 x N
+C_s1 <- t(as.matrix(cs1[, paste0("c", 1:K_s1)]))        # K_s1 x N
+Yfd1 <- fd(C_e1, base_e1)
+Xfd1 <- fd(C_s1, base_s1)
+i_tr <- which(claves$particion == "entrenamiento")
+i_va <- which(claves$particion == "validacion")
+i_te <- which(claves$particion == "prueba")
+cat("Curvas: entrenamiento", length(i_tr), "| validación", length(i_va), "| prueba", length(i_te), "\n")
+
+# ---- 6.2 Matrices de Gram y error L² (misma métrica de la fase 4)
+W_e  <- inprod(base_e1, base_e1)
+W_s  <- inprod(base_s1, base_s1)
+W_se <- inprod(base_s1, base_e1)                         # K_s1 x K_e1 (Gram cruzada)
+err_curvas <- function(Chat, idx) { E <- Chat - C_e1[, idx, drop = FALSE]; colSums(E * (W_e %*% E)) }
+norma_y    <- function(idx) colSums(C_e1[, idx, drop = FALSE] * (W_e %*% C_e1[, idx, drop = FALSE]))
+L2rel      <- function(err, idx) 100 * sqrt(sum(err) / sum(norma_y(idx)))
+err_sat <- function(idx) {                               # satélite SIN corregir (bases distintas)
+  cs_ <- C_s1[, idx, drop = FALSE]; ce_ <- C_e1[, idx, drop = FALSE]
+  colSums(cs_ * (W_s %*% cs_)) - 2 * colSums(cs_ * (W_se %*% ce_)) + colSums(ce_ * (W_e %*% ce_))
+}
+# Control de consistencia con la fase 4 (Fabián reporta 65,66 % en validación y 84,48 % en prueba)
+cat("Satélite sin corregir: validación", round(L2rel(err_sat(i_va), i_va), 2),
+    "% | prueba", round(L2rel(err_sat(i_te), i_te), 2), "%\n")
+
+# ---- 6.3 Ajuste con linmod y predicción paso a paso
+# Con beta1(s,t) = phi_s(s)' B phi_t(t) y X(s) = phi_s(s)' c:  ∫ X(s) beta1(s,t) ds = c' W_s B phi_t(t),
+# así que los coeficientes de y_hat en la base de las estaciones son  b0 + B' W_s c.
+ajustar_ff <- function(lam, idx = i_tr) {
+  b0Par <- fdPar(base_e1, int2Lfd(2), 0)
+  b1Par <- bifdPar(bifd(matrix(0, K_s1, K_e1), base_s1, base_e1), int2Lfd(2), int2Lfd(2), lam, lam)
+  linmod(Xfd1[idx], Yfd1[idx], list(b0Par, b1Par))
+}
+predecir_ff <- function(fit, idx) {
+  B  <- fit$beta1estbifd$coefs                         # K_s1 x K_e1
+  b0 <- as.vector(fit$beta0estfd$coefs)                # K_e1
+  b0 + t(B) %*% W_s %*% C_s1[, idx, drop = FALSE]      # K_e1 x n
+}
+
+# ---- 6.4 Elección de lambda con validación (y lambda = 0 como referencia sin penalizar)
+loglam <- seq(-4, 14, by = 1)       # hasta 1e14: en la primera corrida el óptimo cayó en el borde (1e8)
+tabla_lam <- do.call(rbind, lapply(c(NA, loglam), function(l) {
+  fit <- ajustar_ff(if (is.na(l)) 0 else 10^l)
+  data.frame(log10_lambda = l,
+             L2rel_entrenamiento = round(L2rel(err_curvas(predecir_ff(fit, i_tr), i_tr), i_tr), 3),
+             L2rel_validacion    = round(L2rel(err_curvas(predecir_ff(fit, i_va), i_va), i_va), 3))
+}))
+tabla_lam$log10_lambda[is.na(tabla_lam$log10_lambda)] <- -Inf      # lambda = 0
+print(tabla_lam, row.names = FALSE)
+guardar(tabla_lam, "tabla_f3_18_regresion_eleccion_lambda")
+fila_opt <- which.min(tabla_lam$L2rel_validacion)
+lam_opt  <- if (is.infinite(tabla_lam$log10_lambda[fila_opt])) 0 else 10^tabla_lam$log10_lambda[fila_opt]
+cat("lambda elegido con validación:", lam_opt, "\n")
+
+fit_ff <- ajustar_ff(lam_opt)
+C_hat_ff <- predecir_ff(fit_ff, seq_len(N))              # todas las curvas (para exportar)
+
+# Verificación: la predicción paso a paso coincide con el ajuste de linmod (entrenamiento)
+dif_linmod <- max(abs(eval.fd(t_eval, fit_ff$yhatfdobj) - eval.fd(t_eval, fd(C_hat_ff[, i_tr], base_e1))))
+cat("Predicción paso a paso vs linmod (entrenamiento): máx. diferencia =", signif(dif_linmod, 3), "\n")
+
+# ---- 6.5 Comparación con la fase 4 (mismas curvas, misma métrica)
+leer_pred <- function(tipo, s) {
+  P <- read.csv(file.path(".", "salidas_fase4", sprintf("pred_coef_%s_semilla%d.csv", tipo, s)))
+  stopifnot(all(P$STATION_ID == claves$STATION_ID), all(P$YEAR == claves$YEAR))
+  t(as.matrix(P[, paste0("c", 1:K_e1)]))
+}
+err_todos <- list(satelite = err_sat(seq_len(N)), regresion = err_curvas(C_hat_ff, seq_len(N)))
+for (tipo in c("lineal", "kan", "mlp")) {
+  e_sem <- sapply(0:2, function(s) err_curvas(leer_pred(tipo, s), seq_len(N)))      # N x 3
+  err_todos[[tipo]] <- rowMeans(e_sem)                    # promedio de las 3 semillas (como Fabián)
+  attr(err_todos[[tipo]], "sd_val")  <- sd(apply(e_sem, 2, function(e) L2rel(e[i_va], i_va)))
+  attr(err_todos[[tipo]], "sd_test") <- sd(apply(e_sem, 2, function(e) L2rel(e[i_te], i_te)))
+}
+nombres_mod <- c(satelite = "satélite sin corregir", regresion = "regresión funcional (linmod)",
+                 lineal = "red - cabeza lineal", kan = "red - cabeza KAN", mlp = "red - cabeza MLP")
+tabla_mod <- data.frame(modelo = nombres_mod[names(err_todos)],
+  L2rel_validacion = sapply(err_todos, function(e) round(L2rel(e[i_va], i_va), 2)),
+  L2rel_prueba     = sapply(err_todos, function(e) round(L2rel(e[i_te], i_te), 2)),
+  sd_semillas_prueba = sapply(err_todos, function(e) if (is.null(attr(e, "sd_test"))) NA else round(attr(e, "sd_test"), 2)),
+  row.names = NULL)
+# % de valores diarios negativos en prueba (escala sqrt): se recortan a 0 al pasar a mm (rubrica 4.2)
+P_dia <- eval.basis(t_eval[1:365] + 0.5, base_e1)                    # 365 x K_e1 (centro de cada día)
+pct_neg <- function(Chat) round(100 * mean(P_dia %*% Chat[, i_te, drop = FALSE] < 0), 2)
+tabla_mod$pct_negativos_prueba <- c(NA, pct_neg(C_hat_ff), pct_neg(leer_pred("lineal", 0)),
+                                    pct_neg(leer_pred("kan", 0)), pct_neg(leer_pred("mlp", 0)))
+print(tabla_mod, row.names = FALSE)
+guardar(tabla_mod, "tabla_f3_19_regresion_vs_redes")
+
+# IC bootstrap por estación (prueba) y Wilcoxon pareado, con el mismo esquema de la fase 4
+est_te <- claves$STATION_ID[i_te]
+sum_est <- function(e) tapply(e[i_te], est_te, sum)
+E_est  <- lapply(err_todos, sum_est)
+nor_te <- tapply(norma_y(i_te), est_te, sum)
+cont   <- t(replicate(2000, tabulate(sample(length(nor_te), replace = TRUE), nbins = length(nor_te))))
+l2b    <- function(E) 100 * sqrt(as.vector(cont %*% E) / as.vector(cont %*% nor_te))
+# Además del agregado (bootstrap) se reporta lo que pasa en la estación TÍPICA (mediana de la diferencia
+# de error relativo por estación y % de estaciones donde gana el modelo a), y se repite por subconjunto:
+# así se ve si una ganancia viene de toda la región o de unas pocas estaciones (p. ej. las no confiables).
+ids_te <- as.numeric(names(nor_te))
+subconj <- list("Todas"            = rep(TRUE, length(nor_te)),
+                "Sin no confiables" = !(ids_te %in% NO_CONFIABLES),
+                "Cauca"            = substr(names(nor_te), 1, 2) == "26",
+                "Pacífico"         = substr(names(nor_te), 1, 2) != "26")
+comparar <- function(a, b, sub = "Todas") {
+  k  <- subconj[[sub]]
+  Ea <- E_est[[a]][k]; Eb <- E_est[[b]][k]; nt <- nor_te[k]; cb <- cont[, k, drop = FALSE]
+  dif_b <- 100 * (sqrt(as.vector(cb %*% Ea) / as.vector(cb %*% nt)) - sqrt(as.vector(cb %*% Eb) / as.vector(cb %*% nt)))
+  ic <- quantile(dif_b, c(0.025, 0.975))
+  ra <- sqrt(Ea / nt); rb <- sqrt(Eb / nt)
+  data.frame(comparacion = paste(nombres_mod[a], "-", nombres_mod[b]), estaciones = sub, n = sum(k),
+             dif_L2rel_pp = round(100 * (sqrt(sum(Ea) / sum(nt)) - sqrt(sum(Eb) / sum(nt))), 2),
+             IC95_inf = round(ic[1], 2), IC95_sup = round(ic[2], 2), IC_excluye_0 = ic[1] > 0 | ic[2] < 0,
+             mediana_dif_por_estacion_pp = round(100 * median(ra - rb), 2),
+             pct_estaciones_gana_a = round(100 * mean(ra < rb), 1),
+             wilcoxon_p = signif(wilcox.test(ra, rb, paired = TRUE)$p.value, 3), row.names = NULL)
+}
+tabla_comp_ff <- do.call(rbind, lapply(names(subconj), function(sb)
+  rbind(comparar("regresion", "satelite", sb), comparar("lineal", "regresion", sb),
+        comparar("kan", "regresion", sb), comparar("mlp", "regresion", sb))))
+print(tabla_comp_ff, row.names = FALSE)
+guardar(tabla_comp_ff, "tabla_f3_20_regresion_comparaciones_bootstrap")
+
+# ---- 6.6 R²(t) en prueba (como en el script de clase)
+y_te  <- eval.fd(t_eval, Yfd1[i_te])
+R2_t  <- function(Chat) { yh <- eval.fd(t_eval, fd(Chat, base_e1)); 1 - rowSums((y_te - yh)^2) / rowSums((y_te - rowMeans(y_te))^2) }
+R2_ff  <- R2_t(C_hat_ff[, i_te])
+R2_lin <- R2_t(leer_pred("lineal", 0)[, i_te])
+R2_kan <- R2_t(leer_pred("kan", 0)[, i_te])
+tabla_R2 <- data.frame(modelo = c("regresión funcional", "red - cabeza lineal (semilla 0)", "red - cabeza KAN (semilla 0)"),
+                       R2_medio = round(c(mean(R2_ff[interior]), mean(R2_lin[interior]), mean(R2_kan[interior])), 3),
+                       R2_min = round(c(min(R2_ff[interior]), min(R2_lin[interior]), min(R2_kan[interior])), 3),
+                       R2_max = round(c(max(R2_ff[interior]), max(R2_lin[interior]), max(R2_kan[interior])), 3))
+print(tabla_R2, row.names = FALSE)
+guardar(tabla_R2, "tabla_f3_21_regresion_R2_prueba")
+
+# ---- 6.7 Predicciones exportadas con el formato de la fase 4 (para la evaluación 4.4 de Hoyos)
+pred_ff <- data.frame(claves[, c("STATION_ID", "YEAR", "particion")], t(C_hat_ff))
+names(pred_ff)[-(1:3)] <- paste0("c", 1:K_e1)
+write.csv(pred_ff, file.path(OUT, "pred_coef_regresion_funcional.csv"), row.names = FALSE)
+
+# ---- 6.8 Figuras
+semanas <- seq(0, 365, length.out = 53)
+B1mat   <- eval.bifd(semanas, semanas, fit_ff$beta1estbifd)
+j_med   <- i_te[which.min(abs(err_todos$regresion[i_te] - median(err_todos$regresion[i_te])))]   # curva típica
+figura("fig_f3_11_regresion_funcional", {
+  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 2.5, 1))
+  persp(semanas, semanas, B1mat, theta = 30, phi = 30, col = "lightblue", border = "grey40",
+        xlab = "s (satélite)", ylab = "t (estación)", zlab = "beta1(s,t)", main = "Superficie beta1(s, t)",
+        ticktype = "simple", cex.main = 0.95)
+  image(semanas, semanas, B1mat, col = hcl.colors(40, "Blue-Red 3"),
+        zlim = c(-1, 1) * max(abs(B1mat)), xlab = "s: día del satélite", ylab = "t: día de la estación",
+        main = paste0("beta1(s, t), lambda = ", signif(lam_opt, 2)), cex.main = 0.95)
+  contour(semanas, semanas, B1mat, nlevels = 12, labcex = 0.6, add = TRUE)
+  abline(0, 1, lty = 2)
+  matplot(t_eval, cbind(R2_ff, R2_lin, R2_kan), type = "l", lty = c(1, 2, 2), lwd = c(3, 2, 2),
+          col = c("darkred", "grey40", "darkgreen"), ylim = c(min(0, R2_ff, R2_lin, R2_kan), 1),
+          xlab = "Día del año", ylab = expression(R^2*(t)), main = "R²(t) en prueba (2001-2003)", cex.main = 0.95)
+  rect(c(0, 365 - BORDE), -10, c(BORDE, 365), 10, col = adjustcolor("grey90", 0.6), border = NA)
+  abline(h = 0, lty = 3)
+  legend("bottomright", c("regresión funcional", "red lineal", "red KAN"), col = c("darkred", "grey40", "darkgreen"),
+         lty = c(1, 2, 2), lwd = c(3, 2, 2), bty = "n", cex = 0.8)
+  yv <- eval.fd(t_eval, Yfd1[j_med]); xv <- eval.fd(t_eval, Xfd1[j_med])
+  hv <- eval.fd(t_eval, fd(C_hat_ff[, j_med, drop = FALSE], base_e1))
+  yl <- range(yv, xv, hv); yl[2] <- yl[2] + 0.25 * diff(yl)
+  matplot(t_eval, cbind(yv, xv, hv), type = "l", lty = c(1, 2, 1), lwd = c(3, 2, 2), ylim = yl,
+          col = c("slategray", "darkturquoise", "darkred"), xlab = "Día del año", ylab = "sqrt(mm/día)",
+          main = paste("Curva típica de prueba:", claves$STATION_ID[j_med], claves$YEAR[j_med]), cex.main = 0.95)
+  legend("top", c("estación", "satélite sin corregir", "regresión funcional"), ncol = 3,
+         col = c("slategray", "darkturquoise", "darkred"), lty = c(1, 2, 1), lwd = c(3, 2, 2), bty = "n", cex = 0.8)
 }, ancho = 12, alto = 9)

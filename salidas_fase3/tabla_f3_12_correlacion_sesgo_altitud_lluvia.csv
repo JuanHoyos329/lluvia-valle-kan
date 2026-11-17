@@ -1,0 +1,3 @@
+"relacion","estaciones","valor","IC95_inf","IC95_sup","valor_p"
+"Cauca: altitud vs. sesgo anual (%) - rho de Spearman",188,0.45,NA,NA,8.78e-11
+"Todas sin no confiables: pendiente de log(satélite) ~ log(estación)",233,0.463,0.393,0.532,6.89e-30
