@@ -40,7 +40,7 @@ MOSTRAR_GRAFICAS = False
 
 # True: entrena todo desde cero (lo que se entrega). False: si ya existen los modelos guardados en
 # salidas_fase4/modelos/, los carga en vez de reentrenar (para iterar rápido sobre los bloques 6+).
-REENTRENAR = False
+REENTRENAR = True
 
 def mostrar():
     if MOSTRAR_GRAFICAS:
