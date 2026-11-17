@@ -1,17 +1,17 @@
-install.packages("SuppDists")
 
 library(fda)
 library(fda.usc)
 library(readxl)
 
-ENT0 <- "./salidas_preprocesamiento"   
-ENT1 <- "./salidas_fase1"              
-ENT4 <- "./salidas_fase4"              
+ENT0 <- "./salidas_preprocesamiento"   # Hoyos
+ENT1 <- "./salidas_fase1"              # Daniela
+ENT4 <- "./salidas_fase4"              # Fabián (solo para comprobar la fase ENSO)
+DATOS <- "./Datos"                     # ONI de la NOAA CPC
 OUT  <- "./salidas_fase2"
 FIG  <- file.path(OUT, "figuras")
 dir.create(FIG, showWarnings = FALSE, recursive = TRUE)
 
-GUARDAR_FIGURAS <- TRUE                
+GUARDAR_FIGURAS <- TRUE                # FALSE: las figuras solo se imprimen en pantalla
 set.seed(2026)
 
 # Dibuja una figura en pantalla (si la sesión es interactiva) y la guarda en salidas_fase2/figuras
@@ -57,12 +57,35 @@ C_sat <- t(as.matrix(cs[, paste0("c", 1:K_sat)]))     # K_sat x N
 N <- ncol(C_est)
 
 # ---- Información de cada estación (Hoyos) y fase ENSO de cada año (Fabián)
-ranking <- as.data.frame(read_excel(file.path(ENT0, "ranking_estaciones.xlsx")))
-pixeles <- as.data.frame(read_excel(file.path(ENT0, "estacion_pixel.xlsx")))
-enso    <- read.csv(file.path(ENT4, "fase_enso_por_anio.csv"))
+ranking <- as.data.frame(read_excel(file.path(ENT0, "ranking_estaciones.xlsx")))   # altitud y coordenadas
+pixeles <- as.data.frame(read_excel(file.path(ENT0, "estacion_pixel.xlsx")))       # fila y columna del píxel
+
+# Fase ENSO de cada año con la regla de episodios de la NOAA CPC (la misma de la fase 4):
+# un episodio son >= 5 temporadas trimestrales seguidas con ONI >= 0,5 (Niño) o <= -0,5 (Niña);
+# el año toma la fase si el episodio cubre >= 6 de sus 12 temporadas; si no, es Neutro.
+oni <- read.csv(file.path(DATOS, "oni_cpc.csv"))
+en_episodio <- function(cumple, minimo = 5) {
+  r <- rle(cumple); r$values <- r$values & r$lengths >= minimo; inverse.rle(r)
+}
+oni$nino <- en_episodio(oni$ANOM >= 0.5); oni$nina <- en_episodio(oni$ANOM <= -0.5)
+enso <- data.frame(YR = sort(unique(oni$YR)))
+enso$ONI_medio       <- as.vector(tapply(oni$ANOM, oni$YR, mean))
+enso$temporadas_nino <- as.vector(tapply(oni$nino, oni$YR, sum))
+enso$temporadas_nina <- as.vector(tapply(oni$nina, oni$YR, sum))
+enso$fase_enso <- ifelse(enso$temporadas_nino >= 6, "Niño", ifelse(enso$temporadas_nina >= 6, "Niña", "Neutro"))
+enso <- enso[enso$YR >= 1981 & enso$YR <= 2003, ]
+print(table(enso$fase_enso))
+guardar(enso, "tabla00_fase_enso_por_anio")
+if (file.exists(file.path(ENT4, "fase_enso_por_anio.csv"))) {
+  enso4 <- read.csv(file.path(ENT4, "fase_enso_por_anio.csv"))
+  stopifnot("La fase ENSO no coincide con la de la fase 4" =
+              identical(enso$fase_enso, enso4$fase_enso[match(enso$YR, enso4$YR)]))
+  cat("Fase ENSO: coincide con la de la fase 4 en los 23 años\n")
+}
 
 meta <- data.frame(STATION_ID = ce$STATION_ID, YEAR = ce$YEAR, particion = ce$particion)
-im <- match(meta$STATION_ID, ranking$STATION_ID); stopifnot(!anyNA(im))
+im <- match(meta$STATION_ID, ranking$STATION_ID)
+stopifnot("Hay estaciones sin ubicación en ranking_estaciones.xlsx" = !anyNA(im))
 meta$nombre     <- ifelse(is.na(ranking$STATION_NAME[im]), "(sin nombre)", ranking$STATION_NAME[im])
 meta$altitud    <- ranking$altitud[im]
 meta$fuente_alt <- ranking$fuente_alt[im]
@@ -114,6 +137,11 @@ clave <- paste(d$STATION_ID, d$YEAR, d$MONTH, d$DAY)
 pos28 <- match(paste(d$STATION_ID[es29], d$YEAR[es29], 2, 28), clave)
 d$VALUE[pos28] <- d$VALUE[pos28] + d$VALUE[es29]
 d <- d[!es29, ]
+# Los coeficientes de la fase 1 deben venir de ESTOS datos: mismas estaciones-año y en el mismo orden.
+# Si falla, el preprocesamiento cambió después de la fase 1: hay que volver a correr la fase 1.
+pares_d <- unique(d[, c("STATION_ID", "YEAR")])
+stopifnot("Los coeficientes de la fase 1 no corresponden a los datos del preprocesamiento: vuelva a correr la fase 1" =
+            nrow(pares_d) == N && all(pares_d$STATION_ID == ce$STATION_ID) && all(pares_d$YEAR == ce$YEAR))
 stopifnot(nrow(d) == 365 * N)
 t_dia <- (1:365) - 0.5
 Y_obs <- matrix(sqrt(d$VALUE), nrow = 365)           # 365 x N, mismo orden que ce
@@ -329,6 +357,7 @@ cov_est_paso <- b_cov_est %*% Sigma_c_est %*% t(b_cov_est)
 cov_sat_paso <- b_cov_sat %*% Sigma_c_sat %*% t(b_cov_sat)
 cov_est <- eval.bifd(t_cov, t_cov, var.fd(Y_fd))
 cov_sat <- eval.bifd(t_cov, t_cov, var.fd(X_fd))
+
 cor_est <- cor.fd(t_cov, Y_fd)
 cor_sat <- cor.fd(t_cov, X_fd)
 cor_est_paso <- cov_est_paso / sqrt(diag(cov_est_paso) %o% diag(cov_est_paso))
@@ -564,6 +593,20 @@ cat("MBD por definición vs fbplot (80 curvas, max |dif|):", signif(verif_MBD, 3
 # ---- Profundidad modal (Cuevas et al., 2007), como en clase
 mode_est <- depth.mode(fdata(t(Y_prof), t_prof, rangval), trim = 0.25)
 mode_sat <- depth.mode(fdata(t(X_prof), t_prof, rangval), trim = 0.25)
+# ¿Ordenan igual las tres profundidades? (correlación de rangos de Spearman; MBD sale de fbplot)
+mbd_est <- fbplot(Y_prof, t_prof, method = "MBD", plot = FALSE)$depth
+mbd_sat <- fbplot(X_prof, t_prof, method = "MBD", plot = FALSE)$depth
+concordancia <- data.frame(
+  fuente = c("Estaciones", "Satélite"),
+  FM_vs_MBD = c(cor(fm_est$dep, mbd_est, method = "spearman"), cor(fm_sat$dep, mbd_sat, method = "spearman")),
+  FM_vs_modal = c(cor(fm_est$dep, mode_est$dep, method = "spearman"), cor(fm_sat$dep, mode_sat$dep, method = "spearman")),
+  MBD_vs_modal = c(cor(mbd_est, mode_est$dep, method = "spearman"), cor(mbd_sat, mode_sat$dep, method = "spearman")),
+  mediana_FM = c(paste(meta$nombre[fm_est$lmed], meta$YEAR[fm_est$lmed]), paste("píxel", meta_sat$pixel[fm_sat$lmed], meta_sat$YEAR[fm_sat$lmed])),
+  mediana_MBD = c(paste(meta$nombre[which.max(mbd_est)], meta$YEAR[which.max(mbd_est)]), paste("píxel", meta_sat$pixel[which.max(mbd_sat)], meta_sat$YEAR[which.max(mbd_sat)])),
+  mediana_modal = c(paste(meta$nombre[mode_est$lmed], meta$YEAR[mode_est$lmed]), paste("píxel", meta_sat$pixel[mode_sat$lmed], meta_sat$YEAR[mode_sat$lmed])))
+concordancia[, 2:4] <- round(concordancia[, 2:4], 3)
+print(concordancia)
+guardar(concordancia, "tabla11b_concordancia_profundidades")
 
 # ---- Medidas de centralidad: media, mediana (curva más profunda FM) y media recortada al 25 %
 centralidad <- function(fm, M, tt, media_vec, tf) data.frame(
@@ -624,7 +667,6 @@ cat("Estaciones distintas entre las curvas atípicas (crudo):", length(unique(at
 atipicos_sat_crudo <- data.frame(meta_sat[bx_sat$outpoint, ], prof_MBD = round(bx_sat$depth[bx_sat$outpoint], 4),
                                  tipo = ifelse(nivel_rel(X_prof)[bx_sat$outpoint] > 0, "más lluviosa", "más seca"))
 guardar(atipicos_sat_crudo, "tabla14_atipicos_satelite_crudo")
-
 cat("Atípicos (crudo, satélite):", nrow(atipicos_sat_crudo), "de", N_sat, "\n")
 
 # ---- Anomalías: curva menos la curva media de su propio sitio
@@ -649,8 +691,13 @@ bxa_est <- fbplot(A_prof, t_prof, method = "MBD", plot = FALSE)
 bxa_sat <- fbplot(AX_prof, t_prof, method = "MBD", plot = FALSE)
 cat("Atípicos por la regla del boxplot en anomalías -> estaciones:", length(bxa_est$outpoint), "de", ncol(A_prof),
     "| satélite:", length(bxa_sat$outpoint), "de", ncol(AX_prof), "\n")
-# Resultado: ninguna. Al quitar el nivel de cada sitio, ninguna estación-año sale de los bigotes:
-# los atípicos de las curvas crudas eran de NIVEL (ubicación), no de forma ni de año.
+# Al quitar el nivel de cada sitio casi ninguna estación-año sale de los bigotes: los atípicos de
+# las curvas crudas eran de NIVEL (ubicación), no de forma ni de año. Las que queden se listan aquí.
+atip_an_box <- data.frame(meta_an[bxa_est$outpoint, c("STATION_ID", "nombre", "YEAR", "altitud", "region", "fase_enso")],
+                          prof_MBD = round(bxa_est$depth[bxa_est$outpoint], 4),
+                          anomalia_media = round(colMeans(A_prof)[bxa_est$outpoint], 3))
+print(atip_an_box)
+guardar(atip_an_box, "tabla15b_atipicos_boxplot_anomalias")
 
 # (a) Una curva por AÑO: anomalía media de las estaciones de la cuenca del Cauca (y de sus píxeles) en ese año.
 #     Con 23 curvas, el boxplot funcional señala los años atípicos de toda la región.
@@ -723,7 +770,7 @@ figura("fase2_fig11_boxplot_anomalias", {
   title(paste0("Estaciones: anomalía de cada estación-año (", ncol(A_prof), ")")); abline(h = 0, lty = 3)
   fbplot(anual_and_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Estaciones cuenca del Cauca: anomalía media de cada año (23)"); abline(h = 0, lty = 3)
+  title("Cauca, estaciones: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
   at <- anios_tab$YEAR[anios_tab$atipico_estaciones]
   legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
   fbplot(AX_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-3, 3), xlab = "Día del año",
@@ -731,7 +778,7 @@ figura("fase2_fig11_boxplot_anomalias", {
   title(paste0("Satélite: anomalía de cada píxel-año (", ncol(AX_prof), ")")); abline(h = 0, lty = 3)
   fbplot(anual_sat_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Satélite, píxeles del Cauca: anomalía media de cada año (23)"); abline(h = 0, lty = 3)
+  title("Cauca, satélite: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
   at <- anios_tab$YEAR[anios_tab$atipico_satelite]
   legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
 }, ancho = 11, alto = 8)
@@ -739,9 +786,11 @@ figura("fase2_fig11_boxplot_anomalias", {
 figura("fase2_fig12_profundidad_centralidad", {
   par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
   orden <- order(fm_est$dep, decreasing = TRUE)
-  grises <- gray(seq(0.85, 0.15, length.out = N))         # las menos profundas, más oscuras y encima
+  grises <- gray(seq(0.85, 0.15, length.out = N))         # claras = más profundas (se dibujan encima)
   matplot(t_prof, Y_prof[, rev(orden)], type = "l", lty = 1, col = adjustcolor(rev(grises), 0.25),
           xlab = "Día del año", ylab = "sqrt(mm/día)", ylim = c(0, 7), main = "Estaciones ordenadas por profundidad FM")
+  legend("topright", c("Más profunda (centro)", "Menos profunda (extremos)"), col = c("grey85", "grey15"),
+         lwd = 3, bty = "n", cex = 0.8)
   matplot(t_prof, Y_prof, type = "l", lty = 1, col = adjustcolor("grey70", 0.05), ylim = c(0, 4),
           xlab = "Día del año", ylab = "sqrt(mm/día)", main = "Medidas de centralidad (estaciones)")
   lines(t_fino, media_est, lwd = 3, col = "blue")
@@ -874,7 +923,9 @@ anom_anio_txt$fase_enso <- enso$fase_enso[match(anom_anio_txt$YEAR, enso$YR)]
 guardar(anom_anio_txt, "tabla21_anomalia_pct_por_anio_cauca")
 
 
-# resumen
+#####################################################################################
+# 8. Tabla resumen
+#####################################################################################
 resumen <- data.frame(
   fuente = c("Estaciones", "Satélite"),
   curvas = c(N, N_sat),
@@ -894,4 +945,4 @@ print(resumen)
 guardar(resumen, "tabla22_resumen")
 
 writeLines(capture.output(sessionInfo()), file.path(OUT, "sessionInfo_fase2.txt"))
-cat("\nTablas en", OUT, "y figuras en", FIG, "\n")
+cat("\nListo. Tablas en", OUT, "y figuras en", FIG, "\n")

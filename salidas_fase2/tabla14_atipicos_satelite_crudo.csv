@@ -1,4 +1,3 @@
 "pixel","YEAR","particion","fase_enso","altitud","n_estaciones_pixel","region","franja","prof_MBD","tipo"
-"33-4",1984,"entrenamiento","Neutro",139.642093916613,1,"Pacífico Dagua-Anchicayá","< 800 m",0.0189,"más lluviosa"
-"33-4",1987,"entrenamiento","Niño",139.642093916613,1,"Pacífico Dagua-Anchicayá","< 800 m",0.0236,"más lluviosa"
-"33-4",1995,"entrenamiento","Neutro",139.642093916613,1,"Pacífico Dagua-Anchicayá","< 800 m",0.0818,"más lluviosa"
+"33-4",1984,"entrenamiento","Neutro",139.642093916613,1,"Pacífico Dagua-Anchicayá","< 800 m",0.0188,"más lluviosa"
+"33-4",1995,"entrenamiento","Neutro",139.642093916613,1,"Pacífico Dagua-Anchicayá","< 800 m",0.0816,"más lluviosa"
