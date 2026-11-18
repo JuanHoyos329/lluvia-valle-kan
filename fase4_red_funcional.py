@@ -42,7 +42,12 @@ MOSTRAR_GRAFICAS = False
 # salidas_fase4/modelos/, los carga en vez de reentrenar (para iterar rápido sobre los bloques 6+).
 REENTRENAR = True
 
-def mostrar():
+def mostrar(nombre):
+    """Guarda la figura actual en salidas_fase4/figuras/<nombre>.png (para el informe) y la muestra
+    en pantalla si MOSTRAR_GRAFICAS es True."""
+    carpeta = Path("./salidas_fase4/figuras")
+    carpeta.mkdir(parents=True, exist_ok=True)
+    plt.savefig(carpeta / f"{nombre}.png", dpi=150, bbox_inches="tight")
     if MOSTRAR_GRAFICAS:
         plt.show()
     else:
@@ -291,7 +296,7 @@ ax[2].plot(t_g, mu_g - 2 * sd_s[m_show] * (P_g @ fpca["psi"][:, m_show]), "m--",
 ax[2].set(xlabel="Día del año", ylabel="sqrt(mm/día)", title=f"Efecto de la componente {m_show+1}")
 ax[2].legend(fontsize=8)
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig01_fpca_estaciones")
 
 # Salidas del bloque 1
 verif_W.to_csv(OUT / "verificacion_W_R.csv", index=False)
@@ -598,7 +603,7 @@ ax[1].set(xlabel="Día del año", ylabel="w_k(t) (escalada a máx. 1)",
           title="Funciones de pesos del codificador (cabeza lineal, semilla 0)")
 ax[1].legend(fontsize=7, ncol=2)
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig02_aprendizaje_y_wk_lineal")
 
 print("\nBloque 2 listo.")
 
@@ -675,7 +680,7 @@ ax[1].axhline(0, color="k", lw=0.5)
 ax[1].set(xlabel="Día del año", ylabel="sqrt(mm/día)", title="Intercepto funcional y efectos escalares")
 ax[1].legend(fontsize=8)
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig03_beta_cabeza_lineal")
 
 print("\nBloque 3 listo.")
 
@@ -776,7 +781,7 @@ for j in range(3):
     ax[j].set_title(f"x{j+1}"); ax[j].legend(fontsize=8)
 plt.suptitle(f"Prueba sintética de la KAN con B-splines (RMSE = {rmse_sint:.1e})")
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig04_kan_sintetica")
 print("\nBloque 4 listo.")
 
 
@@ -903,36 +908,51 @@ print("\nAblación - error L² relativo (%), media y desviación de 3 semillas:\
 tabla_abl.to_csv(OUT / "ablacion_resultados.csv", index=False)
 
 
-# --- Diferencias entre cabezas en PRUEBA: IC bootstrap por estación y Wilcoxon pareado -----------
+# --- Diferencias entre cabezas en PRUEBA: IC bootstrap por estación, Wilcoxon y lectura por estación
 # Error de cada cabeza por curva = promedio de las 3 semillas. Se remuestrean estaciones (no curvas)
 # porque las curvas de una misma estación no son independientes.
-est_te = coef_est["STATION_ID"].to_numpy()[idx_te]
-estaciones_te, pos = np.unique(est_te, return_inverse=True)
-norma_te = np.bincount(pos, weights=norma2(C_est[idx_te]))
-def suma_por_estacion(err):
-    return np.bincount(pos, weights=err[idx_te])
-E_est = {t: suma_por_estacion(np.mean([err_curva[(t, s)] for s in SEMILLAS], axis=0)) for t in ("lineal", "kan", "mlp")}
-E_est["satelite"] = suma_por_estacion(err_sat)
+# Además del agregado (lo que pide la regla del IC) se reporta la estación típica: mediana de la
+# diferencia por estación y % de estaciones donde gana la primera cabeza. Y se separa por región
+# (zona hidrográfica del código IDEAM: 26 = Cauca, 53/54 = Pacífico, igual que la fase 3) y sin las
+# estaciones con coordenadas no confiables (su píxel, y por tanto su curva satelital, puede ser otro).
+NO_CONFIABLES = [5300800101, 5300900102, 5300600101, 5300000203, 2621500105, 5300000202,
+                 5301300101, 5301000103, 5400000201, 2621500104, 5300900101]
+ids_all = coef_est["STATION_ID"].to_numpy()
+region_curva = np.where(pd.Series(ids_all).astype(str).str[:2] == "26", "Cauca", "Pacífico")
+SUBCONJUNTOS = {"Todas": np.ones(len(ids_all), bool),
+                "Sin no confiables": ~np.isin(ids_all, NO_CONFIABLES),
+                "Cauca": region_curva == "Cauca",
+                "Pacífico": region_curva == "Pacífico",
+                "Pacífico sin no confiables": (region_curva == "Pacífico") & ~np.isin(ids_all, NO_CONFIABLES)}
 
+err_prom = {t: np.mean([err_curva[(t, s)] for s in SEMILLAS], axis=0) for t in ("lineal", "kan", "mlp")}
+err_prom["satelite"] = L2_satelite(np.arange(len(C_sat)))
+norma_all = norma2(C_est)
 rng = np.random.default_rng(SEED)
 n_boot = 2000
-conteos = np.stack([np.bincount(rng.integers(0, len(estaciones_te), len(estaciones_te)),
-                                minlength=len(estaciones_te)) for _ in range(n_boot)])   # n_boot x n_est
-def l2rel_boot(E):
-    return 100 * np.sqrt((conteos @ E) / (conteos @ norma_te))
 comparaciones = []
-for a, b in [("kan", "lineal"), ("mlp", "lineal"), ("kan", "mlp"), ("lineal", "satelite")]:
-    dif_obs = 100 * (np.sqrt(E_est[a].sum() / norma_te.sum()) - np.sqrt(E_est[b].sum() / norma_te.sum()))
-    dif_b = l2rel_boot(E_est[a]) - l2rel_boot(E_est[b])
-    li, ls = np.percentile(dif_b, [2.5, 97.5])
-    rel_a = np.sqrt(E_est[a] / norma_te); rel_b = np.sqrt(E_est[b] / norma_te)   # L² relativo por estación
-    p_w = wilcoxon(rel_a, rel_b).pvalue
-    comparaciones.append({"comparacion": f"{a} - {b}", "dif_L2rel_pp": dif_obs, "IC95_inf": li, "IC95_sup": ls,
-                          "IC_excluye_0": (li > 0) or (ls < 0), "wilcoxon_p": p_w,
-                          "n_estaciones": len(estaciones_te)})
+for nombre_sub, mascara in SUBCONJUNTOS.items():
+    idx = idx_te[mascara[idx_te]]
+    est, pos = np.unique(ids_all[idx], return_inverse=True)
+    nor = np.bincount(pos, weights=norma_all[idx])
+    E = {t: np.bincount(pos, weights=e[idx]) for t, e in err_prom.items()}
+    conteos = np.stack([np.bincount(rng.integers(0, len(est), len(est)), minlength=len(est))
+                        for _ in range(n_boot)])                             # n_boot x n_estaciones
+    l2b = lambda Et: 100 * np.sqrt((conteos @ Et) / (conteos @ nor))
+    for a, b in [("kan", "lineal"), ("mlp", "lineal"), ("kan", "mlp"), ("lineal", "satelite")]:
+        dif_obs = 100 * (np.sqrt(E[a].sum() / nor.sum()) - np.sqrt(E[b].sum() / nor.sum()))
+        li, ls = np.percentile(l2b(E[a]) - l2b(E[b]), [2.5, 97.5])
+        dif_est = 100 * (np.sqrt(E[a] / nor) - np.sqrt(E[b] / nor))         # L² relativo por estación
+        comparaciones.append({
+            "subconjunto": nombre_sub, "comparacion": f"{a} - {b}", "n_estaciones": len(est),
+            "dif_L2rel_pp": dif_obs, "IC95_inf": li, "IC95_sup": ls, "IC_excluye_0": (li > 0) or (ls < 0),
+            "mediana_dif_por_estacion_pp": np.median(dif_est),
+            "pct_estaciones_gana_primera": 100 * np.mean(dif_est < 0),
+            "wilcoxon_p": wilcoxon(dif_est).pvalue if len(est) > 5 else np.nan})
 tabla_comp = pd.DataFrame(comparaciones)
-print("\nDiferencias en PRUEBA (puntos porcentuales de L² relativo; negativo = la primera es mejor):\n",
-      tabla_comp.round(4).to_string(index=False))
+with pd.option_context("display.width", 220):
+    print("\nDiferencias en PRUEBA (puntos de L² relativo; negativo = la primera cabeza es mejor):\n",
+          tabla_comp.round(3).to_string(index=False))
 tabla_comp.to_csv(OUT / "ablacion_comparaciones_bootstrap.csv", index=False)
 
 
@@ -952,7 +972,7 @@ for i in range(D_IN):
 ax.flat[0].legend(fontsize=7)
 plt.suptitle("Activaciones de la 1.ª capa de la KAN en el rango de los datos (percentiles 1-99)")
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig05_activaciones_kan")
 print("\nBloque 5 listo.")
 
 
@@ -1072,15 +1092,36 @@ for tipo in ("lineal", "kan", "mlp"):
 # (el objetivo general del proyecto). El mismo exportar_csv_mm sirve para las reservadas.
 exportar_csv_mm("kan", idx_te, OUT / "predicciones_prueba_kan_mm.csv")
 
-# Ejemplo: una curva de prueba en mm (observado, satélite, red)
-j = idx_te[np.argmax(obs_anual[idx_te] > np.median(obs_anual[idx_te]))]
-fig, ax = plt.subplots(figsize=(11, 3.8))
-ax.bar(np.arange(1, 366), Y_mm[j], color="lightgray", width=1.0, label="observado (mm/día)")
-for tipo, col in [("lineal", "#2a6f97"), ("kan", "#b23a48"), ("mlp", "#e07a5f")]:
-    ax.plot(np.arange(1, 366), Y_mm_pred[tipo][j], color=col, lw=1.8, label=f"red - {tipo}")
-ax.set(xlabel="Día del año", ylabel="mm/día",
-       title=f"Estación {coef_est['STATION_ID'].iloc[j]} - {coef_est['YEAR'].iloc[j]} (prueba): reconstrucción en mm")
-ax.legend(fontsize=8)
+# Ejemplo en mm, en una escala comparable: todo se agrega a PÉNTADAS (mm/día promedio de cada
+# péntada), que es la resolución del satélite. Comparar barras diarias contra curvas suaves no es justo:
+# la red predice el valor esperado, no el aguacero de un día. Se muestran la estación de prueba con
+# error mediano de la KAN en el Cauca y en el Pacífico (región por código IDEAM: 26 = Cauca).
+dias_mes = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+pent_de_dia = np.concatenate([np.minimum(np.arange(d) // 5, 5) + 6 * m for m, d in enumerate(dias_mes)])  # 365 -> 0..71
+def a_pentadas(Y):                                                    # N x 365 -> N x 72 (mm/día)
+    return np.stack([Y[:, pent_de_dia == k].mean(1) for k in range(72)], axis=1)
+
+pent_sat = pd.read_csv("./salidas_preprocesamiento/estaciones_pentadas_limpio.csv",
+                       usecols=["STATION_ID", "YEAR", "PENTADA", "dias", "satelite_mm"])
+pent_sat = pent_sat.sort_values(["STATION_ID", "YEAR", "PENTADA"])
+Sat_p = (pent_sat["satelite_mm"] / pent_sat["dias"]).to_numpy().reshape(-1, 72)   # mismo orden que coef_est
+assert (pent_sat["STATION_ID"].to_numpy()[::72] == coef_est["STATION_ID"].to_numpy()).all()
+
+region_c = np.where(coef_est["STATION_ID"].astype(str).str[:2] == "26", "Cauca", "Pacífico")
+err_kan_rel = np.sqrt(np.mean([err_curva[("kan", s)] for s in SEMILLAS], axis=0) / norma2(C_est))
+x_p = np.arange(1, 73)
+fig, ax = plt.subplots(2, 1, figsize=(11, 7), sharex=True)
+for a_, reg in zip(ax, ["Cauca", "Pacífico"]):
+    cand = idx_te[region_c[idx_te] == reg]
+    j = cand[np.argsort(err_kan_rel[cand])[len(cand) // 2]]           # caso típico (error mediano)
+    a_.bar(x_p, a_pentadas(Y_mm[j:j + 1])[0], color="lightgray", width=0.9, label="estación observada")
+    a_.plot(x_p, Sat_p[j], "k--", lw=1.5, label="satélite sin corregir")
+    for tipo, col in [("lineal", "#2a6f97"), ("kan", "#b23a48"), ("mlp", "#e07a5f")]:
+        a_.plot(x_p, a_pentadas(Y_mm_pred[tipo][j:j + 1])[0], color=col, lw=1.8, label=f"red - {tipo}")
+    a_.set(ylabel="mm/día (promedio de la péntada)",
+           title=f"{reg}: estación {coef_est['STATION_ID'].iloc[j]}, {coef_est['YEAR'].iloc[j]} (prueba, error mediano de la KAN)")
+    a_.legend(fontsize=7, ncol=3)
+ax[1].set_xlabel("Péntada del año (1-72)")
 plt.tight_layout()
-mostrar()
+mostrar("fase4_fig06_ejemplo_pentadas")
 print("\nBloque 6 listo.")
