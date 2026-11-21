@@ -1,0 +1,57 @@
+efecto,cabeza,region,epoca,cambio_sqrt,cambio_pct_aprox
+ONI +1 sd,kan,Cauca,Año,-0.04532835561993882,-6.798367206959632
+ONI +1 sd,kan,Cauca,Dic-Feb,-0.021903446470121452,-4.681119488991337
+ONI +1 sd,kan,Cauca,Mar-May,-0.02473661138946721,-3.6001330101920193
+ONI +1 sd,kan,Cauca,Jun-Ago,-0.07892447862185377,-18.357332430244778
+ONI +1 sd,kan,Cauca,Sep-Nov,-0.0553485641530243,-7.2759202814052575
+ONI +1 sd,kan,Pacífico,Año,-0.11272807413721836,-11.436879022056523
+ONI +1 sd,kan,Pacífico,Dic-Feb,-0.08493930577116479,-10.521023755997682
+ONI +1 sd,kan,Pacífico,Mar-May,-0.06776108225223038,-7.132714003989882
+ONI +1 sd,kan,Pacífico,Jun-Ago,-0.1628694999246925,-19.201958852194466
+ONI +1 sd,kan,Pacífico,Sep-Nov,-0.13498017560882375,-11.204549611308234
+ONI +1 sd,lineal,Cauca,Año,-0.0706550067289046,-10.594426517044164
+ONI +1 sd,lineal,Cauca,Dic-Feb,-0.04867268201078566,-9.302402793546127
+ONI +1 sd,lineal,Cauca,Mar-May,-0.04630280914485851,-6.482362793947505
+ONI +1 sd,lineal,Cauca,Jun-Ago,-0.10055978343347327,-22.65867348497961
+ONI +1 sd,lineal,Cauca,Sep-Nov,-0.08678217096563673,-11.154446232921467
+ONI +1 sd,lineal,Pacífico,Año,-0.07065500672890447,-7.663666012338188
+ONI +1 sd,lineal,Pacífico,Dic-Feb,-0.04867268201078566,-6.244420894112912
+ONI +1 sd,lineal,Pacífico,Mar-May,-0.04630280914485822,-5.201455127583399
+ONI +1 sd,lineal,Pacífico,Jun-Ago,-0.10055978343347377,-12.504406212991203
+ONI +1 sd,lineal,Pacífico,Sep-Nov,-0.0867821709656361,-7.613257560711684
+altitud 100 m,kan,todas,Año,2.866225582322343,
+altitud 250 m,kan,todas,Año,2.5643837026857192,
+altitud 500 m,kan,todas,Año,1.6532187851015705,
+altitud 750 m,kan,todas,Año,1.2445717063928021,
+altitud 1000 m,kan,todas,Año,1.165935288192993,
+altitud 1500 m,kan,todas,Año,1.2646489295397807,
+altitud 2000 m,kan,todas,Año,1.3725554289400732,
+altitud 2500 m,kan,todas,Año,1.3416363593567946,
+altitud 100 m,lineal,todas,Año,1.3275007527831149,
+altitud 250 m,lineal,todas,Año,1.322130441658894,
+altitud 500 m,lineal,todas,Año,1.313179923118525,
+altitud 750 m,lineal,todas,Año,1.3042294045781566,
+altitud 1000 m,lineal,todas,Año,1.295278886037788,
+altitud 1500 m,lineal,todas,Año,1.2773778489570509,
+altitud 2000 m,lineal,todas,Año,1.2594768118763138,
+altitud 2500 m,lineal,todas,Año,1.2415757747955767,
+satélite x0.6,kan,Cauca,Año,0.8942447051652019,
+satélite x0.8,kan,Cauca,Año,1.0099005249632382,
+satélite x1.0,kan,Cauca,Año,1.120377775050976,
+satélite x1.2,kan,Cauca,Año,1.5381759126104007,
+satélite x1.4,kan,Cauca,Año,2.2214916062500296,
+satélite x0.6,kan,Pacífico,Año,1.195380078061632,
+satélite x0.8,kan,Pacífico,Año,1.3278937184258972,
+satélite x1.0,kan,Pacífico,Año,1.8434537346158215,
+satélite x1.2,kan,Pacífico,Año,2.555542478559867,
+satélite x1.4,kan,Pacífico,Año,2.874173129499807,
+satélite x0.6,lineal,Cauca,Año,0.3126157768277866,
+satélite x0.8,lineal,Cauca,Año,0.738226691456945,
+satélite x1.0,lineal,Cauca,Año,1.163837606086103,
+satélite x1.2,lineal,Cauca,Año,1.5894485207152613,
+satélite x1.4,lineal,Cauca,Año,2.0150594353444196,
+satélite x0.6,lineal,Pacífico,Año,0.6813224015944921,
+satélite x0.8,lineal,Pacífico,Año,1.2258300477816566,
+satélite x1.0,lineal,Pacífico,Año,1.770337693968821,
+satélite x1.2,lineal,Pacífico,Año,2.314845340155985,
+satélite x1.4,lineal,Pacífico,Año,2.859352986343149,
