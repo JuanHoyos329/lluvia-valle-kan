@@ -1,5 +1,7 @@
 # =============================================================================
 # Preprocesamiento
+# Salidas: las tablas de la presentación (tabla1 ... tabla8), la trazabilidad, estacion_pixel,
+# ranking_estaciones y los datos limpios (CSV). Las figuras de la presentación (Figura 1 ... Figura 9) solo se imprimen.
 # =============================================================================
 
 setwd("C:/Users/juana/OneDrive/Escritorio/lluvia-valle-kan")
@@ -58,10 +60,49 @@ st <- bind_rows(hist |> mutate(archivo = "1930-1979"),
          FECHA = suppressWarnings(make_date(YEAR, MONTH, DAY)))
 rm(hist)
 
-# El catálogo viene en latin-1 (tildes); se lee como bytes latin1 para no cortar filas
+# Coordenadas reales de las estaciones (solo fuentes de la CVC; no se estima ninguna ubicación).
+# Orden de prioridad si una estación aparece en varias:
+#   1) CVC_Wheather_Stations_Long_Lat.csv (archivo original del proyecto, ya en lon/lat)
+#   2) catalogo_estaciones_cvc.csv (catálogo de estaciones hidroclimatológicas de la CVC)
+#   3) registros_automaticas_cvc.csv (registros de estaciones automáticas de la CVC)
+# Los archivos 2 y 3 traen coordenadas planas MAGNA-SIRGAS con comas de miles: ESTE ~ 1.000.000
+# es origen Oeste (EPSG:3115) y ESTE ~ 4.600.000 es Origen Nacional CTM12 (EPSG:9377).
+numero <- function(x) as.numeric(gsub(",", "", x))                  # "2,612,000,109" -> 2612000109
+a_lonlat <- function(este, norte) {
+  sis <- ifelse(este > 3e6, "EPSG:9377", "EPSG:3115"); out <- matrix(NA_real_, length(este), 2)
+  for (s in unique(sis)) {
+    i <- sis == s
+    out[i, ] <- crds(project(vect(cbind(este[i], norte[i]), crs = s), "EPSG:4326"))
+  }
+  out
+}
+plano <- function(df, fuente) {                                     # una fila por estación
+  xy <- a_lonlat(df$este, df$norte)
+  df |> mutate(Lon = xy[, 1], lat = xy[, 2]) |> group_by(CODIGO) |>
+    summarise(STATION_NAME = first(STATION_NAME), Lon = mean(Lon), lat = mean(lat), .groups = "drop") |>
+    mutate(fuente_coord = fuente)
+}
+
+# El archivo original viene en latin-1 (tildes); se lee como bytes latin1 para no cortar filas
 ll  <- read.csv(file.path(D, "CVC_Wheather_Stations_Long_Lat.csv"), encoding = "latin1") |>
   mutate(CODIGO = as.numeric(CODIGO))
 stopifnot(nrow(ll) == 238)
+cvc_cat <- read.csv(file.path(D, "catalogo_estaciones_cvc.csv"), encoding = "UTF-8",
+                    colClasses = "character", check.names = FALSE)
+names(cvc_cat) <- trimws(gsub("\\s+", " ", names(cvc_cat)))
+cvc_cat <- cvc_cat |> transmute(CODIGO = numero(`CODIGO ESTACION`), STATION_NAME = `NOMBRE ESTACION`,
+                                este = numero(`ESTE X`), norte = numero(`NORTE Y`)) |>
+  distinct() |> plano("catálogo CVC")
+cvc_aut <- read.csv(file.path(D, "registros_automaticas_cvc.csv"), encoding = "UTF-8",
+                    colClasses = "character", check.names = FALSE) |>
+  transmute(CODIGO = numero(`CODIGO ESTACION`), STATION_NAME = `NOMBRE ESTACION`,
+            este = numero(`COORDENADA X`), norte = numero(`COORDENADA Y`)) |>
+  distinct(CODIGO, .keep_all = TRUE) |> plano("estaciones automáticas CVC")
+
+coords <- ll |> transmute(CODIGO, STATION_NAME, Lon, lat, fuente_coord = "archivo original")
+coords <- bind_rows(coords, cvc_cat |> filter(!CODIGO %in% coords$CODIGO))
+coords <- bind_rows(coords, cvc_aut |> filter(!CODIGO %in% coords$CODIGO))
+print(count(coords, fuente_coord))
 # Catálogo de altitud: trae altitud, cuenca y municipio (algunas estaciones no están en el catálogo de coordenadas)
 cat_alt <- read_excel(file.path(D, "CatalogoEstacionesElevacion.xlsx")) |>
   mutate(codigo = as.numeric(codigo)) |> distinct(codigo, .keep_all = TRUE)
@@ -76,85 +117,15 @@ Y0 <- min(st$YEAR); Y1 <- max(st$YEAR)
 estaciones <- sort(unique(st$STATION_ID))
 
 # ------------------------------------------------- 2. Ubicación y altitud de TODAS las estaciones
-# Solo con los datos disponibles (sin fuentes externas). Grupos según la información de cada estación:
-#   A: coordenadas + altitud de catálogo     -> se dejan igual
-#   B: coordenadas sin altitud               -> altitud de la grilla (interpolada y corregida)
-#   C: altitud de catálogo sin coordenadas   -> ubicación por lluvia, ajustada con su altitud
-#   D: sin coordenadas ni altitud            -> ubicación por lluvia, altitud de la grilla
-# La ubicación por lluvia ("triangulación"): dos estaciones cercanas registran la lluvia de los
-# mismos días. Se buscan las 3 estaciones con coordenadas cuya lluvia diaria más se correlaciona
-# y se promedia su posición con peso = correlación^2. Validado escondiendo las coordenadas de las
-# estaciones conocidas: error típico ~5 km (aprox. un píxel del satélite).
-
-conocidas   <- sort(intersect(estaciones, ll$CODIGO))
-desconocidas <- setdiff(estaciones, conocidas)
-
-# Matriz diaria (filas = días, columnas = estaciones). Se excluyen valores >= 500 mm (errores).
-# Solo años hasta 1995: las correlaciones no usan los años de validación (1996-2000) ni de prueba
-# (2001-2003). Se usan también los años antes de 1981 porque no son de ninguna partición.
-lluvia_ancha <- st |> filter(VALUE < 500, YEAR <= max(ENTRENA)) |> select(FECHA, STATION_ID, VALUE) |>
-  pivot_wider(names_from = STATION_ID, values_from = VALUE) |> arrange(FECHA)
-M <- as.matrix(lluvia_ancha[, -1])
-# Estaciones que solo midieron después de 1995: columna vacía (se ubican por su ID)
-falta <- setdiff(as.character(estaciones), colnames(M))
-M <- cbind(M, matrix(NA_real_, nrow(M), length(falta), dimnames = list(NULL, falta)))
-Mu <- M[, as.character(desconocidas), drop = FALSE]
-Mk <- M[, as.character(conocidas), drop = FALSE]
-comun <- crossprod(!is.na(Mu), !is.na(Mk))               # días en común de cada par
-correl <- suppressWarnings(cor(Mu, Mk, use = "pairwise.complete.obs"))
-correl[comun < 365] <- NA                                # se exige al menos un año en común
-
-coord_k <- ll |> filter(CODIGO %in% conocidas) |> select(CODIGO, Lon, lat)
-coord_k <- coord_k[match(conocidas, coord_k$CODIGO), ]
+# Solo se usan estaciones con coordenadas reales (fuentes de la CVC, paso 1). Las que no aparecen en
+# ninguna fuente se quitan: su ubicación no se estima.
+# Altitud: la de catálogo si existe; si no, la de la grilla en la posición real (corregida abajo).
 km_entre <- function(lo1, la1, lo2, la2) sqrt(((lo1 - lo2) * 111 * cos(3.8 * pi / 180))^2 + ((la1 - la2) * 111)^2)
-
-# Respaldo por ID: centro de las estaciones conocidas con los mismos 5 primeros dígitos
-grupo_id <- function(id) {
-  g <- coord_k |> filter(substr(CODIGO, 1, 5) == substr(id, 1, 5))
-  if (nrow(g) == 0) c(NA, NA) else c(mean(g$Lon), mean(g$lat))
-}
-
-# Celdas de la grilla (para el ajuste por altitud del grupo C)
-celdas <- as.data.frame(dem, xy = TRUE) |> rename(alt_celda = 3)
-
-estim <- lapply(desconocidas, function(id) {
-  r <- correl[as.character(id), ]
-  top <- sort(r[!is.na(r)], decreasing = TRUE)[1:3]
-  top <- top[!is.na(top)]
-  gid <- grupo_id(id)
-  if (length(top) == 0) {                                   # sin datos en común: solo el ID
-    return(tibble(STATION_ID = id, Lon_est = gid[1], lat_est = gid[2], corr_max = NA_real_,
-                  fuente_coord = ifelse(is.na(gid[1]), "sin ubicación", "ID")))
-  }
-  w <- pmax(top, 0.01)^2
-  k <- match(as.numeric(names(top)), coord_k$CODIGO)
-  lo <- sum(coord_k$Lon[k] * w) / sum(w); la <- sum(coord_k$lat[k] * w) / sum(w)
-  fuente <- "lluvia"
-  a <- cat_alt$alt[match(id, cat_alt$codigo)]
-  if (!is.na(a)) {                                          # grupo C: ajuste por altitud
-    d <- km_entre(celdas$x, celdas$y, lo, la)
-    cand <- celdas[d <= 10, ]; dc <- d[d <= 10]
-    if (nrow(cand) > 0) {
-      j <- which.min(abs(cand$alt_celda - a) / 200 + dc / 10)
-      lo <- (lo + cand$x[j]) / 2; la <- (la + cand$y[j]) / 2
-      fuente <- "lluvia + altitud"
-    }
-  }
-  tibble(STATION_ID = id, Lon_est = lo, lat_est = la, corr_max = unname(top[1]), fuente_coord = fuente,
-         dist_grupo_id_km = ifelse(is.na(gid[1]), NA, km_entre(lo, la, gid[1], gid[2])))
-}) |> bind_rows()
-
-# Confianza: alta si la correlación es >= 0,5 y la posición no cae a más de 20 km de su grupo de ID
-estim <- estim |> mutate(confianza = ifelse(!is.na(corr_max) & corr_max >= 0.5 &
-                                              (is.na(dist_grupo_id_km) | dist_grupo_id_km <= 20), "alta", "baja"))
-
-ubic <- tibble(STATION_ID = estaciones) |>
-  left_join(ll |> select(STATION_ID = CODIGO, Lon, lat), by = "STATION_ID") |>
-  left_join(estim, by = "STATION_ID") |>
-  mutate(fuente_coord = ifelse(!is.na(Lon), "catálogo", fuente_coord),
-         confianza = ifelse(!is.na(Lon), "catálogo", confianza),
-         Lon = coalesce(Lon, Lon_est), lat = coalesce(lat, lat_est)) |>
-  select(STATION_ID, Lon, lat, fuente_coord, corr_max, confianza)
+sin_coord <- setdiff(estaciones, coords$CODIGO)
+base::cat("Estaciones con datos:", length(estaciones), "| con coordenadas reales:",
+          length(estaciones) - length(sin_coord), "| sin coordenadas (se quitan):", length(sin_coord), "\n")
+ubic <- tibble(STATION_ID = setdiff(estaciones, sin_coord)) |>
+  left_join(coords |> select(STATION_ID = CODIGO, STATION_NAME, Lon, lat, fuente_coord), by = "STATION_ID")
 
 # Altitud: catálogo si existe; si no, grilla interpolada (bilineal) y corregida con una regresión
 # ajustada en las estaciones que tienen catálogo y coordenadas (la grilla sobreestima en montaña)
@@ -163,32 +134,29 @@ alt_bil <- terra::extract(dem, xy_u, method = "bilinear")[, 1]
 alt_cel <- terra::extract(dem, xy_u)[, 1]
 ubic <- ubic |> mutate(alt_grilla = ifelse(is.na(Lon), NA, coalesce(alt_bil, alt_cel)),
                        alt_catalogo = cat_alt$alt[match(STATION_ID, cat_alt$codigo)])
-ajuste <- lm(alt_catalogo ~ alt_grilla, data = ubic |> filter(fuente_coord == "catálogo"))
+ajuste <- lm(alt_catalogo ~ alt_grilla, data = ubic)
 ubic <- ubic |> mutate(alt_corregida = predict(ajuste, newdata = ubic),
                        altitud = coalesce(alt_catalogo, alt_corregida),
                        fuente_alt = case_when(!is.na(alt_catalogo) ~ "catálogo",
                                               !is.na(alt_corregida) ~ "grilla corregida",
                                               TRUE ~ "sin dato"),
                        en_valle = !is.na(terra::extract(valle, xy_u)[, 1]) & !is.na(Lon)) |>
-  select(STATION_ID, Lon, lat, fuente_coord, corr_max, confianza, altitud, fuente_alt, en_valle)
+  select(STATION_ID, STATION_NAME, Lon, lat, fuente_coord, altitud, fuente_alt, en_valle)
 
-print(count(ubic, fuente_coord, confianza))
+print(count(ubic, fuente_coord))
 print(count(ubic, fuente_alt))
 
 # ------------------------------------------------- 3. Solo estaciones dentro del Valle del Cauca
 # Se usan todas las estaciones con coordenadas como referencia para ubicar (paso 2); desde aquí
 # solo se analizan las que quedan dentro del Valle.
-ubic <- ubic |> left_join(ll |> select(STATION_ID = CODIGO, STATION_NAME), by = "STATION_ID")
 base::cat("\nEstaciones con datos:", nrow(ubic),
           "| dentro del Valle:", sum(ubic$en_valle),
-          "| fuera del Valle:", sum(!ubic$en_valle & !is.na(ubic$Lon)),
-          "| sin ubicación:", sum(is.na(ubic$Lon)), "\n")
+          "| fuera del Valle:", sum(!ubic$en_valle), "\n")
 ubic <- ubic |> filter(en_valle)
 # Tabla de verificación: todas las estaciones del Valle con su ubicación y de dónde salió
-print(ubic |> select(STATION_ID, STATION_NAME, Lon, lat, fuente_coord, confianza, altitud, fuente_alt),
+print(ubic |> select(STATION_ID, STATION_NAME, Lon, lat, fuente_coord, altitud, fuente_alt),
       n = Inf, width = Inf)
-base::cat("Estaciones del Valle sin coordenadas:", sum(is.na(ubic$Lon)),
-          "| sin altitud:", sum(is.na(ubic$altitud)), "\n")
+base::cat("Estaciones del Valle sin altitud:", sum(is.na(ubic$altitud)), "\n")
 
 foto(st, "0. Datos crudos (todas las estaciones)")
 st_crudo <- st |> select(STATION_ID, YEAR, DAY, FECHA, VALUE)   # para la Tabla 1
@@ -303,7 +271,7 @@ inventario <- function(x) {
   vida <- x |> group_by(STATION_ID) |>
     summarise(dias_vida = as.numeric(max(FECHA) - min(FECHA)) + 1, n = n(), .groups = "drop")
   no_diaria <- rachas_separadas(x) |> filter(en_racha) |> distinct(STATION_ID)
-  con_coord <- ids %in% ll$CODIGO; con_alt <- ids %in% cat_alt$codigo
+  con_coord <- ids %in% coords$CODIGO; con_alt <- ids %in% cat_alt$codigo
   c(fmt(length(ids)), paste0(min(x$YEAR), "-", max(x$YEAR)), fmt(nrow(x)),
     fmt(sum(vida$dias_vida - vida$n)), paste0(fmt(100 * sum(vida$n) / sum(vida$dias_vida), 1), "%"),
     paste0(fmt(sum(con_coord)), " / ", fmt(sum(!con_coord))),
@@ -338,6 +306,8 @@ celda <- cellFromXY(sat_r, as.matrix(ubic[, c("Lon", "lat")]))
 mc <- ubic |> mutate(fila = rowFromCell(sat_r, celda), col = colFromCell(sat_r, celda))
 mc$pixel_valido <- validos_px[cbind(mc$fila, mc$col)] == 100
 mc <- mc |> group_by(fila, col) |> mutate(comparte_pixel = n() > 1) |> ungroup()
+guardar_tabla(mc |> select(STATION_ID, STATION_NAME, Lon, lat, fuente_coord, fila, col, pixel_valido, comparte_pixel),
+              "estacion_pixel")
 
 # Verificación de formato del satélite y tabla de formato (estaciones de la sección 4 + satélite)
 fmt_sat <- tibble(f = fs) |>
@@ -676,6 +646,21 @@ base::cat("Filas del calendario (vida útil de cada estación):", nrow(cal), "\n
           "Días con dato:", sum(cal$presente), "\n",
           "Días faltantes (NA):", sum(!cal$presente), "\n")
 
+# Ranking por estación: cobertura sobre su vida útil (de su primer a su último año con dato) y
+# cobertura en todo 1981-2003, para comparar estaciones de distinta antigüedad.
+meta <- ea |> group_by(STATION_ID) |>
+  summarise(primer_anio = min(YEAR[n_dias > 0]),
+            ultimo_anio = max(YEAR[n_dias > 0]),
+            anios_con_algun_dato = sum(n_dias > 0),
+            anios_90 = sum(cob >= 90),
+            cobertura_vida_util = 100 * sum(n_dias) / sum(dias[YEAR >= primer_anio & YEAR <= ultimo_anio]),
+            cobertura_1981_2003 = 100 * sum(n_dias) / sum(dias),
+            .groups = "drop") |>
+  left_join(ll |> select(STATION_ID = CODIGO, CATEGORY, STATUS), by = "STATION_ID") |>
+  left_join(ubic, by = "STATION_ID") |>
+  arrange(desc(anios_90), desc(cobertura_vida_util))
+guardar_tabla(meta, "ranking_estaciones")
+
 # ------------------------------------------------- 13. Criterio de cobertura# ------------------------------------------------- 15. Criterio de cobertura por estación-año
 # Un año de una estación entra al modelo si tiene >= 90 % de sus días con dato y ningún hueco de
 # más de 31 días seguidos. La curva anual se construye con el año completo: imputar un año con
@@ -709,8 +694,12 @@ foto(st, "7. Criterio de cobertura (>= 90 % y hueco <= 31 días)", cal)
 # con el promedio de la estación a imputar. IDW, Kriging y CCW primero deciden si llovió (mayoría
 # ponderada de vecinas con lluvia) para no llenar los días secos de llovizna.
 # Si la estación no tiene años de entrenamiento, su promedio mensual sale del satélite en su píxel.
+# Temporadas: la lluvia del Valle es bimodal y las vecinas se parecen distinto en época lluviosa y
+# seca. Un mes es "Lluviosa" si su lluvia media diaria en 1981-1995 (promedio de todas las estaciones
+# del Valle) supera el promedio de los 12 meses; si no, "Seca". Las correlaciones (SBE, CCW), el
+# variograma (Kriging) y la elección del método se hacen por separado en cada temporada.
 # Validación: se esconden 30.000 días conocidos de 1981-1995, se imputan y se comparan con lo medido.
-# Se elige el método con mayor KGE (métrica del proyecto). Sin vecinas: satélite del píxel.
+# En cada temporada se elige el método con mayor KGE (métrica del proyecto). Sin vecinas: satélite del píxel.
 RADIO_IMP <- 50; K_VEC <- 8; N_VALIDA <- 30000
 set.seed(2026)
 ancha <- matriz_diaria(st)
@@ -726,31 +715,45 @@ clim[is.na(clim)] <- clim_sat[is.na(clim)]
 clim <- pmax(clim, 0.1)
 idx_clim <- cbind(rep(mes_f, ncol(M)), rep(seq_along(ids_m), each = nrow(M)))
 REL <- M / matrix(clim[idx_clim], nrow(M))                         # lluvia relativa
-P <- !is.na(M[tr, ]) * 1; comun_m <- crossprod(P)
-corr_m <- suppressWarnings(cor(M[tr, ], use = "pairwise.complete.obs"))
-corr_m[comun_m < 365 | is.na(corr_m)] <- NA; diag(corr_m) <- NA
 
-# Variograma experimental de la lluvia relativa (400 días de entrenamiento) y ajuste exponencial
-dias_v <- sample(which(tr), 400)
-vg <- do.call(rbind, lapply(dias_v, function(t) {
-  o <- which(!is.na(REL[t, ])); if (length(o) < 5) return(NULL)
-  d <- dist_m[o, o]; g <- outer(REL[t, o], REL[t, o], function(x, y) .5 * (x - y)^2)
-  k <- upper.tri(d) & d <= 100; cbind(h = d[k], g = g[k])
-}))
-bins <- cut(vg[, "h"], seq(0, 100, 5))
-variog <- tibble(h = as.vector(tapply(vg[, "h"], bins, mean)), gamma = as.vector(tapply(vg[, "g"], bins, mean)),
-                 pares = as.vector(table(bins))) |> filter(!is.na(gamma))
-ajuste_v <- optim(c(.5, .5, 20), function(p) sum(variog$pares * (variog$gamma - (p[1] + p[2] * (1 - exp(-variog$h / p[3]))))^2),
-                  method = "L-BFGS-B", lower = c(0, .01, 1), upper = c(10, 10, 300))$par
-gam <- function(h) ifelse(h == 0, 0, ajuste_v[1] + ajuste_v[2] * (1 - exp(-h / ajuste_v[3])))
-base::cat("Variograma exponencial: pepita", round(ajuste_v[1], 2), "| meseta parcial", round(ajuste_v[2], 2),
-          "| rango", round(ajuste_v[3], 1), "km\n")
+# Temporada de cada mes (solo con 1981-1995) y de cada día
+lluvia_mes <- tapply(rowMeans(M[tr, ], na.rm = TRUE), mes_f[tr], mean, na.rm = TRUE)[as.character(1:12)]
+TEMP_MES <- ifelse(lluvia_mes > mean(lluvia_mes), "Lluviosa", "Seca")
+TEMPS <- c("Lluviosa", "Seca")
+tem_f <- TEMP_MES[mes_f]
+print(tibble(mes = 1:12, lluvia_media_mm_dia = round(lluvia_mes, 2), temporada = TEMP_MES))
+
+# Correlaciones entre estaciones y variograma, por temporada (solo días de entrenamiento)
+corr_t <- list(); gam_t <- list()
+for (tp in TEMPS) {
+  dt <- tr & tem_f == tp
+  P <- !is.na(M[dt, ]) * 1; comun_m <- crossprod(P)
+  cm <- suppressWarnings(cor(M[dt, ], use = "pairwise.complete.obs"))
+  cm[comun_m < 180 | is.na(cm)] <- NA; diag(cm) <- NA            # al menos 180 días en común
+  corr_t[[tp]] <- cm
+  # Variograma experimental de la lluvia relativa (400 días de la temporada) y ajuste exponencial
+  dias_v <- sample(which(dt), 400)
+  vg <- do.call(rbind, lapply(dias_v, function(t) {
+    o <- which(!is.na(REL[t, ])); if (length(o) < 5) return(NULL)
+    d <- dist_m[o, o]; g <- outer(REL[t, o], REL[t, o], function(x, y) .5 * (x - y)^2)
+    k <- upper.tri(d) & d <= 100; cbind(h = d[k], g = g[k])
+  }))
+  bins <- cut(vg[, "h"], seq(0, 100, 5))
+  variog <- tibble(h = as.vector(tapply(vg[, "h"], bins, mean)), gamma = as.vector(tapply(vg[, "g"], bins, mean)),
+                   pares = as.vector(table(bins))) |> filter(!is.na(gamma))
+  av <- optim(c(.5, .5, 20), function(p) sum(variog$pares * (variog$gamma - (p[1] + p[2] * (1 - exp(-variog$h / p[3]))))^2),
+              method = "L-BFGS-B", lower = c(0, .01, 1), upper = c(10, 10, 300))$par
+  gam_t[[tp]] <- local({ a <- av; function(h) ifelse(h == 0, 0, a[1] + a[2] * (1 - exp(-h / a[3]))) })
+  base::cat("Variograma exponencial", tp, ": pepita", round(av[1], 2), "| meseta parcial", round(av[2], 2),
+            "| rango", round(av[3], 1), "km\n")
+}
 
 imputa <- function(j, t) {
   o <- which(!is.na(M[t, ])); o <- o[o != j & dist_m[j, o] <= RADIO_IMP]
   out <- c(IDW = NA, Kriging = NA, SBE = NA, CCW = NA)
   if (!length(o)) return(out)
   ct <- clim[mes_f[t], j]; a <- REL[t, ]; llovio <- M[t, ] > 0
+  corr_m <- corr_t[[tem_f[t]]]; gam <- gam_t[[tem_f[t]]]
   n1 <- o[order(dist_m[j, o])][seq_len(min(K_VEC, length(o)))]
   w <- 1 / pmax(dist_m[j, n1], .5)^2; w <- w / sum(w)
   out["IDW"] <- if (sum(w * llovio[n1]) >= .5) sum(w * a[n1]) * ct else 0
@@ -772,32 +775,40 @@ imputa <- function(j, t) {
 conocidos <- which(!is.na(M) & tr, arr.ind = TRUE)
 muestra <- conocidos[sample(nrow(conocidos), N_VALIDA), ]
 pred <- t(apply(muestra, 1, function(x) imputa(x[2], x[1])))
-medido <- M[muestra]; okv <- complete.cases(pred)
+medido <- M[muestra]; okv <- complete.cases(pred); tem_v <- tem_f[muestra[, 1]]
 kge <- function(s, o) { r <- cor(s, o); 1 - sqrt((r - 1)^2 + (sd(s) / sd(o) - 1)^2 + (mean(s) / mean(o) - 1)^2) }
-boot <- replicate(300, { b <- sample(which(okv), sum(okv), TRUE); sapply(colnames(pred), function(m) kge(pred[b, m], medido[b])) })
-comparacion <- bind_rows(lapply(colnames(pred), function(m) {
-  s <- pred[okv, m]; o <- medido[okv]
-  tibble(metodo = m, MAE_mm = mean(abs(s - o)), RMSE_mm = sqrt(mean((s - o)^2)),
-         sesgo_pct = 100 * (sum(s) - sum(o)) / sum(o), correlacion = cor(s, o), KGE = kge(s, o),
-         KGE_IC95_inf = quantile(boot[m, ], .025), KGE_IC95_sup = quantile(boot[m, ], .975),
-         ratio_desv_estandar = sd(s) / sd(o), pct_dias_secos_medido = 100 * mean(o == 0),
-         pct_dias_secos_imputado = 100 * mean(s == 0), acierto_lluvia_o_seco_pct = 100 * mean((s > 0) == (o > 0)),
-         p95_medido = quantile(o, .95), p95_imputado = quantile(s, .95))
+comparacion <- bind_rows(lapply(TEMPS, function(tp) {
+  ok_t <- okv & tem_v == tp
+  boot <- replicate(300, { b <- sample(which(ok_t), sum(ok_t), TRUE); sapply(colnames(pred), function(m) kge(pred[b, m], medido[b])) })
+  bind_rows(lapply(colnames(pred), function(m) {
+    s <- pred[ok_t, m]; o <- medido[ok_t]
+    tibble(temporada = tp, dias_validados = sum(ok_t), metodo = m, MAE_mm = mean(abs(s - o)), RMSE_mm = sqrt(mean((s - o)^2)),
+           sesgo_pct = 100 * (sum(s) - sum(o)) / sum(o), correlacion = cor(s, o), KGE = kge(s, o),
+           KGE_IC95_inf = quantile(boot[m, ], .025), KGE_IC95_sup = quantile(boot[m, ], .975),
+           ratio_desv_estandar = sd(s) / sd(o), pct_dias_secos_medido = 100 * mean(o == 0),
+           pct_dias_secos_imputado = 100 * mean(s == 0), acierto_lluvia_o_seco_pct = 100 * mean((s > 0) == (o > 0)),
+           p95_medido = quantile(o, .95), p95_imputado = quantile(s, .95))
+  }))
 })) |> mutate(across(where(is.numeric), ~ round(.x, 3)))
 print(comparacion, width = Inf)
 guardar_tabla(comparacion, "tabla7_resultados_imputacion")             # Tabla 7
-MEJOR <- comparacion$metodo[which.max(comparacion$KGE)]
-base::cat("Método elegido (mayor KGE):", MEJOR, "\n")
+MEJOR <- sapply(TEMPS, function(tp) { x <- comparacion |> filter(temporada == tp); x$metodo[which.max(x$KGE)] })
+base::cat("Método elegido (mayor KGE) | Lluviosa:", MEJOR["Lluviosa"], "| Seca:", MEJOR["Seca"], "\n")
+# KGE de todo el año con el método elegido en cada temporada (comparable con un solo método para todo el año)
+s_comb <- pred[cbind(which(okv), match(MEJOR[tem_v[okv]], colnames(pred)))]
+base::cat("KGE de todo el año | métodos por temporada:", round(kge(s_comb, medido[okv]), 3),
+          "|", paste(colnames(pred), round(apply(pred[okv, ], 2, kge, o = medido[okv]), 3), collapse = " | "), "\n")
 
 # Imputación de los faltantes con el método elegido
 faltan <- cal |> filter(!presente) |> select(STATION_ID, FECHA)
 fi <- cbind(match(faltan$FECHA, fechas), match(faltan$STATION_ID, ids_m))
-val <- apply(fi, 1, function(x) imputa(x[2], x[1])[MEJOR])
+met <- MEJOR[tem_f[fi[, 1]]]                                       # método de la temporada de cada día
+val <- sapply(seq_len(nrow(fi)), function(i) imputa(fi[i, 2], fi[i, 1])[met[i]])
 sin_vec <- is.na(val)
 val[sin_vec] <- (sat_dia[fi[sin_vec, , drop = FALSE]] / clim_sat[cbind(mes_f[fi[sin_vec, 1]], fi[sin_vec, 2])]) *
   clim[cbind(mes_f[fi[sin_vec, 1]], fi[sin_vec, 2])]
 imputados <- faltan |> mutate(VALUE = round(val, 1), YEAR = year(FECHA), MONTH = month(FECHA), DAY = day(FECHA),
-                              origen = ifelse(sin_vec, "imputado (satélite)", paste0("imputado (", MEJOR, ")")))
+                              origen = ifelse(sin_vec, "imputado (satélite)", paste0("imputado (", met, ")")))
 base::cat("Imputados:", nrow(imputados), "días |", "con vecinas:", sum(!sin_vec), "| con satélite:", sum(sin_vec), "\n")
 
 st_antes_imp <- st
@@ -837,14 +848,14 @@ n_crudo <- traz[[1]]$estaciones; n_corte <- traz[[3]]$estaciones
 tabla3 <- tibble(
   Paso = c("1. Ubicación", "2. Valle y 1981-2003", "3. Acumulados", "4. Días > 300 mm", "5. Ceros falsos",
            "6. Meses imposibles", "7. Cobertura"),
-  `Qué se hizo` = c("Coordenadas faltantes estimadas por correlación de lluvia",
+  `Qué se hizo` = c("Coordenadas reales de la CVC; sin coordenada se quita",
                     "Solo el Valle y el periodo del satélite",
                     "Totales semanales o mensuales repartidos en días",
                     "Contraste con las estaciones vecinas",
                     "Rachas de 0 mm desmentidas por las vecinas",
                     "Totales > 600 mm y más del doble de la vecina",
                     "Año con ≥ 90 % de días y sin huecos > 31 días"),
-  Resultado = c(paste(sum(ubic$fuente_coord != "catálogo"), "estaciones ubicadas (~5 km de error)"),
+  Resultado = c(paste(length(sin_coord), "estaciones sin coordenadas quitadas"),
                 paste(n_crudo, "→", n_corte, "estaciones"),
                 paste(sum(traza$resultado == "acumulado: desagregado"), "periodos corregidos"),
                 paste(sum(altos$decision != "confirmado por vecinas"), "días quitados"),
@@ -856,9 +867,9 @@ print(tabla3, width = Inf)
 guardar_tabla(tabla3, "tabla3_preprocesamiento")
 
 # Tabla 4. Ceros reales vs. falsos por temporada (cada racha va al mes de su día central)
-# Temporadas secas del Valle: dic-feb y jun-ago; lluviosas: mar-may y sep-nov.
+# Temporadas: las mismas de la imputación (TEMP_MES, calculadas con 1981-1995).
 MESES <- c("Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic")
-temporada <- function(m) factor(ifelse(m %in% c(12, 1, 2, 6, 7, 8), "Seca", "Lluviosa"), levels = c("Seca", "Lluviosa"))
+temporada <- function(m) factor(TEMP_MES[m], levels = c("Seca", "Lluviosa"))   # misma definición de la imputación
 r0 <- rachas0 |> mutate(MONTH = month(desde + floor((hasta - desde) / 2)), falso = decision == "cero falso: se quita")
 resumen_ceros <- function(x) summarise(x, `Rachas revisadas` = n(), `Sequía real` = sum(!falso),
                                        `Cero falso` = sum(falso), `% falsos` = round(100 * mean(falso), 1),
@@ -950,18 +961,15 @@ mostrar(
     geom_point(data = ok, aes(Lon, lat), inherit.aes = FALSE, size = .6) + coord_equal() +
     labs(title = "Satélite: lluvia media anual 1981-2003", x = "Lon", y = "Lat")
 )
-# Figura 6. Estaciones con coordenadas de catálogo y estaciones ubicadas
+# Figura 6. Estaciones del Valle y la fuente de sus coordenadas (todas reales, de la CVC)
 valle_df <- as.data.frame(valle, xy = TRUE)                          # solo los píxeles del Valle
+col_fuente <- c("archivo original" = "#2166ac", "catálogo CVC" = "#67a9cf", "estaciones automáticas CVC" = "#053061")
 mostrar(
   ggplot() + geom_raster(data = valle_df, aes(x, y), fill = "grey92") + capa_borde +
-    geom_point(data = ubic |> mutate(origen = ifelse(fuente_coord == "catálogo",
-                                                     "coordenadas de catálogo", "ubicación estimada")),
-               aes(Lon, lat, colour = origen), size = 1.3) +
-    scale_colour_manual(values = c("coordenadas de catálogo" = "#2166ac", "ubicación estimada" = "#e66101"),
-                        labels = function(x) paste0(x, " (", table(ifelse(ubic$fuente_coord == "catálogo",
-                                                                          "coordenadas de catálogo", "ubicación estimada"))[x], ")"),
-                        name = NULL) +
-    coord_equal() + labs(title = "Estaciones del Valle: con coordenadas y ubicadas", x = "Lon", y = "Lat") +
+    geom_point(data = ubic, aes(Lon, lat, colour = fuente_coord), size = 1.3) +
+    scale_colour_manual(values = col_fuente,
+                        labels = function(x) paste0(x, " (", table(ubic$fuente_coord)[x], ")"), name = NULL) +
+    coord_equal() + labs(title = "Estaciones del Valle con coordenadas reales", x = "Lon", y = "Lat") +
     theme(legend.position = "bottom")
 )
 
