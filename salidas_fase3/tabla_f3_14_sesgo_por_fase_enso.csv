@@ -1,31 +1,31 @@
 "grupo","temporada","estaciones","lluvia_estacion_mm_dia","d_media","IC95_inf","IC95_sup","d_mediana","sesgo_pct","pct_estaciones_subestima"
-"Cuenca del río Cauca - Niño","Dic-Feb (seca)",168,3.29,-0.332,-0.571,-0.093,-0.618,-10.1,34.5
-"Cuenca del río Cauca - Niño","Mar-May (lluvias)",168,5.45,-0.435,-0.708,-0.161,-0.629,-8,32.7
-"Cuenca del río Cauca - Niño","Jun-Ago (seca)",168,2.02,-0.916,-1.082,-0.751,-1.015,-45.4,8.3
-"Cuenca del río Cauca - Niño","Sep-Nov (lluvias)",168,4.93,-1.016,-1.283,-0.748,-1.171,-20.6,25
-"Cuenca del río Cauca - Niño","Año completo",168,3.96,-0.694,-0.908,-0.481,-0.807,-17.5,28
-"Cuenca del río Cauca - Neutro","Dic-Feb (seca)",177,3.93,0.083,-0.149,0.314,-0.224,2.1,44.6
-"Cuenca del río Cauca - Neutro","Mar-May (lluvias)",177,5.6,-0.148,-0.397,0.101,-0.333,-2.6,41.2
-"Cuenca del río Cauca - Neutro","Jun-Ago (seca)",177,2.62,-0.334,-0.497,-0.171,-0.48,-12.7,26
-"Cuenca del río Cauca - Neutro","Sep-Nov (lluvias)",177,5.57,-0.317,-0.59,-0.043,-0.591,-5.7,34.5
-"Cuenca del río Cauca - Neutro","Año completo",177,4.46,-0.194,-0.404,0.016,-0.274,-4.4,36.2
-"Cuenca del río Cauca - Niña","Dic-Feb (seca)",163,3.98,0.597,0.353,0.841,0.305,15,58.3
-"Cuenca del río Cauca - Niña","Mar-May (lluvias)",163,5.58,0.305,0.05,0.559,-0.011,5.5,49.7
-"Cuenca del río Cauca - Niña","Jun-Ago (seca)",163,3.25,0.268,0.076,0.461,0.13,8.3,58.9
-"Cuenca del río Cauca - Niña","Sep-Nov (lluvias)",163,5.95,0.333,0.032,0.634,-0.017,5.6,49.1
-"Cuenca del río Cauca - Niña","Año completo",163,4.73,0.362,0.137,0.587,0.235,7.7,57.7
-"Vertiente del Pacífico - Niño","Dic-Feb (seca)",35,7.08,1.04,-0.563,2.642,-0.574,14.7,34.3
-"Vertiente del Pacífico - Niño","Mar-May (lluvias)",35,9.57,0.679,-1.196,2.554,-0.889,7.1,40
-"Vertiente del Pacífico - Niño","Jun-Ago (seca)",35,7.08,0.753,-1.159,2.665,-1.486,10.6,25.7
-"Vertiente del Pacífico - Niño","Sep-Nov (lluvias)",35,11.77,0.989,-1.367,3.345,-1.224,8.4,34.3
-"Vertiente del Pacífico - Niño","Año completo",35,8.98,0.854,-1.003,2.712,-0.916,9.5,31.4
-"Vertiente del Pacífico - Neutro","Dic-Feb (seca)",38,8.46,2.302,0.727,3.877,0.471,27.2,65.8
-"Vertiente del Pacífico - Neutro","Mar-May (lluvias)",38,10.2,1.627,-0.092,3.346,-0.306,16,44.7
-"Vertiente del Pacífico - Neutro","Jun-Ago (seca)",38,8.77,2.528,0.488,4.568,0.323,28.8,57.9
-"Vertiente del Pacífico - Neutro","Sep-Nov (lluvias)",38,13.46,3.009,0.655,5.363,0.804,22.4,57.9
-"Vertiente del Pacífico - Neutro","Año completo",38,10.32,2.369,0.479,4.258,0.45,23,57.9
-"Vertiente del Pacífico - Niña","Dic-Feb (seca)",34,8.83,3.739,1.789,5.689,1.661,42.3,67.6
-"Vertiente del Pacífico - Niña","Mar-May (lluvias)",34,9.55,2.024,0.275,3.772,-0.162,21.2,47.1
-"Vertiente del Pacífico - Niña","Jun-Ago (seca)",34,9.8,3.583,1.225,5.942,1.425,36.6,55.9
-"Vertiente del Pacífico - Niña","Sep-Nov (lluvias)",34,15.18,5.492,2.631,8.353,3.268,36.2,61.8
-"Vertiente del Pacífico - Niña","Año completo",34,10.95,3.703,1.542,5.863,1.605,33.8,64.7
+"Cuenca del río Cauca - Niño","Dic-Feb (seca)",168,3.29,-0.33,-0.569,-0.091,-0.603,-10,34.5
+"Cuenca del río Cauca - Niño","Mar-May (lluvias)",168,5.44,-0.438,-0.713,-0.164,-0.61,-8.1,32.7
+"Cuenca del río Cauca - Niño","Jun-Ago (seca)",168,2.02,-0.915,-1.081,-0.749,-1.023,-45.3,8.3
+"Cuenca del río Cauca - Niño","Sep-Nov (lluvias)",168,4.93,-1.017,-1.285,-0.749,-1.171,-20.6,25
+"Cuenca del río Cauca - Niño","Año completo",168,3.96,-0.695,-0.908,-0.482,-0.791,-17.6,28
+"Cuenca del río Cauca - Neutro","Dic-Feb (seca)",177,3.93,0.085,-0.146,0.315,-0.205,2.2,45.2
+"Cuenca del río Cauca - Neutro","Mar-May (lluvias)",177,5.61,-0.141,-0.39,0.109,-0.337,-2.5,41.2
+"Cuenca del río Cauca - Neutro","Jun-Ago (seca)",177,2.62,-0.333,-0.496,-0.17,-0.48,-12.7,26.6
+"Cuenca del río Cauca - Neutro","Sep-Nov (lluvias)",177,5.58,-0.309,-0.583,-0.036,-0.591,-5.5,33.9
+"Cuenca del río Cauca - Neutro","Año completo",177,4.46,-0.19,-0.4,0.02,-0.29,-4.3,36.2
+"Cuenca del río Cauca - Niña","Dic-Feb (seca)",163,3.99,0.607,0.362,0.851,0.308,15.2,58.9
+"Cuenca del río Cauca - Niña","Mar-May (lluvias)",163,5.58,0.31,0.057,0.563,-0.009,5.6,49.7
+"Cuenca del río Cauca - Niña","Jun-Ago (seca)",163,3.25,0.266,0.074,0.459,0.127,8.2,58.3
+"Cuenca del río Cauca - Niña","Sep-Nov (lluvias)",163,5.95,0.335,0.034,0.636,-0.029,5.6,49.1
+"Cuenca del río Cauca - Niña","Año completo",163,4.73,0.366,0.141,0.591,0.269,7.7,57.1
+"Vertiente del Pacífico - Niño","Dic-Feb (seca)",35,7.08,1.037,-0.565,2.64,-0.575,14.7,34.3
+"Vertiente del Pacífico - Niño","Mar-May (lluvias)",35,9.57,0.682,-1.193,2.556,-0.889,7.1,40
+"Vertiente del Pacífico - Niño","Jun-Ago (seca)",35,7.09,0.756,-1.157,2.669,-1.481,10.7,25.7
+"Vertiente del Pacífico - Niño","Sep-Nov (lluvias)",35,11.77,0.987,-1.368,3.342,-1.224,8.4,34.3
+"Vertiente del Pacífico - Niño","Año completo",35,8.98,0.855,-1.003,2.713,-0.916,9.5,31.4
+"Vertiente del Pacífico - Neutro","Dic-Feb (seca)",38,8.44,2.286,0.704,3.867,0.467,27.1,63.2
+"Vertiente del Pacífico - Neutro","Mar-May (lluvias)",38,10.15,1.583,-0.136,3.302,-0.3,15.6,44.7
+"Vertiente del Pacífico - Neutro","Jun-Ago (seca)",38,8.76,2.516,0.474,4.558,0.255,28.7,55.3
+"Vertiente del Pacífico - Neutro","Sep-Nov (lluvias)",38,13.47,3.005,0.65,5.361,0.849,22.3,57.9
+"Vertiente del Pacífico - Neutro","Año completo",38,10.3,2.349,0.457,4.242,0.314,22.8,57.9
+"Vertiente del Pacífico - Niña","Dic-Feb (seca)",34,8.84,3.741,1.791,5.69,1.66,42.3,67.6
+"Vertiente del Pacífico - Niña","Mar-May (lluvias)",34,9.55,2.021,0.273,3.769,-0.161,21.2,47.1
+"Vertiente del Pacífico - Niña","Jun-Ago (seca)",34,9.8,3.584,1.226,5.943,1.425,36.6,55.9
+"Vertiente del Pacífico - Niña","Sep-Nov (lluvias)",34,15.17,5.488,2.626,8.35,3.264,36.2,61.8
+"Vertiente del Pacífico - Niña","Año completo",34,10.95,3.701,1.541,5.862,1.605,33.8,64.7

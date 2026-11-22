@@ -1,7 +1,7 @@
 "analisis","curvas","var_total_estacion","var_total_satelite","razon_var_total_sat_est","razon_DE_DicFeb","razon_DE_MarMay","razon_DE_JunAgo","razon_DE_SepNov","pct_comp1_estacion","pct_comp1_satelite","pct_3comp_estacion","pct_3comp_satelite","autocor30_estacion","autocor30_satelite"
-"Todas - total",3512,7110,1775,0.25,0.47,0.53,0.48,0.51,76.6,81,87.7,91.7,0.907,0.916
-"Todas - anomalías",3495,1687,303,0.179,0.45,0.45,0.31,0.45,26.4,30.3,57.6,70.3,0.705,0.683
-"Cuenca del río Cauca - total",3054,2301,820,0.356,0.53,0.61,0.66,0.64,51.1,69,72.6,85.3,0.791,0.875
-"Cuenca del río Cauca - anomalías",3040,1273,250,0.196,0.47,0.45,0.34,0.48,25.8,29.4,58.9,71.1,0.683,0.679
-"Vertiente del Pacífico - total",458,30587,4261,0.139,0.37,0.37,0.37,0.38,86.5,84.5,93.3,93.6,0.945,0.913
-"Vertiente del Pacífico - anomalías",455,4464,655,0.147,0.41,0.44,0.27,0.4,32.2,36.1,61.6,70.2,0.744,0.692
+"Todas - total",3508,7114,1774,0.249,0.47,0.53,0.48,0.51,76.6,81,87.7,91.7,0.907,0.916
+"Todas - anomalías",3493,1689,303,0.179,0.45,0.45,0.31,0.45,26.4,30.3,57.7,70.3,0.705,0.683
+"Cuenca del río Cauca - total",3047,2302,821,0.357,0.53,0.61,0.66,0.64,51.1,68.9,72.6,85.3,0.791,0.875
+"Cuenca del río Cauca - anomalías",3033,1275,251,0.197,0.47,0.45,0.34,0.48,25.8,29.4,59,71.1,0.684,0.679
+"Vertiente del Pacífico - total",461,30484,4264,0.14,0.37,0.37,0.37,0.38,86.5,84.5,93.3,93.6,0.945,0.914
+"Vertiente del Pacífico - anomalías",460,4424,649,0.147,0.41,0.44,0.27,0.4,32.2,36.1,61.6,70.2,0.744,0.692

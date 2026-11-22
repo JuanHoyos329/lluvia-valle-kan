@@ -1,216 +1,216 @@
 "STATION_ID","nombre","region","fuente_coord","altitud","Lon","lat","pixel","curvas","estacion_mm_dia","satelite_mm_dia","d_mm_dia","razon_est_sat","top10"
 5300000203,"PACIFICO-BAHIA MALAGA","Vertiente del Pacífico","catálogo CVC",50,-77.306,4.047,"F20-C5",15,33.32,16.9,16.42,1.97,TRUE
-5421200112,"LA PERDICION","Vertiente del Pacífico","catálogo CVC",1010,-76.506,3.988,"F21-C21",4,20.48,6.74,13.73,3.04,TRUE
 5301000104,"SAN FRANCISCO","Vertiente del Pacífico","archivo original",20,-77.281,3.143,"F38-C6",11,27.26,13.53,13.72,2.01,TRUE
-5421240201,"EL TABANO","Vertiente del Pacífico","catálogo CVC",380,-76.711,3.897,"F23-C17",10,21.72,8.6,13.12,2.53,TRUE
-5421200110,"EL ESPANTO","Vertiente del Pacífico","archivo original",515,-76.696,3.947,"F22-C18",5,20.77,8.56,12.21,2.43,TRUE
-5301500108,"ESCALERETE","Vertiente del Pacífico","archivo original",150,-76.863,3.814,"F24-C14",6,21.46,11.01,10.45,1.95,TRUE
-5301500106,"TRIANA","Vertiente del Pacífico","archivo original",232,-76.806,3.857,"F23-C15",15,19.7,10.89,8.81,1.81,TRUE
-5301100101,"YURUMANGUI","Vertiente del Pacífico","archivo original",118,-77.358,3.373,"F33-C4",17,22.34,14.5,7.85,1.54,TRUE
+5421200112,"LA PERDICION","Vertiente del Pacífico","catálogo CVC",1010,-76.506,3.988,"F21-C21",4,20.47,6.74,13.72,3.04,TRUE
+5421240201,"EL TABANO","Vertiente del Pacífico","catálogo CVC",380,-76.711,3.897,"F23-C17",10,21.72,8.6,13.13,2.53,TRUE
+5421200110,"EL ESPANTO","Vertiente del Pacífico","archivo original",515,-76.696,3.947,"F22-C18",5,20.76,8.56,12.2,2.43,TRUE
+5301500108,"ESCALERETE","Vertiente del Pacífico","archivo original",150,-76.863,3.814,"F24-C14",6,21.51,11.01,10.5,1.95,TRUE
+5301500106,"TRIANA","Vertiente del Pacífico","archivo original",232,-76.806,3.857,"F23-C15",15,19.71,10.89,8.83,1.81,TRUE
+5301100101,"YURUMANGUI","Vertiente del Pacífico","archivo original",118,-77.358,3.373,"F33-C4",17,22.34,14.5,7.84,1.54,TRUE
 5300000202,NA,"Vertiente del Pacífico","documentos PDF",10,-77.1,3.8,"F24-C9",12,21.49,14.92,6.57,1.44,TRUE
-2622100104,"PEÑA MONA","Cuenca del río Cauca","archivo original",2100,-76.653,3.252,"F35-C18",14,12.07,6.76,5.3,1.78,TRUE
+2622100104,"PEÑA MONA","Cuenca del río Cauca","archivo original",2100,-76.653,3.252,"F35-C18",14,12.06,6.76,5.3,1.78,TRUE
 2613200105,"LA PATAGONIA","Cuenca del río Cauca","archivo original",1950,-76.21,3.84,"F24-C27",19,7.85,3.22,4.63,2.44,FALSE
 5421200102,"LITUANIA","Vertiente del Pacífico","catálogo CVC",1870,-76.523,3.994,"F21-C21",1,11,6.37,4.62,1.73,FALSE
 5301500102,"LOBOGUERRERO","Vertiente del Pacífico","archivo original",702,-76.664,3.762,"F25-C18",12,2.4,6.24,-3.84,0.38,FALSE
 5420410115,"PUERTO NUEVO","Vertiente del Pacífico","archivo original",990,-76.268,4.596,"F9-C26",20,3.07,6.82,-3.75,0.45,FALSE
-2612710104,"LOS ANDES","Cuenca del río Cauca","archivo original",1960,-76.156,3.24,"F36-C28",10,7.3,3.95,3.36,1.85,FALSE
+2612710104,"LOS ANDES","Cuenca del río Cauca","archivo original",1960,-76.156,3.24,"F36-C28",10,7.31,3.95,3.36,1.85,FALSE
 5420410118,"MORAVITO","Vertiente del Pacífico","archivo original",1640,-76.382,4.299,"F15-C24",19,3.66,6.9,-3.25,0.53,FALSE
 5420410116,"EL BALSAL","Vertiente del Pacífico","archivo original",1524,-76.233,4.666,"F7-C27",21,3.64,6.66,-3.02,0.55,FALSE
 2613600104,"EL JANEIRO","Cuenca del río Cauca","archivo original",2000,-76.184,3.85,"F23-C28",8,6.44,3.5,2.95,1.84,FALSE
 5421200111,"EL CUSUMBO","Vertiente del Pacífico","archivo original",894,-76.692,3.936,"F22-C18",15,11.43,8.55,2.88,1.34,FALSE
 2624700120,"LA DESPENSA","Cuenca del río Cauca","archivo original",1380,-76.147,4.511,"F10-C29",14,2.72,5.45,-2.73,0.5,FALSE
 5420410107,"BETANIA","Vertiente del Pacífico","archivo original",1750,-76.308,4.436,"F12-C25",22,4.09,6.81,-2.72,0.6,FALSE
-5420410117,"EL CAIRO","Vertiente del Pacífico","archivo original",1850,-76.225,4.756,"F5-C27",19,4.56,7.23,-2.67,0.63,FALSE
-2624600103,"LA HERRADURA","Cuenca del río Cauca","archivo original",951,-76.218,4.279,"F15-C27",20,2.95,5.4,-2.45,0.55,FALSE
+5420410117,"EL CAIRO","Vertiente del Pacífico","archivo original",1850,-76.225,4.756,"F5-C27",19,4.55,7.23,-2.67,0.63,FALSE
+2624600103,"LA HERRADURA","Cuenca del río Cauca","archivo original",951,-76.218,4.279,"F15-C27",22,2.9,5.36,-2.46,0.54,FALSE
 5420410112,"LA MARIA","Vertiente del Pacífico","archivo original",1376,-76.243,4.516,"F10-C27",15,3.47,5.92,-2.45,0.59,FALSE
 2624700104,"EL PORVENIR","Cuenca del río Cauca","archivo original",1020,-76.116,4.543,"F10-C29",22,3.07,5.48,-2.41,0.56,FALSE
-2612810109,"SAN NICOLAS","Cuenca del río Cauca","archivo original",2100,-76.162,3.53,"F30-C28",19,5.54,3.16,2.38,1.75,FALSE
 2624700301,"SABANAZO","Cuenca del río Cauca","catálogo CVC",1643,-76.149,4.545,"F10-C29",23,3.12,5.5,-2.38,0.57,FALSE
+2612810109,"SAN NICOLAS","Cuenca del río Cauca","archivo original",2100,-76.162,3.53,"F30-C28",19,5.53,3.16,2.37,1.75,FALSE
 2624700202,NA,"Cuenca del río Cauca","documentos PDF",914,-76.08,4.53,"F10-C30",21,3.07,5.44,-2.37,0.56,FALSE
-2624600101,"BOLIVAR","Cuenca del río Cauca","archivo original",1055,-76.19,4.331,"F14-C28",9,3.17,5.5,-2.33,0.58,FALSE
+2624600101,"BOLIVAR","Cuenca del río Cauca","archivo original",1055,-76.19,4.331,"F14-C28",9,3.16,5.5,-2.34,0.58,FALSE
 2624700115,"EL OREGANO","Cuenca del río Cauca","archivo original",1460,-76.174,4.451,"F11-C28",21,3.29,5.61,-2.32,0.59,FALSE
 5301500107,"DAGUA","Vertiente del Pacífico","archivo original",910,-76.688,3.653,"F27-C18",18,3.16,5.48,-2.32,0.58,FALSE
 2621500301,"TIMBA-SAMARKANDA","Cuenca del río Cauca","catálogo CVC",1527,-76.704,3.173,"F37-C17",23,9.41,7.1,2.31,1.33,FALSE
 2613600102,"EL DILUVIO","Cuenca del río Cauca","archivo original",2360,-76.15,3.878,"F23-C29",22,5.91,3.7,2.2,1.6,FALSE
-2612810112,"AUSTRIA","Cuenca del río Cauca","archivo original",1750,-76.173,3.579,"F29-C28",22,5.3,3.11,2.19,1.7,FALSE
+2612810112,"AUSTRIA","Cuenca del río Cauca","archivo original",1750,-76.173,3.579,"F29-C28",22,5.29,3.11,2.19,1.7,FALSE
 2624700112,"EL BOHIO","Cuenca del río Cauca","archivo original",957,-76.069,4.603,"F8-C30",10,3.26,5.45,-2.18,0.6,FALSE
-2624700121,"LA QUIEBRA","Cuenca del río Cauca","archivo original",1514,-76.115,4.631,"F8-C29",23,3.43,5.59,-2.17,0.61,FALSE
 2614500101,"EL GUABITO","Cuenca del río Cauca","archivo original",941,-76.077,4.302,"F14-C30",1,2.95,5.11,-2.16,0.58,FALSE
+2624700121,"LA QUIEBRA","Cuenca del río Cauca","archivo original",1514,-76.115,4.631,"F8-C29",23,3.43,5.59,-2.16,0.61,FALSE
 2614200101,"VENUS","Cuenca del río Cauca","archivo original",1560,-76.076,4.028,"F20-C30",22,6.39,4.27,2.12,1.5,FALSE
 2624700114,"BUENAVISTA","Cuenca del río Cauca","archivo original",1750,-76.159,4.471,"F11-C28",23,3.47,5.59,-2.12,0.62,FALSE
-2624700119,"LA CALERA","Cuenca del río Cauca","catálogo CVC",1220,-76.166,4.536,"F10-C28",10,3.46,5.56,-2.11,0.62,FALSE
-5421200108,"BERLIN","Vertiente del Pacífico","archivo original",1796,-76.531,3.924,"F22-C21",15,3.73,5.81,-2.08,0.64,FALSE
+2624700119,"LA CALERA","Cuenca del río Cauca","catálogo CVC",1220,-76.166,4.536,"F10-C28",10,3.45,5.56,-2.11,0.62,FALSE
+5421200108,"BERLIN","Vertiente del Pacífico","archivo original",1796,-76.531,3.924,"F22-C21",15,3.72,5.81,-2.09,0.64,FALSE
 2622400201,"LA TERESITA","Cuenca del río Cauca","catálogo CVC",1950,-76.663,3.45,"F32-C18",21,4.86,6.93,-2.07,0.7,FALSE
-5420410114,"ARABIA","Vertiente del Pacífico","archivo original",1395,-76.198,4.618,"F8-C28",20,3.75,5.83,-2.07,0.64,FALSE
 5421220101,"LIMONES","Vertiente del Pacífico","catálogo CVC",850,-76.672,3.911,"F22-C18",9,6.36,8.43,-2.07,0.75,FALSE
-2610000104,"LA VICTORIA","Cuenca del río Cauca","archivo original",903,-76.043,4.525,"F10-C31",20,3.3,5.33,-2.04,0.62,FALSE
-2612810108,"TENJO","Cuenca del río Cauca","archivo original",1500,-76.171,3.521,"F30-C28",22,5.2,3.16,2.04,1.65,FALSE
+2610000104,"LA VICTORIA","Cuenca del río Cauca","archivo original",903,-76.043,4.525,"F10-C31",20,3.29,5.33,-2.05,0.62,FALSE
+2612810108,"TENJO","Cuenca del río Cauca","archivo original",1500,-76.171,3.521,"F30-C28",22,5.21,3.16,2.05,1.65,FALSE
+5420410114,"ARABIA","Vertiente del Pacífico","archivo original",1395,-76.198,4.618,"F8-C28",21,3.75,5.8,-2.05,0.65,FALSE
 2624700116,"LA PLANTA","Cuenca del río Cauca","archivo original",1346,-76.107,4.55,"F9-C29",10,3.44,5.48,-2.04,0.63,FALSE
-2624700117,"EL LUCERO","Cuenca del río Cauca","archivo original",976,-76.109,4.514,"F10-C29",23,3.46,5.5,-2.03,0.63,FALSE
-2622400102,"LA LEONERA","Cuenca del río Cauca","archivo original",1869,-76.633,3.453,"F31-C19",9,3.66,5.68,-2.02,0.64,FALSE
+2624700117,"EL LUCERO","Cuenca del río Cauca","archivo original",976,-76.109,4.514,"F10-C29",23,3.46,5.5,-2.04,0.63,FALSE
+2622400102,"LA LEONERA","Cuenca del río Cauca","archivo original",1869,-76.633,3.453,"F31-C19",9,3.67,5.68,-2.02,0.64,FALSE
 2615400103,"SANTA ANA","Cuenca del río Cauca","archivo original",913,-75.946,4.752,"F5-C33",15,3.84,5.77,-1.92,0.67,FALSE
 2613000103,"EL CASTILLO","Cuenca del río Cauca","archivo original",1424,-76.192,3.665,"F27-C28",23,5.04,3.16,1.88,1.59,FALSE
 2614100104,"LOS BANCOS","Cuenca del río Cauca","archivo original",1956,-76.02,3.9,"F22-C31",23,2.29,4.17,-1.88,0.55,FALSE
-2614400201,"BARRAGAN","Cuenca del río Cauca","catálogo CVC",2484,-75.888,4.033,"F20-C34",19,2.7,4.56,-1.85,0.59,FALSE
+2614400201,"BARRAGAN","Cuenca del río Cauca","catálogo CVC",2484,-75.888,4.033,"F20-C34",19,2.7,4.56,-1.86,0.59,FALSE
 2622400104,"BRASILIA","Cuenca del río Cauca","archivo original",1864,-76.628,3.453,"F31-C19",23,3.96,5.81,-1.85,0.68,FALSE
+2624700110,"EL AGUACATE","Cuenca del río Cauca","archivo original",1400,-76.2,4.395,"F13-C27",22,3.77,5.6,-1.84,0.67,FALSE
 2622420103,"AGUACATAL","Cuenca del río Cauca","archivo original",1649,-76.606,3.507,"F30-C19",22,3.47,5.3,-1.83,0.65,FALSE
-2624700110,"EL AGUACATE","Cuenca del río Cauca","archivo original",1400,-76.2,4.395,"F13-C27",22,3.77,5.6,-1.83,0.67,FALSE
-2612810101,"LA ZAPATA","Cuenca del río Cauca","archivo original",1232,-76.214,3.515,"F30-C27",16,4.87,3.06,1.81,1.59,FALSE
+2612810101,"LA ZAPATA","Cuenca del río Cauca","archivo original",1232,-76.214,3.515,"F30-C27",16,4.86,3.06,1.8,1.59,FALSE
 2624700118,"PATIO BONITO","Cuenca del río Cauca","archivo original",1727,-76.134,4.589,"F9-C29",23,3.74,5.53,-1.79,0.68,FALSE
 2624700103,"EL VESUBIO","Cuenca del río Cauca","archivo original",990,-76.09,4.609,"F8-C30",23,3.76,5.54,-1.78,0.68,FALSE
-5421200105,"LA CRISTALINA","Vertiente del Pacífico","archivo original",1656,-76.444,3.998,"F21-C23",13,6.88,5.13,1.75,1.34,FALSE
+5421200105,"LA CRISTALINA","Vertiente del Pacífico","archivo original",1656,-76.444,3.998,"F21-C23",13,6.87,5.13,1.74,1.34,FALSE
 5421200109,"SAMARIA","Vertiente del Pacífico","archivo original",1748,-76.442,4.027,"F20-C23",14,7.53,5.8,1.74,1.3,FALSE
-2612810117,"LOS CUERVOS","Cuenca del río Cauca","catálogo CVC",2178,-76.105,3.572,"F29-C29",1,5.22,3.49,1.73,1.5,FALSE
+5301400103,"LA FLORESTA","Vertiente del Pacífico","catálogo CVC",1050,-76.759,3.553,"F29-C16",7,8.64,6.93,1.71,1.25,FALSE
 5420410111,"LA BELLITA","Vertiente del Pacífico","archivo original",1693,-76.242,4.732,"F6-C27",6,5.11,6.82,-1.71,0.75,FALSE
 2610000202,"ZARAGOZA","Cuenca del río Cauca","catálogo CVC",925,-75.93,4.714,"F6-C33",21,3.99,5.69,-1.7,0.7,FALSE
-5301400103,"LA FLORESTA","Vertiente del Pacífico","catálogo CVC",1050,-76.759,3.553,"F29-C16",7,8.63,6.93,1.7,1.24,FALSE
+2624700113,"EL OSO","Cuenca del río Cauca","archivo original",1240,-76.1,4.577,"F9-C30",23,3.78,5.47,-1.7,0.69,FALSE
 2610000110,"SAN PEDRO","Cuenca del río Cauca","archivo original",904,-76.038,4.508,"F10-C31",5,3.91,5.6,-1.69,0.7,FALSE
-2624700113,"EL OSO","Cuenca del río Cauca","archivo original",1240,-76.1,4.577,"F9-C30",23,3.78,5.47,-1.69,0.69,FALSE
-2610000115,"ANACARO","Cuenca del río Cauca","archivo original",908,-75.969,4.783,"F5-C32",8,4.31,6,-1.68,0.72,FALSE
 2613100107,"COSTA RICA","Cuenca del río Cauca","archivo original",1192,-76.231,3.755,"F25-C27",19,4.82,3.14,1.68,1.53,FALSE
-2620000105,"LA INMACULADA","Cuenca del río Cauca","archivo original",1005,-75.989,4.797,"F5-C32",17,4.28,5.93,-1.65,0.72,FALSE
-2624700109,"MONTECRISTO","Cuenca del río Cauca","archivo original",1357,-76.192,4.417,"F12-C28",23,3.9,5.52,-1.63,0.71,FALSE
+2612810117,"LOS CUERVOS","Cuenca del río Cauca","catálogo CVC",2178,-76.105,3.572,"F29-C29",1,5.16,3.49,1.67,1.48,FALSE
+2610000115,"ANACARO","Cuenca del río Cauca","archivo original",908,-75.969,4.783,"F5-C32",8,4.34,6,-1.66,0.72,FALSE
+2620000105,"LA INMACULADA","Cuenca del río Cauca","archivo original",1005,-75.989,4.797,"F5-C32",17,4.27,5.93,-1.65,0.72,FALSE
+2624700109,"MONTECRISTO","Cuenca del río Cauca","archivo original",1357,-76.192,4.417,"F12-C28",23,3.89,5.52,-1.63,0.7,FALSE
 2613100103,"LA SELVA","Cuenca del río Cauca","archivo original",1704,-76.195,3.745,"F26-C28",23,4.81,3.21,1.6,1.5,FALSE
 2622100301,"SAN ANTONIO","Cuenca del río Cauca","catálogo CVC",1567,-76.657,3.207,"F36-C18",20,8.25,6.66,1.59,1.24,FALSE
 2612710105,"LA SOLEDAD","Cuenca del río Cauca","archivo original",2160,-76.154,3.354,"F33-C28",21,5.21,3.63,1.58,1.44,FALSE
 2614400104,"IRLANDA","Cuenca del río Cauca","archivo original",1663,-75.927,4.191,"F17-C33",23,6.43,4.85,1.58,1.33,FALSE
+2612810107,"AMBERES","Cuenca del río Cauca","archivo original",2070,-76.095,3.524,"F30-C30",2,5.39,3.84,1.54,1.4,FALSE
 2622420101,"MONTEBELLO","Cuenca del río Cauca","archivo original",1260,-76.55,3.487,"F31-C20",23,3.45,4.98,-1.54,0.69,FALSE
-2612810107,"AMBERES","Cuenca del río Cauca","archivo original",2070,-76.095,3.524,"F30-C30",2,5.36,3.84,1.52,1.4,FALSE
 2614900102,"LA ELVIRA","Cuenca del río Cauca","archivo original",962,-76.047,4.388,"F13-C31",20,3.61,5.13,-1.52,0.7,FALSE
 2622410102,"YANACONAS","Cuenca del río Cauca","archivo original",1730,-76.601,3.438,"F32-C19",22,4.71,6.23,-1.52,0.76,FALSE
-2622320102,"COREA","Cuenca del río Cauca","catálogo CVC",2580,-76.659,3.363,"F33-C18",5,8.63,7.14,1.49,1.21,FALSE
+2622320102,"COREA","Cuenca del río Cauca","catálogo CVC",2580,-76.659,3.363,"F33-C18",5,8.64,7.14,1.5,1.21,FALSE
+2622100103,"SAN VICENTE","Cuenca del río Cauca","archivo original",1442,-76.626,3.269,"F35-C19",23,7.78,6.29,1.49,1.24,FALSE
 2610000105,"PUERTO MOLINA","Cuenca del río Cauca","archivo original",939,-76.023,4.623,"F8-C31",22,4.02,5.5,-1.48,0.73,FALSE
 2612810201,"SAN EMIGDIO","Cuenca del río Cauca","catálogo CVC",1272,-76.201,3.549,"F30-C27",23,4.51,3.04,1.47,1.48,FALSE
-2612810202,"EL DIAMANTE","Cuenca del río Cauca","catálogo CVC",2100,-76.173,3.508,"F30-C28",3,4.74,3.27,1.47,1.45,FALSE
 2612810122,"PLANTA NIMA","Cuenca del río Cauca","archivo original",1170,-76.218,3.548,"F30-C27",21,4.47,3.01,1.46,1.48,FALSE
-2624000102,"RIOFRIO","Cuenca del río Cauca","archivo original",1000,-76.277,4.141,"F18-C26",22,3.59,5.05,-1.46,0.71,FALSE
-2622100103,"SAN VICENTE","Cuenca del río Cauca","archivo original",1442,-76.626,3.269,"F35-C19",22,7.74,6.29,1.45,1.23,FALSE
+2612810202,"EL DIAMANTE","Cuenca del río Cauca","catálogo CVC",2100,-76.173,3.508,"F30-C28",3,4.73,3.27,1.46,1.45,FALSE
+2624000102,"RIOFRIO","Cuenca del río Cauca","archivo original",1000,-76.277,4.141,"F18-C26",22,3.6,5.05,-1.45,0.71,FALSE
 2613600103,"LA PRIMAVERA","Cuenca del río Cauca","archivo original",1644,-76.197,3.919,"F22-C28",23,4.98,3.55,1.43,1.4,FALSE
+5301400104,"LA CASCADA","Vertiente del Pacífico","archivo original",829,-76.841,3.593,"F29-C15",13,9.52,8.09,1.43,1.18,FALSE
 2622110201,"EL TOPACIO","Cuenca del río Cauca","catálogo CVC",1676,-76.637,3.318,"F34-C19",23,7.83,6.41,1.42,1.22,FALSE
 2622330104,"EL DESCANSO","Cuenca del río Cauca","catálogo CVC",1172,-76.609,3.398,"F33-C19",10,4.94,6.37,-1.42,0.78,FALSE
-5301400104,"LA CASCADA","Vertiente del Pacífico","archivo original",829,-76.841,3.593,"F29-C15",13,9.51,8.09,1.42,1.18,FALSE
-2615000102,"LA ARBOLEDA","Cuenca del río Cauca","archivo original",1275,-75.921,4.583,"F9-C33",19,3.92,5.33,-1.41,0.73,FALSE
-2615000101,"OBANDO","Cuenca del río Cauca","archivo original",996,-75.955,4.575,"F9-C32",14,4.06,5.43,-1.37,0.75,FALSE
+2615000102,"LA ARBOLEDA","Cuenca del río Cauca","archivo original",1275,-75.921,4.583,"F9-C33",19,3.92,5.33,-1.41,0.74,FALSE
+2615000101,"OBANDO","Cuenca del río Cauca","archivo original",996,-75.955,4.575,"F9-C32",13,4.02,5.4,-1.38,0.74,FALSE
 2612200103,"LOS ALPES","Cuenca del río Cauca","archivo original",2380,-76.108,3.263,"F35-C29",20,5.27,3.93,1.34,1.34,FALSE
 2621500101,"VILLACOLOMBIA","Cuenca del río Cauca","archivo original",1505,-76.659,3.187,"F37-C18",23,7.97,6.63,1.34,1.2,FALSE
 2624600102,"EL RETIRO","Cuenca del río Cauca","archivo original",1640,-76.235,4.396,"F13-C27",21,4.32,5.61,-1.3,0.77,FALSE
-2614400102,"BUGALAGRANDE","Cuenca del río Cauca","archivo original",942,-76.141,4.213,"F16-C29",23,3.66,4.94,-1.28,0.74,FALSE
+2614400102,"BUGALAGRANDE","Cuenca del río Cauca","archivo original",942,-76.141,4.213,"F16-C29",23,3.66,4.94,-1.27,0.74,FALSE
 2612810121,"LAS VERANERAS","Cuenca del río Cauca","archivo original",1465,-76.19,3.522,"F30-C28",5,4.43,3.17,1.26,1.4,FALSE
-2610000116,"JUANCHITO","Cuenca del río Cauca","archivo original",922,-76.475,3.452,"F31-C22",2,2.13,3.38,-1.25,0.63,FALSE
+2610000116,"JUANCHITO","Cuenca del río Cauca","archivo original",922,-76.475,3.452,"F31-C22",2,2.13,3.38,-1.24,0.63,FALSE
 2612700106,"EL LLANITO","Cuenca del río Cauca","archivo original",926,-76.406,3.521,"F30-C23",1,1.91,3.13,-1.22,0.61,FALSE
 2622330101,"COLEGIO SAN JUAN BOSCO","Cuenca del río Cauca","archivo original",1000,-76.533,3.442,"F32-C21",22,3.26,4.48,-1.22,0.73,FALSE
 2622500102,"LLOREDA GRASAS","Cuenca del río Cauca","archivo original",1014,-76.501,3.519,"F30-C21",22,2.75,3.93,-1.18,0.7,FALSE
-2624700111,"LA MONTANUELA","Cuenca del río Cauca","catálogo CVC",1678,-76.198,4.441,"F12-C28",9,4.25,5.43,-1.18,0.78,FALSE
+2624700111,"LA MONTANUELA","Cuenca del río Cauca","catálogo CVC",1678,-76.198,4.441,"F12-C28",9,4.26,5.43,-1.18,0.78,FALSE
 2612810111,"LA BETULIA","Cuenca del río Cauca","catálogo CVC",2600,-76.105,3.59,"F29-C29",1,4.65,3.49,1.16,1.33,FALSE
 2613100102,"SAN LORENZO","Cuenca del río Cauca","archivo original",935,-76.36,3.758,"F25-C24",1,2.09,3.24,-1.15,0.65,FALSE
 2622330102,"CAÑAVERALEJO PG","Cuenca del río Cauca","archivo original",1056,-76.578,3.411,"F32-C20",22,4.29,5.44,-1.15,0.79,FALSE
-2613000102,"EL PARAISO","Cuenca del río Cauca","archivo original",1412,-76.2,3.65,"F28-C28",20,4.26,3.13,1.14,1.36,FALSE
 2622110101,"LA ARGENTINA","Cuenca del río Cauca","archivo original",1794,-76.651,3.327,"F34-C18",23,8.1,6.96,1.14,1.16,FALSE
+2613000102,"EL PARAISO","Cuenca del río Cauca","archivo original",1412,-76.2,3.65,"F28-C28",20,4.26,3.13,1.13,1.36,FALSE
 2623900102,"CALABAZAS","Cuenca del río Cauca","archivo original",1093,-76.371,4.039,"F20-C24",9,6.11,4.99,1.13,1.23,FALSE
 2613600101,"DOSQUEBRADAS","Cuenca del río Cauca","archivo original",1650,-76.181,3.909,"F22-C28",23,4.67,3.55,1.12,1.32,FALSE
 5301400106,"GUADALITO","Vertiente del Pacífico","catálogo CVC",542,-76.838,3.61,"F28-C15",6,9.48,8.37,1.11,1.13,FALSE
 2614900101,"EL SOCORRO","Cuenca del río Cauca","archivo original",1025,-75.96,4.48,"F11-C32",16,4.02,5.11,-1.1,0.79,FALSE
-2624700108,"LAS PEÑAS","Cuenca del río Cauca","archivo original",1807,-76.107,4.663,"F7-C29",23,4.66,5.72,-1.06,0.82,FALSE
+2624700108,"LAS PEÑAS","Cuenca del río Cauca","archivo original",1807,-76.107,4.663,"F7-C29",23,4.67,5.72,-1.06,0.82,FALSE
 2610000103,"CRUCES","Cuenca del río Cauca","archivo original",968,-75.918,4.651,"F7-C33",21,4.53,5.56,-1.03,0.81,FALSE
-2620000202,"GARZONERO","Cuenca del río Cauca","catálogo CVC",942,-76.334,4.005,"F20-C25",22,3.56,4.57,-1.01,0.78,FALSE
 2613100106,"JUNTAS","Cuenca del río Cauca","archivo original",2072,-76.166,3.773,"F25-C28",21,4.29,3.29,1,1.3,FALSE
-2622400101,"COLEGIO SAN LUIS","Cuenca del río Cauca","archivo original",1053,-76.536,3.46,"F31-C21",21,3.19,4.2,-1,0.76,FALSE
-5301420101,"MORAVIA","Vertiente del Pacífico","catálogo CVC",1800,-76.734,3.485,"F31-C17",3,6.64,7.63,-0.99,0.87,FALSE
-2613600301,"LA MAGDALENA","Cuenca del río Cauca","catálogo CVC",1360,-76.201,3.881,"F23-C27",23,4.2,3.26,0.94,1.29,FALSE
+2620000202,"GARZONERO","Cuenca del río Cauca","catálogo CVC",942,-76.334,4.005,"F20-C25",22,3.57,4.57,-1,0.78,FALSE
+2622400101,"COLEGIO SAN LUIS","Cuenca del río Cauca","archivo original",1053,-76.536,3.46,"F31-C21",21,3.22,4.2,-0.98,0.77,FALSE
+5301420101,"MORAVIA","Vertiente del Pacífico","catálogo CVC",1800,-76.734,3.485,"F31-C17",3,6.65,7.63,-0.98,0.87,FALSE
+2613600301,"LA MAGDALENA","Cuenca del río Cauca","catálogo CVC",1360,-76.201,3.881,"F23-C27",23,4.21,3.26,0.94,1.29,FALSE
 2622310101,"LA LADRILLERA","Cuenca del río Cauca","archivo original",1180,-76.572,3.357,"F33-C20",18,4.73,5.64,-0.91,0.84,FALSE
 2622600201,"LA BUITRERA","Cuenca del río Cauca","catálogo CVC",1500,-76.535,3.567,"F29-C21",22,2.86,3.77,-0.91,0.76,FALSE
 2614100103,"LA GITANA","Cuenca del río Cauca","archivo original",2783,-76.009,3.946,"F22-C31",23,5.07,4.17,0.9,1.22,FALSE
-2622410104,"PEÑAS BLANCAS","Cuenca del río Cauca","archivo original",2158,-76.662,3.416,"F32-C18",20,5.87,6.78,-0.9,0.87,FALSE
+2622410104,"PEÑAS BLANCAS","Cuenca del río Cauca","archivo original",2158,-76.662,3.416,"F32-C18",20,5.88,6.78,-0.9,0.87,FALSE
 5421200114,"LA GRANJITA","Vertiente del Pacífico","archivo original",2229,-76.5,4.039,"F20-C22",13,7.49,6.59,0.89,1.14,FALSE
 2615400102,"HERACLIO URIBE","Cuenca del río Cauca","archivo original",1415,-75.902,4.285,"F15-C33",15,5.93,5.07,0.86,1.17,FALSE
 2612720301,"CHAMBU","Cuenca del río Cauca","catálogo CVC",1350,-76.209,3.481,"F31-C27",23,4.01,3.16,0.85,1.27,FALSE
 2614500102,"EL ALCAZAR","Cuenca del río Cauca","archivo original",991,-76.019,4.307,"F14-C31",20,4.19,5.03,-0.84,0.83,FALSE
-2620000103,"PLANTA RIO CAUCA","Cuenca del río Cauca","archivo original",956,-76.493,3.447,"F32-C22",23,3.03,3.88,-0.84,0.78,FALSE
 2622320201,NA,"Cuenca del río Cauca","documentos PDF",975,-76.53,3.364,"F33-C21",19,3.96,4.79,-0.83,0.83,FALSE
+2620000103,"PLANTA RIO CAUCA","Cuenca del río Cauca","archivo original",956,-76.493,3.447,"F32-C22",23,3.06,3.88,-0.82,0.79,FALSE
 5420410113,"EL BOSQUE","Vertiente del Pacífico","archivo original",1561,-76.142,4.677,"F7-C29",19,4.89,5.71,-0.82,0.86,FALSE
 5421210101,"RIOBRAVO","Vertiente del Pacífico","archivo original",1520,-76.554,3.969,"F21-C20",13,6.7,7.52,-0.82,0.89,FALSE
 2615400111,"PIEDRAS DE MOLER","Cuenca del río Cauca","archivo original",1100,-75.851,4.712,"F6-C34",21,4.83,5.64,-0.81,0.86,FALSE
 2612700105,"MATAPALO","Cuenca del río Cauca","archivo original",928,-76.434,3.576,"F29-C23",20,2.37,3.17,-0.8,0.75,FALSE
-2612810114,"ALBANIA","Cuenca del río Cauca","archivo original",2050,-76.145,3.545,"F30-C29",3,4.39,3.6,0.79,1.22,FALSE
 2622420102,"SAN PABLO","Cuenca del río Cauca","archivo original",1871,-76.62,3.517,"F30-C19",23,4.51,5.3,-0.79,0.85,FALSE
+2612810114,"ALBANIA","Cuenca del río Cauca","archivo original",2050,-76.145,3.545,"F30-C29",3,4.38,3.6,0.78,1.22,FALSE
 5301500109,"LA ROSITA","Vertiente del Pacífico","archivo original",1498,-76.601,3.602,"F28-C19",3,3.69,4.47,-0.78,0.83,FALSE
 2614100202,"TULUA-ACUEDUCTO TULUA","Cuenca del río Cauca","catálogo CVC",1014,-76.184,4.07,"F19-C28",23,3.56,4.32,-0.77,0.82,FALSE
-2622420104,"VILLA ARACELLY","Cuenca del río Cauca","archivo original",2040,-76.588,3.53,"F30-C20",22,3.81,4.56,-0.76,0.83,FALSE
-2612800104,"AUJI","Cuenca del río Cauca","archivo original",1555,-76.108,3.622,"F28-C29",20,2.63,3.35,-0.71,0.79,FALSE
+2622420104,"VILLA ARACELLY","Cuenca del río Cauca","archivo original",2040,-76.588,3.53,"F30-C20",22,3.8,4.56,-0.76,0.83,FALSE
 2622400103,"PLANTA RIO CALI","Cuenca del río Cauca","archivo original",1070,-76.546,3.445,"F32-C21",23,3.82,4.51,-0.69,0.85,FALSE
-2612700203,NA,"Cuenca del río Cauca","documentos PDF",961,-76.38,3.547,"F30-C24",22,2.41,3.05,-0.64,0.79,FALSE
-2622600103,"YUMBILLO","Cuenca del río Cauca","archivo original",1730,-76.55,3.58,"F29-C21",17,3.11,3.74,-0.63,0.83,FALSE
+2612700203,NA,"Cuenca del río Cauca","documentos PDF",961,-76.38,3.547,"F30-C24",22,2.41,3.05,-0.63,0.79,FALSE
+2622600103,"YUMBILLO","Cuenca del río Cauca","archivo original",1730,-76.55,3.58,"F29-C21",17,3.12,3.74,-0.63,0.83,FALSE
 2622500101,"DAPA","Cuenca del río Cauca","archivo original",1716,-76.554,3.56,"F29-C20",21,3.63,4.25,-0.62,0.85,FALSE
+2622400105,"VIVERO CALI","Cuenca del río Cauca","archivo original",960,-76.513,3.464,"F31-C21",11,3.56,4.16,-0.6,0.86,FALSE
 2622330107,"CAÑAVERALEJO-EDIFICIO CVC","Cuenca del río Cauca","catálogo CVC",985,-76.539,3.406,"F32-C21",20,3.87,4.46,-0.59,0.87,FALSE
 2614900201,"MIRAVALLES","Cuenca del río Cauca","catálogo CVC",1233,-75.917,4.519,"F10-C33",23,4.65,5.23,-0.58,0.89,FALSE
-2622400105,"VIVERO CALI","Cuenca del río Cauca","archivo original",960,-76.513,3.464,"F31-C21",11,3.58,4.16,-0.58,0.86,FALSE
 2610000108,"SANTA ANITA","Cuenca del río Cauca","archivo original",955,-76.336,3.599,"F29-C25",10,2.37,2.93,-0.56,0.81,FALSE
 2612720105,"LOS MINCHOS","Cuenca del río Cauca","archivo original",1370,-76.183,3.421,"F32-C28",8,3.96,3.41,0.55,1.16,FALSE
 2610000107,"LA OLGA","Cuenca del río Cauca","archivo original",944,-76.361,3.616,"F28-C24",10,2.48,3.02,-0.54,0.82,FALSE
-2622900301,"VIJES","Cuenca del río Cauca","catálogo CVC",990,-76.43,3.699,"F27-C23",22,2.7,3.25,-0.54,0.83,FALSE
+2612710101,"FLORIDA","Cuenca del río Cauca","archivo original",1042,-76.243,3.321,"F34-C27",22,4.23,3.69,0.53,1.14,FALSE
+2622900301,"VIJES","Cuenca del río Cauca","catálogo CVC",990,-76.43,3.699,"F27-C23",21,2.72,3.24,-0.53,0.84,FALSE
 2621500103,"EL SILENCIOSO","Cuenca del río Cauca","archivo original",1503,-76.734,3.138,"F38-C17",19,7.6,7.08,0.52,1.07,FALSE
-2612800106,"LA CEJA","Cuenca del río Cauca","archivo original",3052,-76.016,3.706,"F26-C31",17,3.33,3.81,-0.48,0.87,FALSE
 2614400103,"PUERTO FRAZADAS","Cuenca del río Cauca","archivo original",1960,-75.995,4.054,"F19-C32",20,5.12,4.64,0.48,1.1,FALSE
-2612710101,"FLORIDA","Cuenca del río Cauca","archivo original",1042,-76.243,3.321,"F34-C27",21,4.15,3.69,0.46,1.13,FALSE
-2613100104,"GUACARI","Cuenca del río Cauca","archivo original",943,-76.332,3.77,"F25-C25",20,2.74,3.2,-0.46,0.86,FALSE
+2612800104,"AUJI","Cuenca del río Cauca","archivo original",1555,-76.108,3.622,"F28-C29",13,2.93,3.38,-0.45,0.87,FALSE
 2612800102,"EL PORVENIR I","Cuenca del río Cauca","archivo original",1045,-76.243,3.615,"F28-C27",10,3.43,2.98,0.44,1.15,FALSE
-5301500104,"LA CUMBRE","Vertiente del Pacífico","archivo original",1439,-76.57,3.653,"F27-C20",2,4.58,4.14,0.44,1.11,FALSE
-2612710103,"ING LA QUINTA","Cuenca del río Cauca","archivo original",980,-76.346,3.417,"F32-C25",21,2.86,3.27,-0.42,0.87,FALSE
-2612710108,"EL AVELINO","Cuenca del río Cauca","archivo original",3380,-76.063,3.297,"F35-C30",9,4.37,3.96,0.41,1.1,FALSE
+2612800106,"LA CEJA","Cuenca del río Cauca","archivo original",3052,-76.016,3.706,"F26-C31",14,3.44,3.87,-0.43,0.89,FALSE
+2623300101,"BUENOS AIRES","Cuenca del río Cauca","archivo original",1566,-76.43,3.841,"F24-C23",21,4,3.57,0.43,1.12,FALSE
+2612710108,"EL AVELINO","Cuenca del río Cauca","archivo original",3380,-76.063,3.297,"F35-C30",9,4.38,3.96,0.42,1.11,FALSE
+2612710103,"ING LA QUINTA","Cuenca del río Cauca","archivo original",980,-76.346,3.417,"F32-C25",21,2.86,3.27,-0.41,0.87,FALSE
 2612800202,NA,"Cuenca del río Cauca","documentos PDF",2674,-76.08,3.73,"F26-C30",23,3.18,3.6,-0.41,0.88,FALSE
+2613100104,"GUACARI","Cuenca del río Cauca","archivo original",943,-76.332,3.77,"F25-C25",18,2.8,3.21,-0.41,0.87,FALSE
 2622100102,"EL PALACIO","Cuenca del río Cauca","archivo original",950,-76.524,3.289,"F35-C21",22,4.66,5.07,-0.41,0.92,FALSE
 2612710202,"CENICAÑA","Cuenca del río Cauca","estaciones automáticas CVC",967,-76.301,3.36,"F33-C25",22,3.09,3.49,-0.4,0.89,FALSE
 2612720106,"BOLIVIA","Cuenca del río Cauca","archivo original",3180,-76.047,3.397,"F33-C31",8,3.61,4.01,-0.4,0.9,FALSE
 2612700202,NA,"Cuenca del río Cauca","documentos PDF",1006,-76.314,3.497,"F31-C25",13,2.77,3.16,-0.38,0.88,FALSE
 2622110102,"EL GUANABANO","Cuenca del río Cauca","archivo original",1365,-76.599,3.356,"F33-C20",8,6.01,5.63,0.38,1.07,FALSE
-2623300101,"BUENOS AIRES","Cuenca del río Cauca","archivo original",1566,-76.43,3.841,"F24-C23",18,3.97,3.59,0.38,1.11,FALSE
-2614500103,"EL JIGUAL","Cuenca del río Cauca","archivo original",1433,-76.003,4.177,"F17-C31",10,5.06,4.69,0.37,1.08,FALSE
+2614500103,"EL JIGUAL","Cuenca del río Cauca","archivo original",1433,-76.003,4.177,"F17-C31",10,5.07,4.69,0.37,1.08,FALSE
 2622330105,"LOS CRISTALES","Cuenca del río Cauca","archivo original",1312,-76.568,3.428,"F32-C20",22,5.01,5.38,-0.37,0.93,FALSE
-5421200206,"EL DARIEN","Vertiente del Pacífico","catálogo CVC",1500,-76.489,3.93,"F22-C22",6,4.76,5.11,-0.35,0.93,FALSE
+5421200206,"EL DARIEN","Vertiente del Pacífico","catálogo CVC",1500,-76.489,3.93,"F22-C22",6,4.76,5.11,-0.34,0.93,FALSE
 2612710106,"GUACHAZAMBOLO","Cuenca del río Cauca","archivo original",922,-76.444,3.497,"F31-C23",20,2.97,3.3,-0.32,0.9,FALSE
 2614100102,"EL PLACER","Cuenca del río Cauca","catálogo CVC",2224,-76.101,3.879,"F23-C29",20,4.06,3.73,0.32,1.09,FALSE
+2614400101,"ALEGRIAS","Cuenca del río Cauca","archivo original",2290,-75.863,4.08,"F19-C34",20,4.37,4.69,-0.32,0.93,FALSE
 2612720103,"BOLO BLANCO","Cuenca del río Cauca","archivo original",2410,-76.108,3.458,"F31-C29",17,3.76,3.45,0.31,1.09,FALSE
-2614400101,"ALEGRIAS","Cuenca del río Cauca","archivo original",2290,-75.863,4.08,"F19-C34",20,4.38,4.69,-0.31,0.93,FALSE
-2614400105,"PARDO","Cuenca del río Cauca","archivo original",1255,-76.101,4.087,"F19-C29",19,4.61,4.31,0.3,1.07,FALSE
+2614400105,"PARDO","Cuenca del río Cauca","archivo original",1255,-76.101,4.087,"F19-C29",19,4.62,4.31,0.31,1.07,FALSE
 2612810203,"LA SIRENA","Cuenca del río Cauca","catálogo CVC",2605,-76.073,3.514,"F30-C30",16,3.87,3.59,0.28,1.08,FALSE
-2613200101,"ING PICHICHI","Cuenca del río Cauca","archivo original",1050,-76.273,3.778,"F25-C26",16,2.91,3.18,-0.28,0.91,FALSE
-2624000101,"VENECIA","Cuenca del río Cauca","archivo original",1739,-76.42,4.112,"F18-C23",16,6.5,6.79,-0.28,0.96,FALSE
-2615400107,"QUEBRADANUEVA","Cuenca del río Cauca","archivo original",1024,-75.943,4.381,"F13-C33",19,4.84,5.11,-0.27,0.95,FALSE
+2613200101,"ING PICHICHI","Cuenca del río Cauca","archivo original",1050,-76.273,3.778,"F25-C26",16,2.9,3.18,-0.28,0.91,FALSE
+2624000101,"VENECIA","Cuenca del río Cauca","archivo original",1739,-76.42,4.112,"F18-C23",16,6.51,6.79,-0.28,0.96,FALSE
+2615400107,"QUEBRADANUEVA","Cuenca del río Cauca","archivo original",1024,-75.943,4.381,"F13-C33",19,4.85,5.11,-0.27,0.95,FALSE
 2620000109,"MEDIACANOA","Cuenca del río Cauca","catálogo CVC",975,-76.348,3.891,"F23-C25",23,3.21,3.48,-0.27,0.92,FALSE
-2614100203,"MONTELORO","Cuenca del río Cauca","catálogo CVC",1861,-76.062,3.962,"F21-C30",21,3.93,4.19,-0.26,0.94,FALSE
-2622900101,"VILLAMARIA","Cuenca del río Cauca","archivo original",1698,-76.48,3.719,"F26-C22",21,3.19,3.42,-0.23,0.93,FALSE
+2614100203,"MONTELORO","Cuenca del río Cauca","catálogo CVC",1861,-76.062,3.962,"F21-C30",21,3.93,4.19,-0.25,0.94,FALSE
+2622900101,"VILLAMARIA","Cuenca del río Cauca","archivo original",1698,-76.48,3.719,"F26-C22",21,3.19,3.42,-0.24,0.93,FALSE
+5301420102,"DIGUITA","Vertiente del Pacífico","archivo original",1220,-76.776,3.536,"F30-C16",14,7.18,7.4,-0.23,0.97,FALSE
+2612810102,"SANTA TERESA","Cuenca del río Cauca","archivo original",3690,-76.023,3.481,"F31-C31",20,4.11,3.89,0.22,1.06,FALSE
 2613000101,"LA SIBERIA","Cuenca del río Cauca","archivo original",990,-76.274,3.687,"F27-C26",9,3.2,2.98,0.22,1.07,FALSE
-2615400106,"COROZAL","Cuenca del río Cauca","archivo original",1122,-75.917,4.386,"F13-C33",14,5.35,5.12,0.22,1.04,FALSE
 2622310201,"SAN SEBASTIAN","Cuenca del río Cauca","archivo original",1418,-76.595,3.374,"F33-C20",2,5.34,5.56,-0.22,0.96,FALSE
-2622600101,"SANTA INES","Cuenca del río Cauca","archivo original",1511,-76.547,3.625,"F28-C21",23,3.45,3.66,-0.22,0.94,FALSE
+2622600101,"SANTA INES","Cuenca del río Cauca","archivo original",1511,-76.547,3.625,"F28-C21",23,3.44,3.66,-0.22,0.94,FALSE
 5301400108,"ALTO - ANCHICAYA","Vertiente del Pacífico","archivo original",650,-76.871,3.582,"F29-C14",22,8.88,8.66,0.22,1.03,FALSE
-5301420102,"DIGUITA","Vertiente del Pacífico","archivo original",1220,-76.776,3.536,"F30-C16",14,7.18,7.4,-0.22,0.97,FALSE
-2612810102,"SANTA TERESA","Cuenca del río Cauca","archivo original",3690,-76.023,3.481,"F31-C31",20,4.11,3.89,0.21,1.05,FALSE
 2615400110,"EL ALAMBRADO","Cuenca del río Cauca","archivo original",1086,-75.875,4.41,"F12-C34",18,4.83,5.03,-0.2,0.96,FALSE
 2612810118,"CASETEJA","Cuenca del río Cauca","archivo original",3520,-76.063,3.48,"F31-C30",17,3.84,3.65,0.19,1.05,FALSE
 2612700201,"ING MANUELITA","Cuenca del río Cauca","catálogo CVC",993,-76.279,3.58,"F29-C26",23,3.1,2.94,0.17,1.06,FALSE
-2610000109,"HDA REAL","Cuenca del río Cauca","archivo original",974,-76.304,3.584,"F29-C25",1,2.65,2.81,-0.16,0.94,FALSE
+5301500104,"LA CUMBRE","Vertiente del Pacífico","archivo original",1439,-76.57,3.653,"F27-C20",4,4.33,4.15,0.17,1.04,FALSE
+2610000109,"HDA REAL","Cuenca del río Cauca","archivo original",974,-76.304,3.584,"F29-C25",1,2.66,2.81,-0.16,0.94,FALSE
 2613600105,"ACUEDUCTO BUGA","Cuenca del río Cauca","archivo original",960,-76.285,3.892,"F23-C26",23,3.14,3.31,-0.16,0.95,FALSE
 2615400104,"LA CAMELIA","Cuenca del río Cauca","archivo original",1188,-75.835,4.332,"F14-C35",21,5.22,5.06,0.16,1.03,FALSE
 2613100101,"LORENA","Cuenca del río Cauca","archivo original",1092,-76.265,3.764,"F25-C26",1,2.92,3.06,-0.14,0.95,FALSE
 2623300201,"BOSQUE DE YOTOCO","Cuenca del río Cauca","catálogo CVC",1700,-76.436,3.876,"F23-C23",19,4.06,3.92,0.14,1.04,FALSE
 2613800101,"ANGOSTURAS","Cuenca del río Cauca","archivo original",1221,-76.181,3.973,"F21-C28",15,3.93,3.8,0.13,1.03,FALSE
 2612720101,"YUNDE CARRIZAL","Cuenca del río Cauca","archivo original",927,-76.399,3.462,"F31-C24",22,3.03,3.15,-0.12,0.96,FALSE
-2615400105,"ALCALA","Cuenca del río Cauca","archivo original",1155,-75.786,4.676,"F7-C36",22,5.67,5.56,0.12,1.02,FALSE
+2615400106,"COROZAL","Cuenca del río Cauca","archivo original",1122,-75.917,4.386,"F13-C33",15,5.25,5.13,0.12,1.02,FALSE
 2620000111,"TABLANCA","Cuenca del río Cauca","archivo original",1031,-76.577,3.127,"F38-C20",3,5.55,5.44,0.12,1.02,FALSE
 2623500101,"EL CANEY","Cuenca del río Cauca","archivo original",1433,-76.418,3.93,"F22-C23",22,4.34,4.45,-0.12,0.97,FALSE
-2612200105,"CAJONES","Cuenca del río Cauca","archivo original",3361,-76.069,3.227,"F36-C30",19,4.13,4.02,0.11,1.03,FALSE
+2612200105,"CAJONES","Cuenca del río Cauca","archivo original",3361,-76.069,3.227,"F36-C30",19,4.12,4.02,0.11,1.03,FALSE
 2612800103,"BELLA VISTA","Cuenca del río Cauca","archivo original",2875,-75.997,3.63,"F28-C32",22,3.83,3.95,-0.11,0.97,FALSE
+2615400105,"ALCALA","Cuenca del río Cauca","archivo original",1155,-75.786,4.676,"F7-C36",22,5.67,5.56,0.11,1.02,FALSE
 2621900201,"LA INDEPENDENCIA","Cuenca del río Cauca","catálogo CVC",1080,-76.57,3.185,"F37-C20",7,5.57,5.68,-0.1,0.98,FALSE
 2612710301,"LA DIANA","Cuenca del río Cauca","catálogo CVC",1960,-76.186,3.314,"F34-C28",23,3.82,3.73,0.09,1.02,FALSE
-2622330106,"LAS BRISAS","Cuenca del río Cauca","archivo original",1228,-76.588,3.405,"F32-C20",20,5.54,5.46,0.09,1.02,FALSE
-5421200205,"QUIRAMA","Vertiente del Pacífico","catálogo CVC",1576,-76.596,3.921,"F22-C20",3,6.67,6.58,0.08,1.01,FALSE
+2622330106,"LAS BRISAS","Cuenca del río Cauca","archivo original",1228,-76.588,3.405,"F32-C20",20,5.55,5.46,0.09,1.02,FALSE
+2612800107,"ESPERANZA PRADERA","Cuenca del río Cauca","archivo original",1020,-76.258,3.432,"F32-C26",13,3.24,3.32,-0.08,0.98,FALSE
 2614500104,"GALICIA","Cuenca del río Cauca","archivo original",1149,-76.056,4.172,"F17-C30",22,4.65,4.72,-0.07,0.99,FALSE
 2622320103,"ALTO DE LAS IGLESIAS","Cuenca del río Cauca","archivo original",1705,-76.621,3.373,"F33-C19",21,6.42,6.49,-0.07,0.99,FALSE
-2622330103,"EL FARO","Cuenca del río Cauca","archivo original",1616,-76.606,3.429,"F32-C19",1,6.17,6.23,-0.07,0.99,FALSE
-2612800107,"ESPERANZA PRADERA","Cuenca del río Cauca","archivo original",1020,-76.258,3.432,"F32-C26",14,3.27,3.32,-0.06,0.98,FALSE
-2621500102,"LA ESMERALDA","Cuenca del río Cauca","catálogo CVC",1402,-76.716,3.148,"F38-C17",5,7.24,7.28,-0.04,1,FALSE
+5421200205,"QUIRAMA","Vertiente del Pacífico","catálogo CVC",1576,-76.596,3.921,"F22-C20",3,6.66,6.58,0.07,1.01,FALSE
+2621500102,"LA ESMERALDA","Cuenca del río Cauca","catálogo CVC",1402,-76.716,3.148,"F38-C17",5,7.24,7.28,-0.04,0.99,FALSE
 2625500102,"EL AGUILA EL GRANARIO","Cuenca del río Cauca","archivo original",1813,-76.05,4.901,"F2-C30",21,6.64,6.69,-0.04,0.99,FALSE
 2622320101,"LA FONDA","Cuenca del río Cauca","archivo original",1298,-76.59,3.391,"F33-C20",20,5.67,5.64,0.03,1.01,FALSE
 2612800201,NA,"Cuenca del río Cauca","documentos PDF",1017,-76.291,3.647,"F28-C26",9,2.93,2.91,0.02,1.01,FALSE
+2622330103,"EL FARO","Cuenca del río Cauca","archivo original",1616,-76.606,3.429,"F32-C19",1,6.22,6.23,-0.01,1,FALSE
 2622900102,"OCACHE","Cuenca del río Cauca","archivo original",1490,-76.508,3.699,"F27-C21",20,3.61,3.61,0,1,FALSE

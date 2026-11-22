@@ -1,31 +1,31 @@
 "grupo","temporada","estaciones","lluvia_estacion_mm_dia","d_media","IC95_inf","IC95_sup","d_mediana","sesgo_pct","pct_estaciones_subestima"
-"Todas","Dic-Feb (seca)",215,4.51,0.431,0.081,0.781,-0.132,9.6,47
-"Todas","Mar-May (lluvias)",215,6.35,0.178,-0.186,0.541,-0.338,2.8,42.3
-"Todas","Jun-Ago (seca)",215,3.6,0.091,-0.302,0.484,-0.403,2.5,31.2
-"Todas","Sep-Nov (lluvias)",215,6.83,0.213,-0.28,0.705,-0.519,3.1,39.1
-"Todas","Año completo",215,5.37,0.216,-0.171,0.603,-0.255,4,40.9
-"Solo originales","Dic-Feb (seca)",165,4.25,0.266,-0.091,0.622,-0.267,6.2,44.8
-"Solo originales","Mar-May (lluvias)",165,6.1,0.006,-0.38,0.392,-0.348,0.1,40.6
-"Solo originales","Jun-Ago (seca)",165,3.3,-0.118,-0.491,0.254,-0.45,-3.6,29.7
-"Solo originales","Sep-Nov (lluvias)",165,6.38,-0.098,-0.555,0.358,-0.643,-1.5,36.4
-"Solo originales","Año completo",165,5.05,-0.001,-0.38,0.377,-0.277,0,38.8
-"Cuenca del río Cauca","Dic-Feb (seca)",177,3.74,0.054,-0.171,0.279,-0.267,1.4,44.6
-"Cuenca del río Cauca","Mar-May (lluvias)",177,5.57,-0.112,-0.358,0.134,-0.338,-2,40.7
-"Cuenca del río Cauca","Jun-Ago (seca)",177,2.56,-0.365,-0.526,-0.205,-0.408,-14.3,27.1
-"Cuenca del río Cauca","Sep-Nov (lluvias)",177,5.45,-0.363,-0.627,-0.1,-0.595,-6.7,36.2
-"Cuenca del río Cauca","Año completo",177,4.36,-0.211,-0.417,-0.006,-0.271,-4.8,38.4
-"Cuenca del río Cauca - originales","Dic-Feb (seca)",138,3.72,0.05,-0.219,0.319,-0.351,1.3,44.2
-"Cuenca del río Cauca - originales","Mar-May (lluvias)",138,5.55,-0.129,-0.411,0.154,-0.263,-2.3,40.6
-"Cuenca del río Cauca - originales","Jun-Ago (seca)",138,2.59,-0.361,-0.551,-0.171,-0.415,-13.9,26.8
-"Cuenca del río Cauca - originales","Sep-Nov (lluvias)",138,5.46,-0.372,-0.682,-0.062,-0.673,-6.8,34.8
-"Cuenca del río Cauca - originales","Año completo",138,4.36,-0.218,-0.458,0.022,-0.274,-5,37.7
-"Vertiente del Pacífico","Dic-Feb (seca)",38,8.09,2.186,0.609,3.763,0.42,27,57.9
-"Vertiente del Pacífico","Mar-May (lluvias)",38,9.99,1.527,-0.128,3.181,-0.287,15.3,50
-"Vertiente del Pacífico","Jun-Ago (seca)",38,8.43,2.215,0.243,4.188,-0.025,26.3,50
-"Vertiente del Pacífico","Sep-Nov (lluvias)",38,13.23,2.895,0.56,5.23,0.4,21.9,52.6
-"Vertiente del Pacífico","Año completo",38,10.04,2.205,0.349,4.061,0.15,22,52.6
-"Vertiente del Pacífico - originales","Dic-Feb (seca)",27,6.98,1.368,-0.287,3.023,-0.046,19.6,48.1
-"Vertiente del Pacífico - originales","Mar-May (lluvias)",27,8.9,0.693,-1.18,2.567,-0.841,7.8,40.7
-"Vertiente del Pacífico - originales","Jun-Ago (seca)",27,6.91,1.122,-0.901,3.146,-0.761,16.2,44.4
-"Vertiente del Pacífico - originales","Sep-Nov (lluvias)",27,11.09,1.3,-0.955,3.554,-0.519,11.7,44.4
-"Vertiente del Pacífico - originales","Año completo",27,8.55,1.105,-0.831,3.042,-0.778,12.9,44.4
+"Todas","Dic-Feb (seca)",215,4.51,0.432,0.082,0.783,-0.166,9.6,46.5
+"Todas","Mar-May (lluvias)",215,6.35,0.177,-0.186,0.541,-0.342,2.8,42.3
+"Todas","Jun-Ago (seca)",215,3.6,0.091,-0.302,0.484,-0.405,2.5,31.6
+"Todas","Sep-Nov (lluvias)",215,6.83,0.216,-0.276,0.709,-0.519,3.2,39.5
+"Todas","Año completo",215,5.37,0.217,-0.17,0.604,-0.255,4,40.9
+"Solo originales","Dic-Feb (seca)",165,4.25,0.268,-0.09,0.625,-0.263,6.3,44.2
+"Solo originales","Mar-May (lluvias)",165,6.1,0.005,-0.38,0.391,-0.347,0.1,40.6
+"Solo originales","Jun-Ago (seca)",165,3.3,-0.117,-0.49,0.256,-0.433,-3.5,30.3
+"Solo originales","Sep-Nov (lluvias)",165,6.38,-0.094,-0.551,0.362,-0.643,-1.5,37
+"Solo originales","Año completo",165,5.05,0,-0.378,0.379,-0.279,0,38.8
+"Cuenca del río Cauca","Dic-Feb (seca)",177,3.74,0.057,-0.167,0.282,-0.263,1.5,44.6
+"Cuenca del río Cauca","Mar-May (lluvias)",177,5.57,-0.107,-0.354,0.139,-0.342,-1.9,40.7
+"Cuenca del río Cauca","Jun-Ago (seca)",177,2.56,-0.366,-0.526,-0.206,-0.408,-14.3,27.7
+"Cuenca del río Cauca","Sep-Nov (lluvias)",177,5.46,-0.36,-0.624,-0.097,-0.595,-6.6,36.2
+"Cuenca del río Cauca","Año completo",177,4.37,-0.209,-0.414,-0.003,-0.271,-4.8,38.4
+"Cuenca del río Cauca - originales","Dic-Feb (seca)",138,3.72,0.054,-0.214,0.323,-0.35,1.5,44.2
+"Cuenca del río Cauca - originales","Mar-May (lluvias)",138,5.55,-0.122,-0.405,0.161,-0.261,-2.2,40.6
+"Cuenca del río Cauca - originales","Jun-Ago (seca)",138,2.59,-0.361,-0.551,-0.171,-0.421,-13.9,27.5
+"Cuenca del río Cauca - originales","Sep-Nov (lluvias)",138,5.46,-0.369,-0.678,-0.059,-0.65,-6.7,34.8
+"Cuenca del río Cauca - originales","Año completo",138,4.37,-0.214,-0.454,0.026,-0.272,-4.9,37.7
+"Vertiente del Pacífico","Dic-Feb (seca)",38,8.08,2.179,0.599,3.76,0.42,27,55.3
+"Vertiente del Pacífico","Mar-May (lluvias)",38,9.97,1.503,-0.152,3.157,-0.268,15.1,50
+"Vertiente del Pacífico","Jun-Ago (seca)",38,8.44,2.22,0.248,4.193,-0.026,26.3,50
+"Vertiente del Pacífico","Sep-Nov (lluvias)",38,13.24,2.902,0.567,5.236,0.395,21.9,55.3
+"Vertiente del Pacífico","Año completo",38,10.03,2.2,0.343,4.057,0.124,21.9,52.6
+"Vertiente del Pacífico - originales","Dic-Feb (seca)",27,6.97,1.358,-0.304,3.019,-0.114,19.5,44.4
+"Vertiente del Pacífico - originales","Mar-May (lluvias)",27,8.86,0.657,-1.213,2.528,-0.841,7.4,40.7
+"Vertiente del Pacífico - originales","Jun-Ago (seca)",27,6.92,1.131,-0.893,3.155,-0.761,16.4,44.4
+"Vertiente del Pacífico - originales","Sep-Nov (lluvias)",27,11.1,1.307,-0.947,3.561,-0.519,11.8,48.1
+"Vertiente del Pacífico - originales","Año completo",27,8.54,1.098,-0.841,3.036,-0.778,12.8,44.4
