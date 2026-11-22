@@ -1,4 +1,4 @@
 "modelo","R2_medio","R2_min","R2_max"
-"regresión funcional",0.275,-0.145,0.361
-"red - cabeza lineal (semilla 0)",0.283,-0.106,0.386
-"red - cabeza KAN (semilla 0)",0.475,-0.163,0.65
+"regresión funcional",0.309,0.186,0.428
+"red - cabeza lineal (semilla 0)",0.38,0.24,0.48
+"red - cabeza KAN (semilla 0)",0.503,0.33,0.662

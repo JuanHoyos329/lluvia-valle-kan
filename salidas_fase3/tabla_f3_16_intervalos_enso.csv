@@ -1,6 +1,7 @@
 "analisis","sentido","desde","hasta","dias","d_media","d_mediana","toca_borde"
-"Cauca: Niño - Neutro","satélite subestima (d > 0)","1 ene","6 ene",5,0.488,0.186,TRUE
-"Cauca: Niño - Neutro","satélite sobreestima (d < 0)","15 ene","16 dic",335,-0.517,-0.534,FALSE
-"Cauca: Niño - Neutro","satélite subestima (d > 0)","22 dic","31 dic",10,0.703,0.624,TRUE
-"Cauca: Niña - Neutro","satélite subestima (d > 0)","1 ene","23 ene",22,0.554,0.403,TRUE
-"Cauca: Niña - Neutro","satélite subestima (d > 0)","18 feb","31 dic",317,0.668,0.631,TRUE
+"Cuenca del río Cauca: Niño - Neutro","satélite subestima (d > 0)","1 ene","6 ene",5,0.519,0.232,TRUE
+"Cuenca del río Cauca: Niño - Neutro","satélite sobreestima (d < 0)","15 ene","11 mar",55,-0.441,-0.5,FALSE
+"Cuenca del río Cauca: Niño - Neutro","satélite sobreestima (d < 0)","12 abr","17 dic",249,-0.591,-0.569,FALSE
+"Cuenca del río Cauca: Niño - Neutro","satélite subestima (d > 0)","23 dic","31 dic",9,0.676,0.625,TRUE
+"Cuenca del río Cauca: Niña - Neutro","satélite subestima (d > 0)","1 ene","25 ene",24,0.502,0.382,TRUE
+"Cuenca del río Cauca: Niña - Neutro","satélite subestima (d > 0)","16 feb","31 dic",319,0.669,0.643,TRUE

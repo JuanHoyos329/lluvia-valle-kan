@@ -800,41 +800,39 @@ top_anios <- sort(table(extremas_an$YEAR), decreasing = TRUE)
 cat("Años con más estaciones en la cola del 5 %:\n"); print(head(top_anios, 8))
 
 figura("fase2_fig11_boxplot_anomalias", {
-  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 2.5, 1))
+  par(mfrow = c(2, 2), mar = c(4.2, 4.2, 3.6, 1))
+  atipicos_txt <- function(at) paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno")
   fbplot(A_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-3, 3), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title(paste0("Estaciones: anomalía de cada estación-año (", ncol(A_prof), ")")); abline(h = 0, lty = 3)
+  title(paste0("Estaciones: anomalía de cada estación-año (", ncol(A_prof), ")"), line = 1.8); abline(h = 0, lty = 3)
   fbplot(anual_and_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Cuenca del río Cauca, estaciones: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
-  at <- anios_tab$YEAR[anios_tab$atipico_estaciones]
-  legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
+  title("Estaciones: anomalía media anual, cuenca del río Cauca", line = 1.8); abline(h = 0, lty = 3)
   fbplot(AX_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-3, 3), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title(paste0("Satélite: anomalía de cada píxel-año (", ncol(AX_prof), ")")); abline(h = 0, lty = 3)
+  title(paste0("Satélite: anomalía de cada píxel-año (", ncol(AX_prof), ")"), line = 1.8); abline(h = 0, lty = 3)
   fbplot(anual_sat_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Cuenca del río Cauca, satélite: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
-  at <- anios_tab$YEAR[anios_tab$atipico_satelite]
-  legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
+  title("Satélite: anomalía media anual, cuenca del río Cauca", line = 1.8); abline(h = 0, lty = 3)
+ 
 }, ancho = 11, alto = 8)
 
 figura("fase2_fig12_profundidad_centralidad", {
-  par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
+  par(mfrow = c(1, 2), mar = c(8, 4.2, 2.5, 2))             # margen inferior para la leyenda
   orden <- order(fm_est$dep, decreasing = TRUE)
   grises <- gray(seq(0.85, 0.15, length.out = N))         # claras = más profundas (se dibujan encima)
   matplot(t_prof, Y_prof[, rev(orden)], type = "l", lty = 1, col = adjustcolor(rev(grises), 0.25),
           xlab = "Día del año", ylab = "sqrt(mm/día)", ylim = c(0, 7), main = "Estaciones ordenadas por profundidad FM")
-  legend("topright", c("Más profunda (centro)", "Menos profunda (extremos)"), col = c("grey85", "grey15"),
-         lwd = 3, bty = "n", cex = 0.8)
+  legend("bottom", c("Más profunda (centro)", "Menos profunda (extremos)"), col = c("grey85", "grey15"),
+         lwd = 3, bty = "n", cex = 0.8, ncol = 2, xpd = NA, inset = c(0, -0.42))
   matplot(t_prof, Y_prof, type = "l", lty = 1, col = adjustcolor("grey70", 0.05), ylim = c(0, 4),
           xlab = "Día del año", ylab = "sqrt(mm/día)", main = "Medidas de centralidad (estaciones)")
   lines(t_fino, media_est, lwd = 3, col = "blue")
   lines(t_prof, fm_est$median$data, lwd = 3, col = "red")
   lines(t_prof, fm_est$mtrim$data, lwd = 3, lty = 2, col = "darkgreen")
-  legend("topright", c("Media", "Mediana (FM)", "Media recortada 25 %"), col = c("blue", "red", "darkgreen"),
-         lty = c(1, 1, 2), lwd = 3, bty = "n", cex = 0.8)
-})
+  legend("bottom", c("Media", "Mediana (FM)", "Media recortada 25 %"), col = c("blue", "red", "darkgreen"),
+         lty = c(1, 1, 2), lwd = 3, bty = "n", cex = 0.75, ncol = 2, xpd = NA, inset = c(0, -0.42))
+}, alto = 5.2)
 
 
 
