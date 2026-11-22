@@ -44,7 +44,7 @@ MOSTRAR_GRAFICAS = False
 
 # True: entrena todo desde cero (lo que se entrega). False: si ya existen los modelos guardados en
 # salidas_fase4/modelos/, los carga en vez de reentrenar (para iterar rápido sobre los bloques 6+).
-REENTRENAR = True
+REENTRENAR = False
 
 # Partición temporal.
 #   "ferro":   recomendación del profesor Ferro (asesoría del 20 de noviembre). Prueba 1997-2003, que
@@ -1192,21 +1192,24 @@ print("\nBloque 5 listo.")
 
 
 ###############################################################################
-# BLOQUE 5c. Análisis de sensibilidad: KAN con dos capas ocultas (NO se usa para elegir nada)
+# BLOQUE 5c. Análisis de sensibilidad: KAN aditiva vs KAN con capas ocultas (NO se usa para elegir)
 ###############################################################################
 # Una KAN sin capa oculta [10 -> 6] es ADITIVA: cada salida es Σ_i φ_i(z_i), una suma de funciones de
 # una sola entrada. No puede representar interacciones como "el satélite dice que llovió mucho, PERO
 # es año Niño, así que hay que descontar". Las capas ocultas sí permiten combinar entradas.
-# Este bloque entrena, con el mismo presupuesto y los hiperparámetros que la validación cruzada eligió
-# para esa arquitectura, la KAN [10 -> 4 -> 4 -> 6] (la mejor en el pliegue de años Niño 1991-1993) y
-# la reporta por bloque climático. Es un análisis POSTERIOR: el modelo elegido sigue siendo el de la
-# validación cruzada; esto solo sirve para entender por qué la KAN aditiva falla en El Niño de 1997.
-cfg_prof = busqueda[(busqueda.cabeza == "kan") & (busqueda.ocultas.astype(str) == "(4, 4)")].sort_values("val_L2_cv").iloc[0]
-kw_prof = dict(ocultas=(4, 4), G=5, k=3)
+# Este bloque entrena la arquitectura CONTRARIA a la elegida (si se eligió una con capas ocultas, la
+# aditiva [10 -> 6]; si se eligió la aditiva, la [10 -> 4 -> 4 -> 6]), con el mismo presupuesto y los
+# hiperparámetros que la validación cruzada le dio a esa arquitectura, y las compara por bloque
+# climático. Es un análisis POSTERIOR: el modelo elegido sigue siendo el de la validación cruzada; esto
+# solo sirve para ver qué aporta poder combinar entradas, sobre todo en El Niño de 1997.
+oc_alt = () if KW_CABEZA["kan"]["ocultas"] != () else (4, 4)
+cfg_prof = busqueda[(busqueda.cabeza == "kan") & (busqueda.ocultas.astype(str) == str(oc_alt))].sort_values("val_L2_cv").iloc[0]
+kw_prof = dict(ocultas=oc_alt, G=5, k=3)
+arq_alt = "[" + " -> ".join(map(str, [D_IN, *oc_alt, M])) + "]"
 err_prof = []
 for sem in SEMILLAS:
     modelo = RedFuncional("kan", sem, **kw_prof)
-    ruta_p = DIR_MOD / f"red_kan_profunda_semilla{sem}.pt"
+    ruta_p = DIR_MOD / f"red_kan_alternativa_semilla{sem}.pt"
     if not REENTRENAR and ruta_p.exists():
         modelo.load_state_dict(torch.load(ruta_p)); modelo.eval()
     else:
@@ -1221,13 +1224,13 @@ for nombre_bl, masc in {"Prueba completa": np.ones(len(anio), bool), **BLOQUES_E
     idx_b = idx_te[masc[idx_te]]
     fila = {"bloque": nombre_bl}
     for nombre_m, errs in [("KAN elegida " + arq_kan, [err_curva[("kan", s_)] for s_ in SEMILLAS]),
-                           ("KAN [10 -> 4 -> 4 -> 6]", err_prof),
+                           ("KAN alternativa " + arq_alt, err_prof),
                            ("MLP elegido " + arq_mlp, [err_curva[("mlp", s_)] for s_ in SEMILLAS]),
                            ("lineal", [err_curva[("lineal", s_)] for s_ in SEMILLAS])]:
         fila[nombre_m] = np.mean([L2_relativo(e[idx_b], idx_b) for e in errs])
     filas_s.append(fila)
 tabla_sens = pd.DataFrame(filas_s)
-print("\nSensibilidad (análisis posterior): KAN aditiva vs KAN con dos capas ocultas, L² relativo en prueba (%):\n",
+print("\nSensibilidad (análisis posterior): KAN elegida vs arquitectura alternativa, L² relativo en prueba (%):\n",
       tabla_sens.round(2).to_string(index=False))
 tabla_sens.to_csv(OUT / "kan_sensibilidad_profundidad.csv", index=False)
 print("\nBloque 5c listo.")
