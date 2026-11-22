@@ -67,7 +67,7 @@ figura <- function(nombre, codigo, ancho = 10, alto = 4.5) {
 }
 guardar <- function(df, nombre) write.csv(df, file.path(OUT, paste0(nombre, ".csv")), row.names = FALSE)
 
-# Día del año (t en [0, 365), día k centrado en k - 0.5) -> fecha legible "26 abr"
+# Día del año (t en [0, 365), día k centrado en k - 0.5) 
 meses <- c("ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic")
 fecha <- function(t) {
   d <- as.Date(pmin(floor(t), 364), origin = "2019-01-01")
@@ -227,7 +227,7 @@ figura("fase2_fig01_representatividad", {
   par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
   tab_anio <- t(table(meta$YEAR, meta$region))
   barplot(tab_anio, col = cols_region, border = NA, las = 2, cex.names = 0.7,
-          ylim = c(0, max(colSums(tab_anio)) * 1.45),             # espacio arriba para la leyenda
+          ylim = c(0, max(colSums(tab_anio)) * 1.45),            
           ylab = "Curvas estación-año", main = "Curvas por año (estaciones)")
   legend("topleft", ETQ_REGION, fill = cols_region, border = NA, bty = "n", cex = 0.7)
   box()
@@ -665,7 +665,7 @@ figura("fase2_fig10_boxplot_crudo", {
                     xlab = "Día del año", ylab = "sqrt(mm/día)")
   title("Satélite (curvas crudas)")
 })
-if (!exists("bx_est")) {                      # si GUARDAR_FIGURAS = FALSE y no es interactivo
+if (!exists("bx_est")) {                      
   bx_est <- fbplot(Y_prof, t_prof, method = "MBD", plot = FALSE)
   bx_sat <- fbplot(X_prof, t_prof, method = "MBD", plot = FALSE)
 }
