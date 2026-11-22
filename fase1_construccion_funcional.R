@@ -8,7 +8,7 @@
 #   3. Construye la base B-spline A MANO (recursión de Cox-de Boor) y la matriz Phi.
 #   4. Calcula los coeficientes por mínimos cuadrados: c = (Phi'Phi)^-1 Phi' y.
 #   5. Verifica la matriz suavizadora S = Phi (Phi'Phi)^-1 Phi': simétrica, idempotente, tr(S) = K.
-#   6. Elige K con ECM, VC y VCG, para cada fuente, usando solo los años de entrenamiento.
+#   6. Elige K con ECM, VC y VCG, para cada fuente, sin usar los años de prueba.
 #   7. Calcula sigma^2, la covarianza residual y las bandas de confianza PUNTO A PUNTO.
 #   8. Guarda los coeficientes de todas las curvas para las fases 2, 3 y 4.
 #
@@ -17,14 +17,17 @@
 # La librería fda se usa SOLO para verificar que lo programado a mano da lo mismo.
 #
 # Decisiones:
-#   - Escala: raíz cuadrada de la lluvia (sqrt(mm)), como pide el modelo de la fase 4.
+#   - Escala: raíz cuadrada de la lluvia en mm/día (sqrt(mm/día)), como pide el modelo de la fase 4.
 #   - Años bisiestos: la lluvia del 29 de febrero se suma al 28 de febrero. Todos los años
 #     quedan con 365 días y se conserva el total anual.
 #   - Estaciones: cada día se ubica en su centro (día 1 -> t = 0,5; día 365 -> t = 364,5).
 #   - Satélite: cada péntada se ubica en el centro de sus días (calendario no bisiesto).
 #   - Base: B-splines cúbicos (orden 4) con nudos equiespaciados en [0, 365].
-#   - K se elige solo con 1981-1995 (entrenamiento) para no usar información de validación
-#     (1996-2000) ni de prueba (2001-2003).
+#   - Partición recomendada por el profesor Ferro (asesoría del 20 de noviembre): 1981-1996 para
+#     entrenar y validar con validación cruzada temporal, y 1997-2003 para la prueba (incluye El Niño
+#     1997, La Niña 1998-2000 y años neutros 2001-2003). K se elige con 1981-1996, sin la prueba.
+#     Las etiquetas de salida siguen a la fase 4: entrenamiento 1981-1993, validación 1994-1996 y
+#     prueba 1997-2003.
 #
 # Uso (desde la carpeta del repositorio):
 #   source("fase1_construccion_funcional.R")       # en RStudio
@@ -40,7 +43,7 @@ ENT <- "./salidas_preprocesamiento"    # datos limpios de la fase 0 (Hoyos)
 OUT <- "./salidas_fase1"               # salidas de esta fase
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
 
-ENTRENA <- 1981:1995                   # partición: train 1981-1995 / val 1996-2000 / test 2001-2003
+ENTRENA <- 1981:1996                   # años fuera de la prueba (1997-2003): se usan para elegir K
 ORDEN   <- 4                           # B-splines cúbicos
 RANGO   <- c(0, 365)                   # dominio anual común
 
@@ -67,7 +70,7 @@ claves <- unique(d[, c("STATION_ID", "YEAR")])
 rownames(claves) <- NULL
 stopifnot(nrow(d) == 365 * nrow(claves))         # todos los años con 365 días
 
-# Matriz Y: filas = días (365), columnas = curvas estación-año. Escala sqrt(mm)
+# Matriz Y: filas = días (365), columnas = curvas estación-año. Escala sqrt(mm/día)
 Y <- matrix(sqrt(d$VALUE), nrow = 365)
 N <- ncol(Y)
 cat("Curvas estación-año:", N, "| estaciones:", length(unique(claves$STATION_ID)), "\n")
@@ -87,9 +90,9 @@ stopifnot(nrow(p) == 72 * N, !anyNA(p$satelite_mm), all(p$dias %in% 3:6))
 #sale más alta solo por tener más días, y estación - satélite no se podría comparar
 X <- matrix(sqrt(p$satelite_mm / p$dias), nrow = 72)
 
-# Años de entrenamiento
+# Años fuera de la prueba
 tr <- claves$YEAR %in% ENTRENA
-cat("Curvas de entrenamiento (1981-1995):", sum(tr), "\n")
+cat("Curvas para elegir K (1981-1996):", sum(tr), "\n")
 
 
 #####################################################################################
@@ -181,7 +184,7 @@ propiedades_S <- function(S, K) data.frame(
 
 
 #####################################################################################
-# 5. Selección de K con ECM, VC y VCG (solo años de entrenamiento)
+# 5. Selección de K con ECM, VC y VCG (solo 1981-1996, sin la prueba)
 #####################################################################################
 # ECM(K) = promedio de (y - y_hat)^2                    -> siempre baja con K; no sirve solo
 # VC(K)  = promedio de ((y - y_hat) / (1 - s_ii))^2     -> atajo de dejar-uno-fuera con la diagonal de S
@@ -324,7 +327,7 @@ cor_lag1 <- mean(diag(Cor_res[-1, -365]))
 cat("Correlación media entre residuos de días consecutivos (estaciones):", round(cor_lag1, 3), "\n")
 
 image(t_est, t_est, Cor_res, col = hcl.colors(50, "Blue-Red 3"), zlim = c(-1, 1),
-      xlab = "Día s", ylab = "Día t", main = "Correlación residual entre días (estaciones, 1981-1995)")
+      xlab = "Día s", ylab = "Día t", main = "Correlación residual entre días (estaciones, 1981-1996)")
 par(mfrow = c(1, 1))
 
 # Ejemplo de bandas: una estación-año de entrenamiento, ambas fuentes
@@ -360,8 +363,8 @@ cat("Picos de la curva media de estaciones (día del año):", round(t_fino[picos
 #####################################################################################
 coef_est <- data.frame(claves, t(C_est));  names(coef_est)[-(1:2)] <- paste0("c", 1:K_est)
 coef_sat <- data.frame(claves, t(C_sat));  names(coef_sat)[-(1:2)] <- paste0("c", 1:K_sat)
-coef_est$particion <- coef_sat$particion <- ifelse(claves$YEAR <= 1995, "entrenamiento",
-                                             ifelse(claves$YEAR <= 2000, "validacion", "prueba"))
+coef_est$particion <- coef_sat$particion <- ifelse(claves$YEAR <= 1993, "entrenamiento",
+                                             ifelse(claves$YEAR <= 1996, "validacion", "prueba"))
 write.csv(coef_est, file.path(OUT, "coeficientes_estaciones.csv"), row.names = FALSE)
 write.csv(coef_sat, file.path(OUT, "coeficientes_satelite.csv"),   row.names = FALSE)
 
@@ -372,7 +375,7 @@ write.csv(verif_fda, file.path(OUT, "verificacion_vs_fda.csv"),    row.names = F
 
 # Cómo reconstruir la base en las otras fases (mismos nudos, mismo orden)
 base_info <- data.frame(fuente = c("estaciones", "satélite"), K = c(K_est, K_sat), orden = ORDEN,
-                        rango = "0-365", escala = "sqrt(mm)",
+                        rango = "0-365", escala = "sqrt(mm/día)",
                         nudos = c(paste(round(nudos_bspline(K_est), 4), collapse = " "),
                                   paste(round(nudos_bspline(K_sat), 4), collapse = " ")))
 write.csv(base_info, file.path(OUT, "base_info.csv"), row.names = FALSE)
