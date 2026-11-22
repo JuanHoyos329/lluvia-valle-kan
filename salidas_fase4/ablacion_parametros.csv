@@ -1,4 +1,4 @@
 cabeza,arquitectura,parametros_cabeza,parametros_codificador,parametros_decodificador_entrenables,dif_vs_kan_pct
-lineal,Linear(10->6),66,96,0,-89.0
-kan,"KAN[10 -> 6], G=5, k=3",600,96,0,0.0
-mlp,"MLP[10 -> 17 -> 17 -> 6], GELU",601,96,0,0.16666666666666666
+lineal,Linear(10->6),66,64,0,-91.91176470588235
+kan,"KAN[10 -> 4 -> 4 -> 6], G=5, k=3",816,64,0,0.0
+mlp,"MLP[10 -> 21 -> 21 -> 6], GELU",825,64,0,1.1029411764705883
