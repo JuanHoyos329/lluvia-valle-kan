@@ -1,49 +1,49 @@
 cabeza,semilla,neurona,pico,signo_pico,ventana_50pct,dias_ventana
-kan,0,w1,1 ene,+,1 ene-26 ene; 19 sep-22 oct,60
-kan,0,w2,19 feb,+,23 ene-25 mar,62
-kan,0,w3,31 dic,+,11 mar-25 may; 26 dic-31 dic,82
-kan,0,w4,13 jul,+,1 ene-17 feb; 4 jun-17 ago,123
-kan,0,w5,31 dic,-,8 dic-31 dic,24
-kan,0,w6,9 oct,+,25 may-24 jun; 9 sep-9 nov,93
-kan,0,w7,1 ene,-,1 ene-18 ene; 11 mar-11 abr,50
-kan,0,w8,1 ene,-,1 ene-11 ene,11
-kan,1,w1,1 ene,+,1 ene-25 ene,25
-kan,1,w2,14 feb,+,26 ene-10 mar; 29 sep-23 oct,69
-kan,1,w3,29 mar,+,1 ene-15 ene; 25 feb-2 may,82
-kan,1,w4,9 jun,+,6 may-13 jul; 27 dic-31 dic,74
-kan,1,w5,16 nov,+,12 may-9 jul; 12 oct-18 dic,127
-kan,1,w6,11 oct,+,2 sep-26 nov,86
-kan,1,w7,1 ene,-,1 ene-17 ene,17
-kan,1,w8,31 dic,+,28 ene-4 mar; 28 nov-31 dic,70
-kan,2,w1,1 ene,+,1 ene-19 ene,19
-kan,2,w2,13 feb,+,19 ene-14 mar,55
-kan,2,w3,11 mar,+,1 feb-12 may,101
-kan,2,w4,6 jun,+,2 may-8 jul,68
-kan,2,w5,26 jun,+,1 ene-27 ene; 16 may-8 ago; 23 oct-17 nov,138
-kan,2,w6,13 nov,+,8 sep-20 dic,104
-kan,2,w7,31 dic,+,1 oct-31 dic,92
-kan,2,w8,31 dic,+,16 dic-31 dic,16
-lineal,0,w1,15 oct,+,4 feb-25 feb; 18 sep-15 nov,81
-lineal,0,w2,15 feb,+,6 ene-12 abr,97
-lineal,0,w3,28 ene,+,1 ene-20 mar; 21 dic-31 dic,90
-lineal,0,w4,1 ene,-,1 ene-15 ene,15
-lineal,0,w5,9 abr,-,5 mar-10 may; 30 dic-31 dic,69
-lineal,0,w6,7 abr,-,1 ene-12 ene; 6 mar-5 may,73
-lineal,0,w7,31 dic,+,30 oct-31 dic,63
-lineal,0,w8,9 jun,+,5 may-11 jul,68
-lineal,1,w1,1 ene,+,1 ene-20 ene,20
-lineal,1,w2,1 ene,+,1 ene-9 mar; 28 nov-31 dic,102
-lineal,1,w3,1 ene,-,1 ene-14 ene,14
-lineal,1,w4,19 oct,-,1 ene-26 feb; 15 sep-30 nov,134
-lineal,1,w5,12 jun,+,22 may-5 jul,45
-lineal,1,w6,11 sep,+,1 ene-8 ene; 13 jun-13 nov,162
-lineal,1,w7,15 oct,+,18 sep-15 nov,59
-lineal,1,w8,24 nov,+,18 oct-31 dic,75
-lineal,2,w1,6 abr,-,6 mar-7 may,63
-lineal,2,w2,31 dic,-,17 may-6 ago; 8 nov-31 dic,136
-lineal,2,w3,1 ene,-,1 ene-10 ene; 16 jul-14 ago; 2 dic-31 dic,70
-lineal,2,w4,31 dic,+,27 nov-31 dic,35
-lineal,2,w5,19 oct,+,3 jun-22 jun; 21 sep-25 nov,86
-lineal,2,w6,14 oct,+,4 sep-21 nov,79
-lineal,2,w7,31 dic,+,28 oct-31 dic,65
-lineal,2,w8,1 ene,-,1 ene-21 ene,21
+kan,0,w1,31 dic,+,1 ene-30 ene; 22 nov-31 dic,70
+kan,0,w2,26 feb,+,2 ene-3 jun,153
+kan,0,w3,31 dic,-,26 nov-31 dic,36
+kan,0,w4,13 jun,+,20 feb-22 sep,215
+kan,0,w5,29 ene,-,1 ene-7 abr,97
+kan,0,w6,31 dic,+,21 may-31 dic,225
+kan,0,w7,28 nov,+,15 sep-31 dic,108
+kan,0,w8,1 ene,-,1 ene-8 feb,39
+kan,1,w1,1 ene,+,1 ene-25 feb; 8 dic-31 dic,80
+kan,1,w2,2 mar,+,2 ene-7 may,126
+kan,1,w3,16 abr,+,26 ene-28 jul,184
+kan,1,w4,5 jun,+,5 feb-27 oct,265
+kan,1,w5,3 jun,+,15 mar-31 dic,292
+kan,1,w6,1 ene,-,1 ene-22 mar,81
+kan,1,w7,31 dic,+,6 oct-31 dic,87
+kan,1,w8,1 ene,-,1 ene-4 feb,35
+kan,2,w1,17 ene,+,1 ene-2 abr,92
+kan,2,w2,1 ene,+,1 ene-3 mar,62
+kan,2,w3,23 mar,+,14 ene-15 jun,153
+kan,2,w4,31 dic,+,25 ene-16 jul; 28 sep-31 dic,268
+kan,2,w5,20 ago,+,17 may-31 dic,229
+kan,2,w6,31 dic,+,14 sep-31 dic,109
+kan,2,w7,31 dic,+,22 oct-31 dic,71
+kan,2,w8,31 dic,+,12 nov-31 dic,50
+lineal,0,w1,1 nov,+,14 ene-24 feb; 21 sep-11 dic,124
+lineal,0,w2,1 ene,-,1 ene-8 ene,8
+lineal,0,w3,24 ene,+,1 ene-6 mar,65
+lineal,0,w4,31 dic,+,26 ene-10 feb; 25 oct-31 dic,84
+lineal,0,w5,31 dic,-,4 mar-10 may; 21 dic-31 dic,79
+lineal,0,w6,1 ene,-,1 ene-10 ene,10
+lineal,0,w7,31 dic,+,10 dic-31 dic,22
+lineal,0,w8,8 dic,+,26 oct-31 dic,67
+lineal,1,w1,1 ene,+,1 ene-14 ene,14
+lineal,1,w2,1 ene,-,1 ene-8 ene,8
+lineal,1,w3,31 dic,+,7 feb-16 feb; 11 dic-31 dic,31
+lineal,1,w4,1 ene,-,1 ene-10 ene,10
+lineal,1,w5,1 ene,-,1 ene-5 ene; 20 mar-26 abr,43
+lineal,1,w6,31 dic,-,25 mar-28 abr; 20 dic-31 dic,47
+lineal,1,w7,2 feb,+,12 ene-2 mar; 1 oct-7 nov,88
+lineal,1,w8,9 dic,+,30 oct-31 dic,63
+lineal,2,w1,30 nov,+,3 ene-12 feb; 23 oct-26 dic,106
+lineal,2,w2,1 ene,+,1 ene-1 feb; 4 feb-2 abr,90
+lineal,2,w3,1 ene,-,1 ene-9 ene,9
+lineal,2,w4,31 dic,+,9 ene-10 mar; 13 dic-31 dic,80
+lineal,2,w5,1 ene,-,1 ene-7 ene,7
+lineal,2,w6,17 oct,+,10 ene-6 feb; 31 ago-24 nov,114
+lineal,2,w7,10 dic,+,21 oct-31 dic,72
+lineal,2,w8,1 ene,-,1 ene-8 ene; 29 dic-31 dic,11

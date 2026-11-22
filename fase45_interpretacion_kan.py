@@ -29,8 +29,6 @@ DIR_F4 = Path("./salidas_fase4")
 DIR_FIG = DIR_F4 / "figuras"
 SEMILLAS_45 = (0, 1, 2)
 NOMBRES_Z = [f"z{k+1}" for k in range(8)] + ["altitud", "ONI"]
-NO_CONFIABLES_45 = [5300800101, 5300900102, 5300600101, 5300000203, 2621500105, 5300000202,
-                    5301300101, 5301000103, 5400000201, 2621500104, 5300900101]
 MESES = np.cumsum([0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])
 NOM_MES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
 EPOCAS = {"Dic-Feb": np.r_[0:59, 334:365], "Mar-May": np.r_[59:151],
@@ -99,7 +97,18 @@ def bases_kan(x, nudos, k=3):
     return B
 
 
-def capa_kan(sd, pre, x, layernorm=False):
+def capas_kan(sd):
+    """Prefijos de las capas de la cabeza KAN guardada (capa1, capa2, ...), en orden."""
+    n = 1
+    while f"cabeza.capa{n}.w_b" in sd:
+        n += 1
+    return [f"cabeza.capa{i}." for i in range(1, n)]
+
+
+def capa_kan(sd, pre, x, layernorm=None):
+    # Las capas después de la 1.a llevan LayerNorm a la entrada (igual que CapaKAN de la fase 4)
+    if layernorm is None:
+        layernorm = (pre + "norm.weight") in sd
     if layernorm:
         m, v = x.mean(1, keepdims=True), x.var(1, keepdims=True)
         x = (x - m) / np.sqrt(v + 1e-5) * sd[pre + "norm.weight"] + sd[pre + "norm.bias"]
@@ -123,7 +132,9 @@ def predecir(tipo, sd, C_sat, extra_std):
     """Coeficientes de la curva de la estación (base K = 8) que predice la red."""
     z = codificar(sd, C_sat, extra_std)
     if tipo == "kan":
-        s = capa_kan(sd, "cabeza.capa2.", capa_kan(sd, "cabeza.capa1.", z), layernorm=True)
+        s = z
+        for pre in capas_kan(sd):
+            s = capa_kan(sd, pre, s)
     else:
         s = z @ sd["cabeza.weight"].T + sd["cabeza.bias"]
     return sd["dec.mu"] + s @ sd["dec.Psi"].T
@@ -299,7 +310,7 @@ def activaciones(d):
     for s in SEMILLAS_45:
         sd = d["modelos"][("kan", s)]
         Z = codificar(sd, d["C_sat"], d["extra_std"])[d["tr"]]
-        M = np.array([[np.std(arista(sd, o, i, Z[:, i])) for i in range(10)] for o in range(4)])
+        M = np.array([[np.std(arista(sd, o, i, Z[:, i])) for i in range(10)] for o in range(sd["cabeza.capa1.w_b"].shape[0])])
         for i in range(10):
             imp.append({"semilla": s, "entrada": NOMBRES_Z[i], "importancia_total": M[:, i].sum(),
                         "oculta_mas_fuerte": int(np.argmax(M[:, i])) + 1, "importancia_max": M[:, i].max()})
@@ -352,7 +363,7 @@ def figura_activaciones(d, simb):
 
 
 # 4. Efectos parciales (lo que la red le hace a la lluvia) y contraste con la cabeza lineal
-# El signo de una arista de la 1.a capa no es el efecto sobre la lluvia, porque pasa por la 2.a capa
+# El signo de una arista de la 1.a capa no es el efecto sobre la lluvia, porque pasa por las capas siguientes
 # y por el decodificador. Por eso se mueve una entrada y se mira el cambio en la curva predicha.
 
 def curva_media(d, tipo, C_sat, extra_std):
@@ -443,7 +454,8 @@ def peores_casos(d, n=8):
     ce = d["ce"]
     tabla = pd.DataFrame({"STATION_ID": ce.STATION_ID, "YEAR": ce.YEAR, "region": d["region"],
                           "altitud": d["extra"][:, 0], "fase_enso": ce.YEAR.map(d["enso"]["fase_enso"]),
-                          "no_confiable": ce.STATION_ID.isin(NO_CONFIABLES_45),
+                          # estación sin ningún año en entrenamiento: la red nunca vio ese sitio
+                          "sin_anios_entrenamiento": ~ce.STATION_ID.isin(ce.STATION_ID[d["tr"]]),
                           "L2rel_kan": err["kan"], "L2rel_lineal": err["lineal"],
                           "media_obs_sqrt": obs, "media_kan_sqrt": kan, "media_sat_sqrt": sat})[d["te"]]
     tabla = tabla.sort_values("L2rel_kan", ascending=False)
