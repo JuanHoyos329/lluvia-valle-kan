@@ -9,7 +9,10 @@
 #   Bloque 3. Cabeza lineal: demostración y verificación numérica de la equivalencia con
 #             la regresión funcional función a función.
 #   Bloque 4. KAN (B-splines en las aristas) verificada con una función sintética.
-#   Bloque 5. Ablación: lineal vs KAN vs MLP, parámetros igualados, 3 semillas.
+#   Bloque 5. Ablación: lineal vs KAN vs MLP, parámetros igualados, 3 semillas, validación cruzada
+#             temporal, experimento de arquitectura de la KAN y resultados por bloque ENSO.
+#   Bloque 5b. Poda de la KAN (L1 + entropía).
+#   Bloque 6. Reconstrucción en mm (no negativa, corrección de varianza) y CSV de predicciones.
 #
 # Entradas (salidas de la fase 1, Daniela):
 #   salidas_fase1/coeficientes_estaciones.csv  -> c de las estaciones (K = 8), escala sqrt(mm/día)
@@ -17,7 +20,8 @@
 #   salidas_fase1/base_info.csv                -> K, orden y nudos de cada base
 # La fila i de los dos archivos de coeficientes es la misma estación en el mismo año.
 #
-# Partición: entrenamiento 1981-1995 / validación 1996-2000 / prueba 2001-2003.
+# Partición: ver PARTICION más abajo ('ferro': validación cruzada temporal en 1981-1996 y prueba
+# 1997-2003; 'rubrica': 1981-1995 / 1996-2000 / 2001-2003).
 # Todo lo que se AJUSTA (FPCA, estandarizaciones, sigma^2 del paso a mm) usa solo entrenamiento.
 #
 # Uso (desde la carpeta del repositorio, con el .venv activo):
@@ -41,6 +45,19 @@ MOSTRAR_GRAFICAS = False
 # True: entrena todo desde cero (lo que se entrega). False: si ya existen los modelos guardados en
 # salidas_fase4/modelos/, los carga en vez de reentrenar (para iterar rápido sobre los bloques 6+).
 REENTRENAR = True
+
+# Partición temporal.
+#   "ferro":   recomendación del profesor Ferro (asesoría del 20 de noviembre). Prueba 1997-2003, que
+#              contiene El Niño 1997, La Niña 1998-2000 y años neutros 2001-2003. Los hiperparámetros y la
+#              arquitectura se eligen con VALIDACIÓN CRUZADA TEMPORAL de pliegues expansivos dentro de
+#              1981-1996 (nunca se valida con años anteriores a los de entrenamiento). El modelo final se
+#              entrena con 1981-1993 y se detiene con 1994-1996 (el último pliegue).
+#   "rubrica": la del enunciado: 1981-1995 / 1996-2000 / 2001-2003 (un solo pliegue).
+PARTICION = "ferro"
+
+# Estaciones reservadas (por el docente o por el grupo): no se usan para ajustar NADA (red, FPCA,
+# estandarizaciones, corrección a mm) y se evalúan aparte. Lista vacía = no hay estaciones reservadas.
+ESTACIONES_RESERVADAS = []
 
 def mostrar(nombre):
     """Guarda la figura actual en salidas_fase4/figuras/<nombre>.png (para el informe) y la muestra
@@ -81,11 +98,27 @@ cols_sat = [c for c in coef_sat.columns if c.startswith("c")]
 C_est = coef_est[cols_est].to_numpy(np.float64)          # N x 8   (salida que se quiere reconstruir)
 C_sat = coef_sat[cols_sat].to_numpy(np.float64)          # N x 12  (entrada de la red)
 K_est, K_sat = C_est.shape[1], C_sat.shape[1]
-particion = coef_est["particion"].to_numpy()
-tr = particion == "entrenamiento"
-va = particion == "validacion"
-te = particion == "prueba"
-print(f"Curvas: {len(particion)} | entrenamiento {tr.sum()} | validación {va.sum()} | prueba {te.sum()}")
+if PARTICION == "ferro":
+    ANIOS = {"entrenamiento": (1981, 1993), "validacion": (1994, 1996), "prueba": (1997, 2003)}
+    PLIEGUES_CV = [((1981, 1987), (1988, 1990)), ((1981, 1990), (1991, 1993)), ((1981, 1993), (1994, 1996))]
+elif PARTICION == "rubrica":
+    ANIOS = {"entrenamiento": (1981, 1995), "validacion": (1996, 2000), "prueba": (2001, 2003)}
+    PLIEGUES_CV = [((1981, 1995), (1996, 2000))]
+else:
+    raise ValueError("PARTICION debe ser 'ferro' o 'rubrica'")
+anio = coef_est["YEAR"].to_numpy()
+entre = lambda a, b: (anio >= a) & (anio <= b)
+es_reservada = coef_est["STATION_ID"].isin(ESTACIONES_RESERVADAS).to_numpy()
+tr = entre(*ANIOS["entrenamiento"]) & ~es_reservada
+va = entre(*ANIOS["validacion"]) & ~es_reservada
+te = entre(*ANIOS["prueba"]) & ~es_reservada
+particion = np.select([tr, va, te, es_reservada], ["entrenamiento", "validacion", "prueba", "reservada"], "fuera")
+coef_est["particion"] = particion                     # se reemplaza la etiqueta de la fase 1
+coef_sat["particion"] = particion
+TXT = {k: f"{a}-{b}" for k, (a, b) in ANIOS.items()}
+print(f"Partición '{PARTICION}': entrenamiento {TXT['entrenamiento']} ({tr.sum()}) | validación "
+      f"{TXT['validacion']} ({va.sum()}) | prueba {TXT['prueba']} ({te.sum()}) | "
+      f"reservadas {es_reservada.sum()} curvas de {len(ESTACIONES_RESERVADAS)} estaciones")
 print(f"K estaciones = {K_est} | K satélite = {K_sat}")
 
 
@@ -453,7 +486,7 @@ def crear_cabeza(tipo, d_in, M, **kw):
 
 
 class RedFuncional(nn.Module):
-    def __init__(self, tipo_cabeza, semilla, **kw_cabeza):
+    def __init__(self, tipo_cabeza, semilla, fpca_obj=None, **kw_cabeza):
         super().__init__()
         fijar_semilla(semilla)
         self.tipo = tipo_cabeza
@@ -461,7 +494,7 @@ class RedFuncional(nn.Module):
             kw_cabeza = {**kw_cabeza, "semilla": semilla}
         self.cod = CodificadorFuncional(W_sat, R_sat, N_NEUR, extra.shape[1], semilla)
         self.cabeza = crear_cabeza(tipo_cabeza, N_NEUR + extra.shape[1], M, **kw_cabeza)
-        self.dec = DecodificadorFPCA(fpca, M)
+        self.dec = DecodificadorFPCA(fpca if fpca_obj is None else fpca_obj, M)
 
     def forward(self, c_sat, extra):
         return self.dec(self.cabeza(self.cod(c_sat, extra)))
@@ -486,7 +519,7 @@ Xs = a_tensor(C_sat); Xe = a_tensor(extra_std); Yc = a_tensor(C_est)
 idx_tr, idx_va, idx_te = np.where(tr)[0], np.where(va)[0], np.where(te)[0]
 
 
-def recalcular_bn(modelo):
+def recalcular_bn(modelo, idx_fit=None, Xe_t=None):
     """Estadísticas de la BatchNorm EXACTAS sobre todo el entrenamiento con las a_k actuales.
     Las estadísticas 'móviles' por defecto se quedan atrás cuando las a_k cambian y hacen que la
     pérdida de validación salte de una época a otra. Solo usa entrenamiento (no hay fuga)."""
@@ -494,13 +527,21 @@ def recalcular_bn(modelo):
     bn.reset_running_stats()
     bn.momentum = None                               # promedio acumulado: con un solo paso = exacto
     modelo.train()
+    idx_fit = idx_tr if idx_fit is None else idx_fit
+    Xe_t = Xe if Xe_t is None else Xe_t
     with torch.no_grad():
-        modelo.cod(Xs[idx_tr], Xe[idx_tr])
+        modelo.cod(Xs[idx_fit], Xe_t[idx_fit])
     modelo.eval()
 
 
 def entrenar(modelo, semilla, epocas, paciencia, lote, lr, weight_decay, clip, lam_rug=LAMBDA_RUG,
-             verbose=False):
+             verbose=False, idx_fit=None, idx_val=None, Xe_t=None, reg_extra=None):
+    """Entrena con parada temprana. idx_fit / idx_val / Xe_t permiten entrenar en un pliegue de la
+    validación cruzada (por defecto: entrenamiento y validación de la partición). reg_extra(modelo)
+    agrega un término a la pérdida (se usa en la poda de la KAN)."""
+    idx_fit = idx_tr if idx_fit is None else idx_fit
+    idx_val = idx_va if idx_val is None else idx_val
+    Xe_t = Xe if Xe_t is None else Xe_t
     fijar_semilla(semilla)
     opt = torch.optim.AdamW([p for p in modelo.parameters() if p.requires_grad], lr=lr,
                             weight_decay=weight_decay)
@@ -509,25 +550,28 @@ def entrenar(modelo, semilla, epocas, paciencia, lote, lr, weight_decay, clip, l
     mejor, mejor_estado, malas = np.inf, None, 0
     for ep in range(1, epocas + 1):
         modelo.train()
-        perm = idx_tr[torch.randperm(len(idx_tr), generator=gen).numpy()]
+        perm = idx_fit[torch.randperm(len(idx_fit), generator=gen).numpy()]
         acum = 0.0
         for i in range(0, len(perm), lote):
             b = perm[i:i + lote]
             if len(b) < 2:                           # BatchNorm necesita al menos 2 curvas
                 continue
-            c_hat = modelo(Xs[b], Xe[b])
+            c_hat = modelo(Xs[b], Xe_t[b])
             perdida = error_L2(c_hat, Yc[b]).mean() / 365 + lam_rug * modelo.cod.rugosidad()
+            if reg_extra is not None:
+                perdida = perdida + reg_extra(modelo)
             opt.zero_grad(set_to_none=True)
             perdida.backward()
             nn.utils.clip_grad_norm_(modelo.parameters(), clip)
             opt.step()
             acum += perdida.item() * len(b)
-        recalcular_bn(modelo)
+        recalcular_bn(modelo, idx_fit, Xe_t)
         with torch.no_grad():
-            val = (error_L2(modelo(Xs[idx_va], Xe[idx_va]), Yc[idx_va]).mean() / 365).item()
-        hist["train"].append(acum / len(idx_tr)); hist["val"].append(val)
+            val = (error_L2(modelo(Xs[idx_val], Xe_t[idx_val]), Yc[idx_val]).mean() / 365).item()
+        hist["train"].append(acum / len(idx_fit)); hist["val"].append(val)
         if val < mejor - 1e-7:
             mejor, mejor_estado, malas = val, copy.deepcopy(modelo.state_dict()), 0
+            hist["mejor_epoca"] = ep
         else:
             malas += 1
         if verbose and (ep == 1 or ep % 25 == 0):
@@ -572,7 +616,7 @@ hist_lin = entrenar(red_lin, semilla=0, verbose=True, **PRESUPUESTO)
 with torch.no_grad():
     err_va_lin = error_L2(red_lin(Xs[idx_va], Xe[idx_va]), Yc[idx_va]).numpy()
 
-print("\nError L² relativo en VALIDACIÓN (1996-2000), escala sqrt(mm/día):")
+print(f"\nError L² relativo en VALIDACIÓN ({TXT['validacion']}), escala sqrt(mm/día):")
 print(f"  Satélite sin corregir         : {L2_relativo(L2_satelite(idx_va), idx_va):6.2f} %")
 print(f"  Red funcional, cabeza lineal  : {L2_relativo(err_va_lin, idx_va):6.2f} %")
 print(f"  Techo del decodificador (M={M}) : {tabla_M.loc[M - 1, 'L2_rel_validacion_pct']:6.2f} %")
@@ -706,6 +750,10 @@ class CapaKAN(nn.Module):
         nn.init.kaiming_uniform_(self.w_b, a=math.sqrt(5), generator=gen)
         self.w_s = nn.Parameter(torch.ones(n_out, n_in))                          # escala de la spline
         self.c = nn.Parameter(0.1 * torch.randn(n_out, n_in, G + k, generator=gen))  # coeficientes c_i
+        # Máscara de aristas (1 = activa). Solo la usa la poda (bloque 5b). No se guarda en el
+        # state_dict para que los modelos guardados no cambien de formato.
+        self.register_buffer("mascara", torch.ones(n_out, n_in, dtype=torch.float64), persistent=False)
+        self.importancia = None
 
     def bases(self, x):
         """B-splines de grado k en x: (B, n_in) -> (B, n_in, G + k). Recursión de Cox-de Boor."""
@@ -717,11 +765,18 @@ class CapaKAN(nn.Module):
                  + (u[p + 1:] - x) / (u[p + 1:] - u[1:-p]) * B[..., 1:])
         return B
 
-    def forward(self, x):
+    def aristas(self, x):
+        """φ_{o,i}(x_i) de cada arista: (B, n_in) -> (B, n_out, n_in)."""
         x = self.norm(x)
-        base = nn.functional.silu(x) @ self.w_b.T                                   # (B, out)
-        spline = torch.einsum("big,oig->bo", self.bases(x), self.c * self.w_s[..., None])
+        base = nn.functional.silu(x)[:, None, :] * self.w_b                          # w_b·SiLU(x)
+        spline = torch.einsum("big,oig->boi", self.bases(x), self.c * self.w_s[..., None])
         return base + spline
+
+    def forward(self, x):
+        phi = self.aristas(x) * self.mascara
+        # Importancia de cada arista = promedio de |φ_{o,i}| en el lote (se usa en la poda)
+        self.importancia = phi.abs().mean(0)
+        return phi.sum(-1)                                   # el nodo SUMA sus aristas
 
     @torch.no_grad()
     def funcion_arista(self, o, i, x):
@@ -731,17 +786,27 @@ class CapaKAN(nn.Module):
 
 
 class CabezaKAN(nn.Module):
-    """Cabeza KAN [d_in -> H -> M]. La 1.ª capa actúa DIRECTO sobre z (ya estandarizado por la
-    BatchNorm del codificador), así sus activaciones se leen sobre cada neurona funcional / altitud /
-    ONI. La 2.ª capa lleva LayerNorm a la entrada, como la KANLayer del curso."""
+    """Cabeza KAN [d_in -> ocultas... -> M]. La 1.ª capa actúa DIRECTO sobre z (ya estandarizado por
+    la BatchNorm del codificador), así sus activaciones se leen sobre cada neurona funcional / altitud /
+    ONI. Las capas siguientes llevan LayerNorm a la entrada, como la KANLayer del curso.
+    ocultas=(4,) es [d_in -> 4 -> M]; () es una sola capa [d_in -> M]; (4, 4) son dos capas ocultas.
+    Las capas se llaman capa1, capa2, ... (mismos nombres que usa la fase 4.5)."""
 
-    def __init__(self, d_in, M, H=4, G=5, k=3, semilla=0):
+    def __init__(self, d_in, M, ocultas=(4,), G=5, k=3, semilla=0):
         super().__init__()
-        self.capa1 = CapaKAN(d_in, H, G, k, rango=(-3.0, 3.0), layernorm=False, semilla=semilla)
-        self.capa2 = CapaKAN(H, M, G, k, rango=(-3.0, 3.0), layernorm=True, semilla=semilla + 1)
+        tam = [d_in, *ocultas, M]
+        self.n_capas = len(tam) - 1
+        for i in range(self.n_capas):
+            setattr(self, f"capa{i+1}", CapaKAN(tam[i], tam[i + 1], G, k, rango=(-3.0, 3.0),
+                                                 layernorm=(i > 0), semilla=semilla + i))
+
+    def capas(self):
+        return [getattr(self, f"capa{i+1}") for i in range(self.n_capas)]
 
     def forward(self, z):
-        return self.capa2(self.capa1(z))
+        for capa in self.capas():
+            z = capa(z)
+        return z
 
 
 # --- Verificación con una función sintética (antes de usar datos reales) -----------------------
@@ -791,10 +856,14 @@ print("\nBloque 4 listo.")
 # Diseño (rúbrica 4.3):
 #   - Mismo codificador, mismo decodificador FPCA, misma pérdida: solo cambia la cabeza.
 #   - KAN y MLP con el mismo número de parámetros (±10 %), contados con sum(p.numel()).
-#   - Mismo presupuesto: épocas máximas, parada temprana con validación (1996-2000) y el MISMO
-#     número de pruebas de hiperparámetros (4 por cabeza: lr x λ_rug), elegidas con la semilla 0.
+#   - Mismo presupuesto: épocas máximas, parada temprana y el MISMO número de pruebas (8 por
+#     cabeza), evaluadas con validación cruzada temporal (PLIEGUES_CV) y la semilla 0.
+#       lineal: lr x λ_rug (2 x 4)
+#       KAN:    ARQUITECTURA (sin capa oculta, 4 ocultas, 8 ocultas, dos capas de 4) x λ_rug (4 x 2):
+#               es el experimento que justifica la profundidad y el ancho de la KAN.
+#       MLP:    profundidad (1 o 2 capas ocultas) x lr x λ_rug (2 x 2 x 2), igualado en parámetros.
 #   - Con la configuración elegida, 3 semillas (0, 1, 2): media y desviación estándar.
-#   - La prueba (2001-2003) NO se usa para elegir nada; solo se reporta al final.
+#   - La prueba NO se usa para elegir nada; solo se reporta al final.
 #   - Una cabeza supera a otra solo si el IC bootstrap del 95 % de la diferencia excluye el 0
 #     (remuestreo de ESTACIONES, 2000 réplicas).
 from scipy.stats import wilcoxon
@@ -803,9 +872,12 @@ from scipy.stats import wilcoxon
 class CabezaMLP(nn.Module):
     """Red densa [d_in -> h -> M] con GELU (como make_head del curso), sin dropout (igual que la KAN)."""
 
-    def __init__(self, d_in, M, h=32, semilla=0):
+    def __init__(self, d_in, M, h=32, capas=1, semilla=0):
         super().__init__()
-        self.red = nn.Sequential(nn.Linear(d_in, h), nn.GELU(), nn.Linear(h, M))
+        bloques = [nn.Linear(d_in, h), nn.GELU()]
+        for _ in range(capas - 1):
+            bloques += [nn.Linear(h, h), nn.GELU()]
+        self.red = nn.Sequential(*bloques, nn.Linear(h, M))
 
     def forward(self, z):
         return self.red(z)
@@ -815,19 +887,108 @@ def n_parametros(modulo):
     return sum(p.numel() for p in modulo.parameters())
 
 
-# --- Igualar parámetros: se fija la KAN y se elige el ancho h del MLP más cercano ---------------
+# --- Pruebas de hiperparámetros y arquitectura (mismo número por cabeza) --------------------------
+import ast
 D_IN = N_NEUR + extra.shape[1]
-KW_KAN = dict(H=4, G=5, k=3)
-p_kan = n_parametros(CabezaKAN(D_IN, M, **KW_KAN))
-h_mlp = min(range(4, 200), key=lambda h: abs(n_parametros(CabezaMLP(D_IN, M, h)) - p_kan))
-KW_MLP = dict(h=h_mlp)
-p_mlp = n_parametros(CabezaMLP(D_IN, M, **KW_MLP))
+P_KAN_BASE = n_parametros(CabezaKAN(D_IN, M, ocultas=(4,)))
+
+
+def ancho_mlp(p_obj, capas):
+    """Ancho h del MLP cuyo número de parámetros queda más cerca de p_obj."""
+    return min(range(2, 400), key=lambda h: abs(n_parametros(CabezaMLP(D_IN, M, h, capas)) - p_obj))
+
+
+PRUEBAS = {
+    "lineal": [dict(lr=lr, lam_rug=lam) for lr in (1e-3, 3e-3) for lam in (1e-3, 1e-2, 1e-1, 1.0)],
+    "kan": [dict(lr=3e-3, lam_rug=lam, ocultas=oc) for oc in ((), (4,), (8,), (4, 4)) for lam in (1e-2, 1e-1)],
+    "mlp": [dict(lr=lr, lam_rug=lam, capas=nc) for nc in (1, 2) for lr in (1e-3, 3e-3) for lam in (1e-2, 1e-1)],
+}
+assert len({len(v) for v in PRUEBAS.values()}) == 1, "todas las cabezas deben tener el mismo número de pruebas"
+
+
+def kw_cabeza(tipo, cfg, p_obj=None):
+    if tipo == "kan":
+        oc = cfg["ocultas"]
+        return dict(ocultas=tuple(ast.literal_eval(oc) if isinstance(oc, str) else oc), G=5, k=3)
+    if tipo == "mlp":
+        nc = int(cfg["capas"])
+        return dict(h=ancho_mlp(P_KAN_BASE if p_obj is None else p_obj, nc), capas=nc)
+    return {}
+
+
+def preparar_pliegue(anios_fit, anios_val):
+    """Índices, FPCA y estandarización de covariables ajustados SOLO con los años de ajuste del pliegue."""
+    ifit = np.where(entre(*anios_fit) & ~es_reservada)[0]
+    ival = np.where(entre(*anios_val) & ~es_reservada)[0]
+    fp = fpca_coeficientes(C_est[ifit], W_est)
+    m_, s_ = extra[ifit].mean(0), extra[ifit].std(0)
+    return ifit, ival, fp, a_tensor((extra - m_) / s_)
+
+
+PLIEGUES = [preparar_pliegue(f, v) for f, v in PLIEGUES_CV]
+print(f"\nValidación cruzada temporal ({len(PLIEGUES)} pliegues): "
+      + " | ".join(f"ajuste {a[0]}-{a[1]} / valida {b[0]}-{b[1]}" for a, b in PLIEGUES_CV))
+
+RUTA_BUSQ = OUT / "ablacion_busqueda_hiperparametros.csv"
+if REENTRENAR or not RUTA_BUSQ.exists():
+    filas_b = []
+    for tipo in ("lineal", "kan", "mlp"):
+        for j, cfg in enumerate(PRUEBAS[tipo]):
+            vals, epocas_b = [], []
+            for ifit, ival, fp, XeF in PLIEGUES:
+                modelo = RedFuncional(tipo, 0, fpca_obj=fp, **kw_cabeza(tipo, cfg))
+                pres = dict(PRESUPUESTO); pres.update(lr=cfg["lr"])
+                h = entrenar(modelo, semilla=0, lam_rug=cfg["lam_rug"], idx_fit=ifit, idx_val=ival, Xe_t=XeF, **pres)
+                vals.append(min(h["val"])); epocas_b.append(h.get("mejor_epoca", np.nan))
+            fila = {"cabeza": tipo, "prueba": j + 1,
+                    **{k_: (str(v_) if k_ == "ocultas" else v_) for k_, v_ in cfg.items()},
+                    "parametros_cabeza": n_parametros(RedFuncional(tipo, 0, **kw_cabeza(tipo, cfg)).cabeza),
+                    "val_L2_cv": float(np.mean(vals)),
+                    **{f"val_L2_pliegue{i+1}": v_ for i, v_ in enumerate(vals)},
+                    "mejor_epoca_media": float(np.nanmean(epocas_b))}
+            filas_b.append(fila)
+            print(f"  {tipo:6s} prueba {j+1}: " + ", ".join(f"{k_}={v_}" for k_, v_ in cfg.items())
+                  + f" -> CV {fila['val_L2_cv']:.4f}")
+    busqueda = pd.DataFrame(filas_b)
+    busqueda.to_csv(RUTA_BUSQ, index=False)
+else:
+    busqueda = pd.read_csv(RUTA_BUSQ)
+    print("Búsqueda de hiperparámetros cargada de", RUTA_BUSQ)
+    assert "val_L2_cv" in busqueda.columns, "búsqueda vieja (otra partición): corra con REENTRENAR = True"
+
+mejor_cfg = {}
+for t in ("lineal", "kan", "mlp"):
+    fila = busqueda[busqueda.cabeza == t].sort_values("val_L2_cv").iloc[0]
+    cfg = {"lr": float(fila["lr"]), "lam_rug": float(fila["lam_rug"])}
+    if t == "kan":
+        cfg["ocultas"] = tuple(ast.literal_eval(str(fila["ocultas"])))
+    if t == "mlp":
+        cfg["capas"] = int(fila["capas"])
+    mejor_cfg[t] = cfg
+print("\nConfiguración elegida (solo con validación cruzada):", mejor_cfg)
+
+# Experimento de arquitectura de la KAN: mejor error de CV de cada arquitectura (con su mejor λ_rug)
+exp_kan = (busqueda[busqueda.cabeza == "kan"].sort_values("val_L2_cv").groupby("ocultas", sort=False).first()
+           .reset_index()[["ocultas", "parametros_cabeza", "lam_rug", "val_L2_cv"]
+                          + [c for c in busqueda.columns if c.startswith("val_L2_pliegue")]])
+exp_kan["arquitectura"] = exp_kan["ocultas"].map(
+    lambda o: "[" + " -> ".join(map(str, [D_IN, *ast.literal_eval(str(o)), M])) + "]")
+print("\nExperimento de arquitectura de la KAN (validación cruzada; menor es mejor):\n",
+      exp_kan.round(4).to_string(index=False))
+exp_kan.to_csv(OUT / "kan_experimento_arquitectura.csv", index=False)
+
+# --- Igualar parámetros: KAN elegida y MLP con su profundidad elegida, ancho para igualar ----------
+KW_CABEZA = {"lineal": {}, "kan": kw_cabeza("kan", mejor_cfg["kan"])}
+p_kan = n_parametros(CabezaKAN(D_IN, M, **KW_CABEZA["kan"]))
+KW_CABEZA["mlp"] = kw_cabeza("mlp", mejor_cfg["mlp"], p_obj=p_kan)
+p_mlp = n_parametros(CabezaMLP(D_IN, M, **KW_CABEZA["mlp"]))
 p_lin = n_parametros(nn.Linear(D_IN, M))
 p_cod = n_parametros(CodificadorFuncional(W_sat, R_sat, N_NEUR, extra.shape[1], 0))
+arq_kan = "[" + " -> ".join(map(str, [D_IN, *KW_CABEZA["kan"]["ocultas"], M])) + "]"
+arq_mlp = "[" + " -> ".join(map(str, [D_IN] + [KW_CABEZA["mlp"]["h"]] * KW_CABEZA["mlp"]["capas"] + [M])) + "]"
 tabla_param = pd.DataFrame({
     "cabeza": ["lineal", "kan", "mlp"],
-    "arquitectura": [f"Linear({D_IN}->{M})", f"KAN[{D_IN}->{KW_KAN['H']}->{M}], G={KW_KAN['G']}, k={KW_KAN['k']}",
-                     f"MLP[{D_IN}->{h_mlp}->{M}], GELU"],
+    "arquitectura": [f"Linear({D_IN}->{M})", f"KAN{arq_kan}, G=5, k=3", f"MLP{arq_mlp}, GELU"],
     "parametros_cabeza": [p_lin, p_kan, p_mlp],
     "parametros_codificador": [p_cod] * 3,
     "parametros_decodificador_entrenables": [0] * 3})
@@ -836,40 +997,19 @@ print("\nParámetros por cabeza (sum(p.numel())):\n", tabla_param.round(1).to_st
 assert abs(p_mlp - p_kan) / p_kan <= 0.10, "KAN y MLP no quedaron dentro del ±10 %"
 tabla_param.to_csv(OUT / "ablacion_parametros.csv", index=False)
 
-KW_CABEZA = {"lineal": {}, "kan": KW_KAN, "mlp": KW_MLP}
-
 
 def construir(tipo, semilla):
     return RedFuncional(tipo, semilla, **KW_CABEZA[tipo])
 
 
-# --- Búsqueda de hiperparámetros: mismo número de pruebas por cabeza (semilla 0, validación) ----
-REJILLA = [dict(lr=lr, lam_rug=lam) for lr in (1e-3, 3e-3) for lam in (1e-2, 1e-1)]
-RUTA_BUSQ = OUT / "ablacion_busqueda_hiperparametros.csv"
-busqueda = []
-for tipo in ("lineal", "kan", "mlp"):
-    if not REENTRENAR and RUTA_BUSQ.exists():
-        break
-    for cfg in REJILLA:
-        modelo = construir(tipo, 0)
-        pres = dict(PRESUPUESTO); pres.update(lr=cfg["lr"])
-        h = entrenar(modelo, semilla=0, lam_rug=cfg["lam_rug"], **pres)
-        busqueda.append({"cabeza": tipo, **cfg, "val_L2": min(h["val"]), "epocas": len(h["val"])})
-        print(f"  {tipo:6s} lr={cfg['lr']:.0e} λ_rug={cfg['lam_rug']:.0e} -> val {min(h['val']):.4f}"
-              f" ({len(h['val'])} épocas)")
-if busqueda:
-    busqueda = pd.DataFrame(busqueda)
-    busqueda.to_csv(RUTA_BUSQ, index=False)
-else:
-    busqueda = pd.read_csv(RUTA_BUSQ)
-    print("Búsqueda de hiperparámetros cargada de", RUTA_BUSQ)
-mejor_cfg = {t: busqueda[busqueda.cabeza == t].sort_values("val_L2").iloc[0][["lr", "lam_rug"]].to_dict()
-             for t in ("lineal", "kan", "mlp")}
-print("\nConfiguración elegida (solo con validación):", mejor_cfg)
-
-
 # --- 3 semillas por cabeza con la configuración elegida ------------------------------------------
 DIR_MOD = OUT / "modelos"; DIR_MOD.mkdir(exist_ok=True)
+# Los modelos guardados solo se reutilizan si se entrenaron con la MISMA partición
+marca = DIR_MOD / "particion.txt"
+if not REENTRENAR:
+    assert marca.exists() and marca.read_text().strip() == PARTICION, \
+        "los modelos guardados son de otra partición: corra con REENTRENAR = True"
+marca.write_text(PARTICION)
 SEMILLAS = (0, 1, 2)
 modelos, err_curva = {}, {}
 for tipo in ("lineal", "kan", "mlp"):
@@ -907,6 +1047,76 @@ print("\nAblación - error L² relativo (%), media y desviación de 3 semillas:\
       tabla_abl.round(2).to_string(index=False))
 tabla_abl.to_csv(OUT / "ablacion_resultados.csv", index=False)
 
+# --- Resultados en PRUEBA por bloque climático (Ferro: El Niño, La Niña y años neutros por separado)
+if PARTICION == "ferro":
+    BLOQUES_ENSO = {"Niño 1997": anio == 1997, "Niña 1998-2000": (anio >= 1998) & (anio <= 2000),
+                    "Neutro 2001-2003": (anio >= 2001) & (anio <= 2003)}
+else:
+    BLOQUES_ENSO = {f"{f} (ONI)": fase_enso == f for f in ("Niño", "Niña", "Neutro")}
+filas_bl = []
+for nombre_bl, masc in BLOQUES_ENSO.items():
+    idx_b = idx_te[masc[idx_te]]
+    if len(idx_b) == 0:
+        continue
+    fila = {"bloque": nombre_bl, "curvas": len(idx_b),
+            "estaciones": len(np.unique(coef_est["STATION_ID"].to_numpy()[idx_b])),
+            "satelite": L2_relativo(err_sat[idx_b], idx_b)}
+    for tipo in ("lineal", "kan", "mlp"):
+        v_ = [L2_relativo(err_curva[(tipo, s_)][idx_b], idx_b) for s_ in SEMILLAS]
+        fila[tipo] = np.mean(v_); fila[f"{tipo}_sd"] = np.std(v_, ddof=1)
+    filas_bl.append(fila)
+tabla_bloques = pd.DataFrame(filas_bl)
+print("\nPrueba por bloque climático - error L² relativo (%), media de 3 semillas:\n",
+      tabla_bloques.round(2).to_string(index=False))
+tabla_bloques.to_csv(OUT / "ablacion_por_bloque_enso.csv", index=False)
+
+
+# --- ¿La red solo aprende la media? (preocupación de Ferro, asesoría del 19 de noviembre) --------
+# Se compara cada cabeza (promedio de sus 3 semillas) con dos predictores sin satélite:
+#   - media de entrenamiento: la misma curva μ(t) para todas las estaciones y años.
+#   - climatología de la estación: promedio de las curvas de ESA estación en 1981-1995. Usa la
+#     historia de la propia estación, que no existe para una estación nueva: es una cota de
+#     referencia, no un competidor del mismo tipo. Estaciones sin años de entrenamiento -> μ(t).
+# Métricas (en sqrt(mm/día)):
+#   L2_rel     error L² relativo (como en la ablación)
+#   R2_func    1 - Σ∫(y - ŷ)² / Σ∫(y - μ)²: cuánto mejora frente a predecir la media
+#   sd_ratio   desviación de la lluvia media anual predicha / observada (variabilidad captada)
+#   r_nivel    correlación entre curvas de la lluvia media anual (¿distingue sitios húmedos y secos?)
+#   r_anomalia correlación de las anomalías año a año DENTRO de cada estación (¿capta años
+#              más lluviosos o más secos que lo normal en un mismo sitio?)
+ids_all = coef_est["STATION_ID"].to_numpy()
+mu_c = fpca["mu"]
+with torch.no_grad():
+    C_pred = {t: np.mean([modelos[(t, s)](Xs, Xe).numpy() for s in SEMILLAS], axis=0) for t in ("lineal", "kan", "mlp")}
+C_pred["media de entrenamiento"] = np.tile(mu_c, (len(C_est), 1))
+clim = {s: C_est[(ids_all == s) & tr].mean(0) for s in np.unique(ids_all[tr])}
+C_pred["climatología de la estación"] = np.array([clim.get(s, mu_c) for s in ids_all])
+uno_k = np.ones(K_est)
+media_anual = lambda C: (C @ W_est @ uno_k) / 365
+
+filas_media = []
+for nombre, C in C_pred.items():
+    for part, idx in [("validacion", idx_va), ("prueba", idx_te)]:
+        Y, P = C_est[idx], C[idx]
+        o, pr = media_anual(Y), media_anual(P)
+        df = pd.DataFrame({"s": ids_all[idx], "o": o, "p": pr})
+        oa = df["o"] - df.groupby("s")["o"].transform("mean")
+        pa = df["p"] - df.groupby("s")["p"].transform("mean")
+        filas_media.append({
+            "modelo": nombre, "particion": part,
+            "L2_rel": L2_relativo(np.einsum("bi,ij,bj->b", P - Y, W_est, P - Y), idx),
+            "R2_func": 1 - np.einsum("bi,ij,bj->b", P - Y, W_est, P - Y).sum()
+                         / np.einsum("bi,ij,bj->b", Y - mu_c, W_est, Y - mu_c).sum(),
+            "sd_ratio": pr.std() / o.std(),
+            "r_nivel": np.corrcoef(o, pr)[0, 1] if pr.std() > 1e-12 else np.nan,
+            "r_anomalia": np.corrcoef(oa, pa)[0, 1] if pa.std() > 1e-12 else np.nan})
+tabla_media = pd.DataFrame(filas_media)
+print("\n¿La red solo aprende la media? (escala sqrt; climatología usa la historia de la estación):\n",
+      tabla_media.round(3).to_string(index=False))
+print(f"  Estaciones de prueba sin años de entrenamiento (climatología = μ): "
+      f"{len(set(ids_all[idx_te]) - set(clim))}")
+tabla_media.to_csv(OUT / "ablacion_vs_media_y_climatologia.csv", index=False)
+
 
 # --- Diferencias entre cabezas en PRUEBA: IC bootstrap por estación, Wilcoxon y lectura por estación
 # Error de cada cabeza por curva = promedio de las 3 semillas. Se remuestrean estaciones (no curvas)
@@ -915,15 +1125,20 @@ tabla_abl.to_csv(OUT / "ablacion_resultados.csv", index=False)
 # diferencia por estación y % de estaciones donde gana la primera cabeza. Y se separa por región
 # (zona hidrográfica del código IDEAM: 26 = Cauca, 53/54 = Pacífico, igual que la fase 3) y sin las
 # estaciones con coordenadas no confiables (su píxel, y por tanto su curva satelital, puede ser otro).
-NO_CONFIABLES = [5300800101, 5300900102, 5300600101, 5300000203, 2621500105, 5300000202,
-                 5301300101, 5301000103, 5400000201, 2621500104, 5300900101]
+# Estaciones con coordenadas no confiables. Con el preprocesamiento del 21 de noviembre todas las
+# estaciones tienen coordenadas documentadas (archivo original, catálogo CVC, documentos PDF o red
+# automática de la CVC) y las que no las tenían se quitaron, así que la lista queda vacía. Si se
+# vuelve a llenar, el bootstrap agrega solo los subconjuntos "sin no confiables".
+NO_CONFIABLES = []
 ids_all = coef_est["STATION_ID"].to_numpy()
 region_curva = np.where(pd.Series(ids_all).astype(str).str[:2] == "26", "Cauca", "Pacífico")
 SUBCONJUNTOS = {"Todas": np.ones(len(ids_all), bool),
-                "Sin no confiables": ~np.isin(ids_all, NO_CONFIABLES),
-                "Cauca": region_curva == "Cauca",
-                "Pacífico": region_curva == "Pacífico",
-                "Pacífico sin no confiables": (region_curva == "Pacífico") & ~np.isin(ids_all, NO_CONFIABLES)}
+                "Cuenca del río Cauca": region_curva == "Cauca",
+                "Vertiente del Pacífico": region_curva == "Pacífico"}
+if NO_CONFIABLES:
+    SUBCONJUNTOS["Sin no confiables"] = ~np.isin(ids_all, NO_CONFIABLES)
+    SUBCONJUNTOS["Pacífico sin no confiables"] = (region_curva == "Pacífico") & ~np.isin(ids_all, NO_CONFIABLES)
+SUBCONJUNTOS.update(BLOQUES_ENSO)
 
 err_prom = {t: np.mean([err_curva[(t, s)] for s in SEMILLAS], axis=0) for t in ("lineal", "kan", "mlp")}
 err_prom["satelite"] = L2_satelite(np.arange(len(C_sat)))
@@ -966,7 +1181,7 @@ for i in range(D_IN):
     lo, hi = np.percentile(Z[:, i], [1, 99])
     xm = torch.linspace(lo, hi, 200)
     a_ = ax.flat[i]
-    for o in range(KW_KAN["H"]):
+    for o in range(kan0.cabeza.capa1.n_out):
         a_.plot(xm, kan0.cabeza.capa1.funcion_arista(o, i, xm), label=f"→ oculta {o+1}")
     a_.set_title(nombres_z[i], fontsize=9)
 ax.flat[0].legend(fontsize=7)
@@ -974,6 +1189,134 @@ plt.suptitle("Activaciones de la 1.ª capa de la KAN en el rango de los datos (p
 plt.tight_layout()
 mostrar("fase4_fig05_activaciones_kan")
 print("\nBloque 5 listo.")
+
+
+###############################################################################
+# BLOQUE 5c. Análisis de sensibilidad: KAN con dos capas ocultas (NO se usa para elegir nada)
+###############################################################################
+# Una KAN sin capa oculta [10 -> 6] es ADITIVA: cada salida es Σ_i φ_i(z_i), una suma de funciones de
+# una sola entrada. No puede representar interacciones como "el satélite dice que llovió mucho, PERO
+# es año Niño, así que hay que descontar". Las capas ocultas sí permiten combinar entradas.
+# Este bloque entrena, con el mismo presupuesto y los hiperparámetros que la validación cruzada eligió
+# para esa arquitectura, la KAN [10 -> 4 -> 4 -> 6] (la mejor en el pliegue de años Niño 1991-1993) y
+# la reporta por bloque climático. Es un análisis POSTERIOR: el modelo elegido sigue siendo el de la
+# validación cruzada; esto solo sirve para entender por qué la KAN aditiva falla en El Niño de 1997.
+cfg_prof = busqueda[(busqueda.cabeza == "kan") & (busqueda.ocultas.astype(str) == "(4, 4)")].sort_values("val_L2_cv").iloc[0]
+kw_prof = dict(ocultas=(4, 4), G=5, k=3)
+err_prof = []
+for sem in SEMILLAS:
+    modelo = RedFuncional("kan", sem, **kw_prof)
+    ruta_p = DIR_MOD / f"red_kan_profunda_semilla{sem}.pt"
+    if not REENTRENAR and ruta_p.exists():
+        modelo.load_state_dict(torch.load(ruta_p)); modelo.eval()
+    else:
+        pres = dict(PRESUPUESTO); pres.update(lr=float(cfg_prof["lr"]))
+        entrenar(modelo, semilla=sem, lam_rug=float(cfg_prof["lam_rug"]), **pres)
+        torch.save(modelo.state_dict(), ruta_p)
+    with torch.no_grad():
+        C_p = modelo(Xs, Xe).numpy()
+    err_prof.append(np.einsum("bi,ij,bj->b", C_p - C_est, W_est, C_p - C_est))
+filas_s = []
+for nombre_bl, masc in {"Prueba completa": np.ones(len(anio), bool), **BLOQUES_ENSO}.items():
+    idx_b = idx_te[masc[idx_te]]
+    fila = {"bloque": nombre_bl}
+    for nombre_m, errs in [("KAN elegida " + arq_kan, [err_curva[("kan", s_)] for s_ in SEMILLAS]),
+                           ("KAN [10 -> 4 -> 4 -> 6]", err_prof),
+                           ("MLP elegido " + arq_mlp, [err_curva[("mlp", s_)] for s_ in SEMILLAS]),
+                           ("lineal", [err_curva[("lineal", s_)] for s_ in SEMILLAS])]:
+        fila[nombre_m] = np.mean([L2_relativo(e[idx_b], idx_b) for e in errs])
+    filas_s.append(fila)
+tabla_sens = pd.DataFrame(filas_s)
+print("\nSensibilidad (análisis posterior): KAN aditiva vs KAN con dos capas ocultas, L² relativo en prueba (%):\n",
+      tabla_sens.round(2).to_string(index=False))
+tabla_sens.to_csv(OUT / "kan_sensibilidad_profundidad.csv", index=False)
+print("\nBloque 5c listo.")
+
+
+###############################################################################
+# BLOQUE 5b. Poda de la KAN con regularización L1 + entropía (recomendación de Ferro)
+###############################################################################
+# Idea (Liu et al., 2024, la misma de pykan): durante un ajuste extra se penaliza
+#   λ_L1 · Σ_aristas |φ| promedio   (empuja a que las aristas poco útiles se apaguen)
+#   λ_ent · entropía de las importancias de cada capa   (empuja a concentrar el trabajo en pocas aristas)
+# Luego se apagan (máscara = 0) las aristas con importancia < UMBRAL_PODA x la máxima de su capa y se
+# reajusta sin esa penalización. Se compara el error antes y después y se listan las entradas que
+# sobreviven: si la red podada casi no pierde precisión, las aristas que quedan son las que importan.
+# Es un experimento APARTE de la ablación: al podar, la KAN ya no tiene los mismos parámetros que el MLP.
+LAM_L1, LAM_ENT, UMBRAL_PODA = 1e-2, 1e-2, 0.05
+
+
+def reg_poda(modelo):
+    tot = 0.0
+    for capa in modelo.cabeza.capas():
+        imp = capa.importancia                                      # (out, in) del último lote
+        tot = tot + LAM_L1 * imp.sum()
+        p_ = imp / (imp.sum() + 1e-12)
+        tot = tot + LAM_ENT * (-(p_ * torch.log(p_ + 1e-12)).sum())
+    return tot
+
+
+def aristas_activas(modelo):
+    return [int(c.mascara.sum().item()) for c in modelo.cabeza.capas()]
+
+
+def importancias_entrenamiento(modelo):
+    with torch.no_grad():
+        modelo(Xs[idx_tr], Xe[idx_tr])
+    return [c.importancia.clone() for c in modelo.cabeza.capas()]
+
+
+red_poda = construir("kan", 0)
+red_poda.load_state_dict(modelos[("kan", 0)].state_dict())
+imp_antes = importancias_entrenamiento(red_poda)
+pres = dict(PRESUPUESTO); pres.update(lr=mejor_cfg["kan"]["lr"])
+print("\nPoda de la KAN: ajuste con L1 + entropía...")
+entrenar(red_poda, semilla=0, lam_rug=mejor_cfg["kan"]["lam_rug"], reg_extra=reg_poda, **pres)
+with torch.no_grad():
+    err_reg = error_L2(red_poda(Xs, Xe), Yc).numpy()
+imp_reg = importancias_entrenamiento(red_poda)
+for capa, imp in zip(red_poda.cabeza.capas(), imp_reg):
+    capa.mascara.copy_((imp >= UMBRAL_PODA * imp.max()).to(torch.float64))
+print("Aristas activas después de podar:", aristas_activas(red_poda))
+entrenar(red_poda, semilla=0, lam_rug=mejor_cfg["kan"]["lam_rug"], **pres)       # reajuste sin L1
+with torch.no_grad():
+    err_podada = error_L2(red_poda(Xs, Xe), Yc).numpy()
+torch.save({"estado": red_poda.state_dict(),
+            "mascaras": [c.mascara.numpy() for c in red_poda.cabeza.capas()]},
+           DIR_MOD / "red_kan_podada_semilla0.pt")
+
+n_total = [c.n_out * c.n_in for c in red_poda.cabeza.capas()]
+tabla_poda = pd.DataFrame([
+    {"modelo": "KAN completa (semilla 0)", "aristas_activas": sum(n_total),
+     "val_L2_rel": L2_relativo(err_curva[("kan", 0)][idx_va], idx_va),
+     "prueba_L2_rel": L2_relativo(err_curva[("kan", 0)][idx_te], idx_te)},
+    {"modelo": "KAN con L1 + entropía (antes de podar)", "aristas_activas": sum(n_total),
+     "val_L2_rel": L2_relativo(err_reg[idx_va], idx_va), "prueba_L2_rel": L2_relativo(err_reg[idx_te], idx_te)},
+    {"modelo": f"KAN podada (umbral {UMBRAL_PODA:.0%} de la máxima por capa) y reajustada",
+     "aristas_activas": sum(aristas_activas(red_poda)),
+     "val_L2_rel": L2_relativo(err_podada[idx_va], idx_va), "prueba_L2_rel": L2_relativo(err_podada[idx_te], idx_te)}])
+tabla_poda["aristas_por_capa"] = [str(n_total), str(n_total), str(aristas_activas(red_poda))]
+print("\nPoda de la KAN (error L² relativo, %):\n", tabla_poda.round(2).to_string(index=False))
+tabla_poda.to_csv(OUT / "kan_poda.csv", index=False)
+
+nombres_entrada = [f"z{k+1}" for k in range(N_NEUR)] + ["altitud", "ONI"]
+m1 = red_poda.cabeza.capa1.mascara.numpy()
+sobreviven = pd.DataFrame({"entrada": nombres_entrada, "aristas_activas": m1.sum(0).astype(int),
+                           "importancia_antes": imp_antes[0].numpy().sum(0),
+                           "importancia_con_L1": imp_reg[0].numpy().sum(0)})
+print("\nEntradas de la 1.ª capa que sobreviven a la poda:\n", sobreviven.round(3).to_string(index=False))
+sobreviven.to_csv(OUT / "kan_poda_entradas_capa1.csv", index=False)
+
+fig, ax = plt.subplots(1, 2, figsize=(13, 3.6))
+for a_, imp, tit in [(ax[0], imp_antes[0].numpy(), "KAN entrenada (sin poda)"),
+                     (ax[1], imp_reg[0].numpy() * m1, "Después de L1 + entropía y poda")]:
+    im = a_.imshow(imp, cmap="Blues", aspect="auto")
+    a_.set_xticks(range(len(nombres_entrada))); a_.set_xticklabels(nombres_entrada, rotation=45, fontsize=8)
+    a_.set_ylabel("neurona oculta"); a_.set_title(f"Importancia de las aristas, 1.ª capa: {tit}", fontsize=9)
+    plt.colorbar(im, ax=a_)
+plt.tight_layout()
+mostrar("fase4_fig11_poda_kan")
+print("\nBloque 5b listo.")
 
 
 ###############################################################################
@@ -1119,9 +1462,23 @@ for a_, reg in zip(ax, ["Cauca", "Pacífico"]):
     for tipo, col in [("lineal", "#2a6f97"), ("kan", "#b23a48"), ("mlp", "#e07a5f")]:
         a_.plot(x_p, a_pentadas(Y_mm_pred[tipo][j:j + 1])[0], color=col, lw=1.8, label=f"red - {tipo}")
     a_.set(ylabel="mm/día (promedio de la péntada)",
-           title=f"{reg}: estación {coef_est['STATION_ID'].iloc[j]}, {coef_est['YEAR'].iloc[j]} (prueba, error mediano de la KAN)")
+           title=f"{ {'Cauca': 'Cuenca del río Cauca', 'Pacífico': 'Vertiente del Pacífico'}[reg]}: estación {coef_est['STATION_ID'].iloc[j]}, {coef_est['YEAR'].iloc[j]} (prueba, error mediano de la KAN)")
     a_.legend(fontsize=7, ncol=3)
 ax[1].set_xlabel("Péntada del año (1-72)")
 plt.tight_layout()
 mostrar("fase4_fig06_ejemplo_pentadas")
 print("\nBloque 6 listo.")
+
+
+# -----------------------------------------------------------------------------
+# Versiones (la rúbrica pide listarlas). Además: pip freeze > requirements.txt
+# -----------------------------------------------------------------------------
+import platform
+import scipy
+import matplotlib
+with open(OUT / "versiones_python.txt", "w", encoding="utf-8") as f_v:
+    for nombre_v, ver in [("python", platform.python_version()), ("numpy", np.__version__),
+                          ("pandas", pd.__version__), ("scipy", scipy.__version__),
+                          ("matplotlib", matplotlib.__version__), ("torch", torch.__version__)]:
+        f_v.write(f"{nombre_v}=={ver}\n")
+print("Versiones guardadas en", OUT / "versiones_python.txt")
