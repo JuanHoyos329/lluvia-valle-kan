@@ -1,4 +1,4 @@
 modelo,aristas_activas,val_L2_rel,prueba_L2_rel,aristas_por_capa
-KAN completa (semilla 0),80,32.340479261763384,33.789657333220866,"[40, 16, 24]"
-KAN con L1 + entropía (antes de podar),80,32.52174126884964,35.250121152248084,"[40, 16, 24]"
-KAN podada (umbral 5% de la máxima por capa) y reajustada,51,30.23861832508815,35.20227024104333,"[38, 7, 6]"
+KAN completa (semilla 0),80,30.835946775055028,34.737572096339406,"[40, 16, 24]"
+KAN con L1 + entropía (antes de podar),80,31.59081829597701,33.85982557448068,"[40, 16, 24]"
+KAN podada (umbral 5% de la máxima por capa) y reajustada,79,31.22645803571541,34.31620322770384,"[40, 16, 23]"

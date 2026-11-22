@@ -44,7 +44,7 @@ MOSTRAR_GRAFICAS = False
 
 # True: entrena todo desde cero (lo que se entrega). False: si ya existen los modelos guardados en
 # salidas_fase4/modelos/, los carga en vez de reentrenar (para iterar rápido sobre los bloques 6+).
-REENTRENAR = False
+REENTRENAR = True
 
 # Partición temporal.
 #   "ferro":   recomendación del profesor Ferro (asesoría del 20 de noviembre). Prueba 1997-2003, que
