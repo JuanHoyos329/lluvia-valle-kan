@@ -1,7 +1,7 @@
 # =============================================================================
 # Preprocesamiento
 # =============================================================================
-paquetes <- c("dplyr", "tidyr", "lubridate", "ggplot2", "readxl", "writexl", "terra")
+paquetes <- c("dplyr", "tidyr", "lubridate", "ggplot2", "patchwork", "readxl", "writexl", "terra")
 faltan <- paquetes[!vapply(paquetes, requireNamespace, logical(1), quietly = TRUE)]
 if (length(faltan) > 0) install.packages(faltan, repos = "https://cloud.r-project.org")
 invisible(lapply(paquetes, library, character.only = TRUE))
@@ -243,10 +243,10 @@ completitud <- function(st, y0, y1) {
 ea <- completitud(st, Y0, Y1)$ea
 
 # Estas dos gráficas se imprimen aquí porque son las únicas con todo 1930-2003.
+# Se imprimen juntas, lado a lado, en una sola figura.
 # Orden de las estaciones: de más a menos años "buenos" (cobertura >= 90 %)
 orden <- ea |> group_by(STATION_ID) |> summarise(a90 = sum(cob >= 90), cob = mean(cob)) |>
   arrange(desc(a90), desc(cob)) |> pull(STATION_ID)
-eje_anios <- scale_x_continuous(breaks = seq(1930, Y1, 5))
 
 # Figura 1. Mapa de calor estación x año (1930-2003)
 # Cada fila es una estación y cada columna un año. Arriba quedan las estaciones con más años
@@ -254,7 +254,7 @@ eje_anios <- scale_x_continuous(breaks = seq(1930, Y1, 5))
 ea_plot <- ea |> mutate(est = factor(STATION_ID, levels = rev(orden)),
                         clase = cut(cob, c(-Inf, 0, 50, 80, 90, 99.999, Inf),
                                     labels = c("sin datos", "<50%", "50-80%", "80-90%", "90-<100%", "100%")))
-mostrar(
+fig1_calor <- (
   ggplot(ea_plot, aes(YEAR, est, fill = clase)) + geom_tile() +
     scale_fill_manual(values = c("#e8e8e8", "#b2182b", "#ef8a62", "#92c5de", "#4393c3", "#2166ac"),
                       name = "% de días\ncon dato", drop = FALSE) +
@@ -273,15 +273,19 @@ f2 <- ea |> group_by(YEAR) |>
             `cobertura >= 90 %` = sum(cob >= 90), `100 %` = sum(cob == 100)) |>
   pivot_longer(-YEAR, names_to = "serie", values_to = "n") |>
   mutate(serie = factor(serie, levels = c("con algún dato", "cobertura >= 80 %", "cobertura >= 90 %", "100 %")))
-mostrar(
+fig2_reportan <- (
   ggplot(f2, aes(YEAR, n, colour = serie, linetype = serie)) + geom_line(linewidth = .8) +
     geom_vline(xintercept = S0 - .5, linetype = "dashed", colour = "grey40") +
     scale_colour_manual(values = c("#000000", "#E69F00", "#009E73", "#CC79A7"), name = NULL) +
     scale_linetype_manual(values = c("solid", "solid", "longdash", "solid"), name = NULL) +
-    eje_anios + expand_limits(y = 0) +
+    scale_x_continuous(breaks = seq(1930, Y1, 5), expand = c(0, 0)) + expand_limits(y = 0) +
     labs(title = "¿Cuántas estaciones reportan cada año?", x = NULL, y = "n.º de estaciones") +
     theme(legend.position = "bottom")
 )
+
+# Figuras 1 y 2 juntas en una sola figura: a la izquierda la cobertura diaria, a la derecha las
+# estaciones que reportan cada año
+mostrar(fig1_calor + fig2_reportan)
 
 # ------------------------------------------------- 6. Corte: desde aquí solo 1981-2003
 # La partición del proyecto empieza en 1981 (train 1981-1993 / val 1994-1996 / test 1997-2003).
@@ -1011,7 +1015,7 @@ cob_anio <- ea |> filter(cob > 0, YEAR %in% ANIOS_PANEL) |>
 print(cob_anio |> pivot_wider(names_from = clase, values_from = n) |>
         mutate(total = rowSums(across(-YEAR))), n = Inf)
 
-mostrar(
+fig3_cobertura <- (
   ggplot(cob_anio, aes(clase, n, fill = clase)) + geom_col(width = .8) +
     geom_text(aes(label = n), vjust = -.4, size = 2.3) +
     facet_wrap(~YEAR, ncol = 7) +
@@ -1029,11 +1033,20 @@ f5 <- ea |> filter(n_dias > 0) |>
   mutate(rango = cut(hueco, c(-Inf, 0, 1, 7, 31, 91, Inf),
                      labels = c("0 (año completo)", "1 día", "2-7 días", "8-31 días", "32-91 días", "> 3 meses"))) |>
   count(rango)
-mostrar(
+fig4_huecos <- (
   ggplot(f5, aes(rango, n, fill = as.integer(rango) > 3)) + geom_col() + geom_text(aes(label = n), vjust = -.3) +
     scale_fill_manual(values = c("#2166ac", "#b2182b"), guide = "none") +
+    scale_y_continuous(expand = expansion(mult = c(0, .1))) +              # espacio para las etiquetas
     labs(title = "¿Los faltantes son días sueltos o bloques largos?",
          x = "hueco más largo dentro del año (días consecutivos sin dato)", y = "pares estación-año")
+)
+
+# Figuras 3 y 4 juntas en una sola figura: a la izquierda la cobertura año por año, a la derecha
+# el hueco más largo (la leyenda de la cobertura va abajo para no quedar entre las dos gráficas)
+mostrar(
+  (fig3_cobertura + theme(legend.position = "bottom")) +
+    (fig4_huecos + scale_x_discrete(labels = label_wrap_gen(10))) +
+    plot_layout(widths = c(1.8, 1))
 )
 
 # Capa común para los mapas: borde del Valle del Cauca
@@ -1052,6 +1065,7 @@ mostrar(
     geom_point(data = ok, aes(Lon, lat), inherit.aes = FALSE, size = .6) + coord_equal() +
     labs(title = "Satélite: lluvia media anual 1981-2003", x = "Lon", y = "Lat")
 )
+
 # Figura 6. Estaciones del Valle y la fuente de sus coordenadas (todas reales, de la CVC)
 valle_df <- as.data.frame(valle, xy = TRUE)                          # solo los píxeles del Valle
 col_fuente <- c("archivo original" = "#2166ac", "catálogo CVC" = "#67a9cf", "estaciones automáticas CVC" = "#053061",

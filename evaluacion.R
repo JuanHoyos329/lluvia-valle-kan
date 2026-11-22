@@ -1,10 +1,6 @@
 # =============================================================================
 # Evaluación
 # =============================================================================
-
-# ---- Reproducibilidad ---------------------------------------------------------
-# No se usa setwd() con una ruta fija: las rutas son relativas a la carpeta del proyecto
-# (en RStudio: Session > Set Working Directory > To Source File Location).
 paquetes <- c("writexl")
 faltan <- paquetes[!vapply(paquetes, requireNamespace, logical(1), quietly = TRUE)]
 if (length(faltan) > 0) install.packages(faltan, repos = "https://cloud.r-project.org")
@@ -221,7 +217,7 @@ cat("Curvas con los dos picos observados bien definidos:",
 
 
 #####################################################################################
-# 4. Resumen por bloque: valor, IC bootstrap del 95 % y Wilcoxon pareado contra el satélite
+# 4. Resumen por bloque: valor e IC bootstrap del 95 %
 #####################################################################################
 # Las curvas de una misma estación no son independientes (comparten sitio, píxel y altitud), así que
 # el bootstrap remuestrea ESTACIONES con reemplazo y se lleva todas sus curvas del grupo.
@@ -238,18 +234,6 @@ resumen <- function(idx) {
   out
 }
 
-# Valor de cada métrica POR ESTACIÓN (para Wilcoxon): una cifra por estación y modelo
-por_estacion <- function(idx, m) {
-  g <- factor(claves$STATION_ID[idx])
-  data.frame(
-    L2_relativo_pct  = 100 * sqrt(tapply(err_L2[[m]][idx], g, sum) / tapply(norma[idx], g, sum)),
-    KGE_mediana      = tapply(KGE[[m]][idx], g, median, na.rm = TRUE),
-    sesgo_anual_pct  = abs(100 * (tapply(tot_mod[[m]][idx], g, sum) - tapply(tot_obs[idx], g, sum)) /
-                             tapply(tot_obs[idx], g, sum)),                  # |sesgo|: cuánto se aleja
-    error_pico1_dias = tapply(err_pico[[m]][idx, 1], g, mean, na.rm = TRUE),
-    error_pico2_dias = tapply(err_pico[[m]][idx, 2], g, mean, na.rm = TRUE))
-}
-
 evaluar <- function(idx, bloque, fase = "todas") {
   estaciones <- unique(claves$STATION_ID[idx])
   curvas_de  <- split(idx, factor(claves$STATION_ID[idx], levels = estaciones))
@@ -260,23 +244,14 @@ evaluar <- function(idx, bloque, fase = "todas") {
     unlist(resumen(idx_b))
   })
   ic <- apply(boot, 1, quantile, probs = c(0.025, 0.975), na.rm = TRUE)
-  # Wilcoxon pareado por estación: cada modelo contra el satélite sin corregir
-  est_sat <- por_estacion(idx, "satelite")
   filas <- list()
   for (m in MODELOS) {
-    est_m <- por_estacion(idx, m)
     for (met in names(obs_val[[m]])) {
       clave <- paste(m, met, sep = ".")
-      dif <- est_m[[met]] - est_sat[[met]]
-      ok  <- !is.na(dif)
-      p   <- if (m == "satelite" || sum(ok) < 5) NA else
-        suppressWarnings(wilcox.test(est_m[[met]][ok], est_sat[[met]][ok], paired = TRUE)$p.value)
       filas[[clave]] <- data.frame(
         particion = bloque, fase_enso = fase, modelo = NOMBRE[[m]], metrica = met,
         valor = obs_val[[m]][[met]], IC95_inf = ic[1, clave], IC95_sup = ic[2, clave],
-        n_curvas = length(idx), n_estaciones = length(estaciones),
-        mediana_dif_estacion_vs_satelite = if (m == "satelite") NA else median(dif, na.rm = TRUE),
-        wilcoxon_p_vs_satelite = p, row.names = NULL)
+        n_curvas = length(idx), n_estaciones = length(estaciones), row.names = NULL)
     }
   }
   do.call(rbind, filas)
@@ -285,15 +260,16 @@ ordenar <- function(tb) tb[order(match(tb$particion, BLOQUES), tb$metrica, match
                                  match(tb$modelo, NOMBRE)), ]
 
 # ---- 4.1 Los tres bloques completos
-# Entrenamiento = ajuste (dentro de muestra); validación = elección de hiperparámetros; prueba = desempeño.
-# En validación aparece la falla de la KAN en 1997 (explicada en el punto 6 del informe).
+# Entrenamiento (1981-1993) = ajuste (dentro de muestra); validación (1994-1996) = elección de
+# hiperparámetros; prueba (1997-2003) = desempeño. Solo la prueba sirve para concluir.
 cat("\nBootstrap (", B_BOOT, " remuestreos de estaciones) en los tres bloques...\n", sep = "")
 tabla_eval1 <- ordenar(do.call(rbind, lapply(BLOQUES, function(b) evaluar(idx_de[[b]], b))))
-print(format(tabla_eval1[, c("particion", "metrica", "modelo", "valor", "IC95_inf", "IC95_sup",
-                             "wilcoxon_p_vs_satelite")], digits = 3), row.names = FALSE)
+print(format(tabla_eval1[, c("particion", "metrica", "modelo", "valor", "IC95_inf", "IC95_sup")], digits = 3), row.names = FALSE)
 guardar(tabla_eval1, "tabla_eval1_metricas")
 
-# ---- 4.2 Por fase ENSO dentro de cada bloque (la prueba 2001-2003 no tiene años Niña)
+# ---- 4.2 Por fase ENSO dentro de cada bloque
+# La validación (1994-1996) solo tiene años Neutro. La prueba tiene las tres fases:
+# Niño (1997, 2002), Niña (1998-2000) y Neutro (2001, 2003), según la regla de la fase 4.
 cat("\nBootstrap por fase ENSO...\n")
 tabla_eval2 <- NULL
 for (b in BLOQUES) for (f in c("Niña", "Neutro", "Niño")) {
@@ -339,7 +315,8 @@ guardar(tabla_eval4, "tabla_eval4_KGE_por_escala")
 #####################################################################################
 # 6. Sensibilidad: KGE y sesgo anual usando solo los días MEDIDOS
 #####################################################################################
-# Una parte de los días fue imputada en el preprocesamiento (IDW_altitud) o desagregada de acumulados.
+# Una parte de los días fue imputada en el preprocesamiento (IDW_altitud o, sin vecinas, satélite)
+# o desagregada de acumulados (solo en entrenamiento).
 # Si se quitan, ¿cambian las conclusiones? Se usa la misma máscara para observado, satélite y red.
 diario <- read.csv(file.path(PRE, "estaciones_diario_limpio.csv"))[, c("STATION_ID", "YEAR", "MONTH", "DAY", "origen")]
 cum_mes <- cumsum(c(0, head(dias_mes, -1)))
