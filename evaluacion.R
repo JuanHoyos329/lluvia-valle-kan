@@ -2,53 +2,68 @@
 # Evaluación
 # =============================================================================
 
-setwd("C:/Users/juana/OneDrive/Escritorio/lluvia-valle-kan")
+# ---- Reproducibilidad ---------------------------------------------------------
+# No se usa setwd() con una ruta fija: las rutas son relativas a la carpeta del proyecto
+# (en RStudio: Session > Set Working Directory > To Source File Location).
+paquetes <- c("writexl")
+faltan <- paquetes[!vapply(paquetes, requireNamespace, logical(1), quietly = TRUE)]
+if (length(faltan) > 0) install.packages(faltan, repos = "https://cloud.r-project.org")
+invisible(lapply(paquetes, library, character.only = TRUE))
+RNGkind("Mersenne-Twister", "Inversion", "Rejection")
+SEMILLA <- 2026
+set.seed(SEMILLA)
+cat("R:", R.version.string, "| writexl", as.character(packageVersion("writexl")), "\n")
 
-library(writexl)
-
-set.seed(2026)
 B_BOOT  <- 2000                         # remuestreos bootstrap (la rúbrica pide >= 1000)
-ORDEN   <- 4                            # B-splines cúbicos (igual que la fase 1)
+ORDEN   <- 4                            # B-splines cúbicos
 RANGO   <- c(0, 365)
 MODELOS <- c("satelite", "lineal", "kan", "mlp")
 NOMBRE  <- c(satelite = "satélite sin corregir", lineal = "red - cabeza lineal",
              kan = "red - cabeza KAN", mlp = "red - cabeza MLP")
 SEMILLAS <- 0:2
+BLOQUES <- c("entrenamiento", "validacion", "prueba")
 
 F1  <- "./salidas_fase1"
 F4  <- "./salidas_fase4"
 PRE <- "./salidas_preprocesamiento"
 OUT <- "./salidas_evaluacion"
+for (d in c(F1, F4, PRE)) if (!dir.exists(d))
+  stop("No se encuentra la carpeta '", d, "' desde ", getwd(), ". Ponga el directorio de trabajo en la carpeta del proyecto.")
 dir.create(OUT, showWarnings = FALSE)
 guardar <- function(tabla, nombre) write_xlsx(tabla, file.path(OUT, paste0(nombre, ".xlsx")))
+clave_de <- function(df) paste(df$STATION_ID, df$YEAR)
 
 
 #####################################################################################
 # 1. Carga de datos
 #####################################################################################
 
-# ---- Coeficientes de la fase 1 (escala sqrt(mm/día)): fila i = misma estación-año en los dos
+# ---- Coeficientes predichos por la red (3 semillas por cabeza). De aquí sale la PARTICIÓN.
+leer_pred <- function(tipo, s) read.csv(file.path(F4, sprintf("pred_coef_%s_semilla%d.csv", tipo, s)))
+p0 <- leer_pred("kan", 0)
+claves <- p0[, c("STATION_ID", "YEAR", "particion")]
+stopifnot(all(claves$particion %in% BLOQUES))
+N <- nrow(claves)
+C_pred <- lapply(setNames(MODELOS[-1], MODELOS[-1]), function(t) lapply(SEMILLAS, function(s) {
+  p <- leer_pred(t, s)
+  if (!identical(clave_de(p), clave_de(claves)) || !identical(p$particion, claves$particion))
+    stop("pred_coef_", t, "_semilla", s, ".csv no tiene las mismas curvas o partición que pred_coef_kan_semilla0.csv")
+  as.matrix(p[, grep("^c[0-9]+$", names(p))])
+}))
+
+# ---- Coeficientes de la fase 1 (escala sqrt(mm/día)): solo para las fechas de los picos y el control
 coef_est <- read.csv(file.path(F1, "coeficientes_estaciones.csv"))
 coef_sat <- read.csv(file.path(F1, "coeficientes_satelite.csv"))
-stopifnot(identical(coef_est$STATION_ID, coef_sat$STATION_ID), identical(coef_est$YEAR, coef_sat$YEAR))
-claves <- coef_est[, c("STATION_ID", "YEAR", "particion")]
-N <- nrow(claves)
+if (!identical(clave_de(coef_est), clave_de(claves)) || !identical(clave_de(coef_sat), clave_de(claves)))
+  stop("Las salidas de la fase 1 y de la fase 4 no tienen las mismas curvas: corra de nuevo la fase 4.")
 C_est <- as.matrix(coef_est[, grep("^c[0-9]+$", names(coef_est))])      # N x 8
 C_sat <- as.matrix(coef_sat[, grep("^c[0-9]+$", names(coef_sat))])      # N x 12
 K_est <- ncol(C_est); K_sat <- ncol(C_sat)
 
-# ---- Coeficientes predichos por la red (3 semillas por cabeza), mismas filas que la fase 1
-leer_pred <- function(tipo, s) {
-  p <- read.csv(file.path(F4, sprintf("pred_coef_%s_semilla%d.csv", tipo, s)))
-  stopifnot(identical(p$STATION_ID, claves$STATION_ID), identical(p$YEAR, claves$YEAR))
-  as.matrix(p[, grep("^c[0-9]+$", names(p))])
-}
-C_pred <- lapply(setNames(MODELOS[-1], MODELOS[-1]), function(t) lapply(SEMILLAS, function(s) leer_pred(t, s)))
-
 # ---- Curvas diarias en mm (365 días; el 29 de febrero va sumado al 28, como en la fase 1)
 leer_mm <- function(archivo) {
   m <- read.csv(file.path(F4, archivo))
-  stopifnot(identical(m$STATION_ID, claves$STATION_ID), identical(m$YEAR, claves$YEAR))
+  if (!identical(clave_de(m), clave_de(claves))) stop(archivo, " no tiene las mismas curvas que pred_coef_*.csv")
   m
 }
 obs <- leer_mm("mm_diario_observado.csv")
@@ -58,32 +73,35 @@ Y_obs <- as.matrix(obs[, dcols])
 Y_mm  <- lapply(setNames(MODELOS[-1], MODELOS[-1]),
                 function(t) as.matrix(leer_mm(sprintf("mm_diario_pred_%s.csv", t))[, dcols]))
 
-# ---- Satélite: total de cada péntada en el píxel de la estación
+# ---- Satélite: total de cada péntada (mm) en el píxel de la estación, unido por estación-año
 pent <- read.csv(file.path(PRE, "estaciones_pentadas_limpio.csv"))
 pent <- pent[order(pent$STATION_ID, pent$YEAR, pent$PENTADA), ]
-stopifnot(nrow(pent) == 72 * N,
-          identical(pent$STATION_ID[seq(1, nrow(pent), 72)], claves$STATION_ID),
-          identical(pent$YEAR[seq(1, nrow(pent), 72)], claves$YEAR))
-SAT_mm   <- matrix(pent$satelite_mm, nrow = N, byrow = TRUE)               # N x 72, mm por péntada
-SAT_dias <- matrix(pent$dias, nrow = N, byrow = TRUE)                      # días de cada péntada
+fila_pent <- match(clave_de(claves), clave_de(pent[pent$PENTADA == 1, ]))
+if (anyNA(fila_pent))
+  stop(sum(is.na(fila_pent)), " de ", N, " curvas de la fase 4 no están en estaciones_pentadas_limpio.csv. ",
+       "Las fases 1-4 se corrieron con un preprocesamiento anterior: córralas de nuevo antes de evaluar.")
+SAT_mm   <- matrix(pent$satelite_mm, ncol = 72, byrow = TRUE)[fila_pent, ]   # N x 72, mm por péntada
+SAT_dias <- matrix(pent$dias, ncol = 72, byrow = TRUE)[fila_pent, ]          # días de cada péntada
+if (nrow(pent) != 72 * nrow(pent[pent$PENTADA == 1, ])) stop("estaciones_pentadas_limpio.csv no tiene 72 péntadas por curva")
 
 # ---- Día del año (1..365) -> péntada (1..72): péntadas 1-5 de cada mes con 5 días, la 6.ª el resto
 dias_mes <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
 mes_dia  <- data.frame(mes = rep(1:12, dias_mes), dia = unlist(lapply(dias_mes, seq_len)))
 pentada_de_dia <- (mes_dia$mes - 1) * 6 + pmin(ceiling(mes_dia$dia / 5), 6)
 stopifnot(length(pentada_de_dia) == 365, all(table(pentada_de_dia) %in% 3:6))
+n_pent <- as.vector(table(pentada_de_dia))                                 # días de cada péntada (año de 365)
 
 # Satélite en mm/día para cada día: el total de su péntada repartido por igual entre sus días
 SAT_dia <- (SAT_mm / SAT_dias)[, pentada_de_dia]                           # N x 365
 
-# Índices de cada partición. El entrenamiento no se evalúa (ya se usó para ajustar).
-i_va <- which(claves$particion == "validacion")
-i_te <- which(claves$particion == "prueba")
-cat("Curvas evaluadas: validación", length(i_va), "| prueba", length(i_te), "\n")
+# Índices de cada bloque de la partición
+idx_de <- lapply(setNames(BLOQUES, BLOQUES), function(b) which(claves$particion == b))
+cat("Curvas: entrenamiento", length(idx_de$entrenamiento), "| validación", length(idx_de$validacion),
+    "| prueba", length(idx_de$prueba), "\n")
 
 
 #####################################################################################
-# 2. Bases B-spline y matrices de Gram (para el error L² en la escala de las curvas)
+# 2. Bases B-spline (fechas de los picos) y matrices de Gram (control en escala raíz, sección 7)
 #####################################################################################
 # Misma base de la fase 1. Las integrales se hacen por Gauss-Legendre de 4 puntos en cada tramo
 # entre nudos; como el producto de dos cúbicas tiene grado 6 <= 7, la cuadratura es EXACTA.
@@ -123,33 +141,13 @@ gram <- function(K1, K2) {
   wq <- as.vector(outer(w, seq_along(a), function(w, k) (b[k] - a[k]) / 2 * w))
   t(base_bspline(tq, K1)) %*% (wq * base_bspline(tq, K2))
 }
-W_est  <- gram(K_est, K_est)           # 8 x 8
-W_sat  <- gram(K_sat, K_sat)           # 12 x 12
-W_cruz <- gram(K_sat, K_est)           # 12 x 8: el satélite y la estación tienen bases distintas
-stopifnot(abs(sum(W_est) - 365) < 1e-9, abs(sum(W_sat) - 365) < 1e-9)   # ∫ 1 dt = 365
-
-forma <- function(A, W, B) rowSums((A %*% W) * B)                        # aᵢᵀ W bᵢ por fila
 
 
 #####################################################################################
-# 3. Las cuatro métricas por curva estación-año
+# 3. Las cuatro métricas por curva estación-año, en mm
 #####################################################################################
-
-# ---- 3.1 Error L² (escala sqrt(mm/día)):  e_i = ∫ (ŷ_i(t) - y_i(t))² dt
-# Satélite: ∫ (x - y)² = xᵀW_sat x - 2 xᵀW_cruz y + yᵀW_est y
-# Red: error de cada semilla y luego el promedio de las 3 semillas (igual que la fase 4).
-# El L² RELATIVO de un grupo de curvas es 100 · sqrt(Σ e_i / Σ ∫ y_i²): se calcula al resumir.
-norma <- forma(C_est, W_est, C_est)                                       # ∫ y_i² dt
-err_L2 <- list(satelite = forma(C_sat, W_sat, C_sat) - 2 * forma(C_sat, W_cruz, C_est) + norma)
-for (t in MODELOS[-1]) {
-  err_L2[[t]] <- Reduce(`+`, lapply(C_pred[[t]], function(C) forma(C - C_est, W_est, C - C_est))) / length(SEMILLAS)
-}
-
-# ---- 3.2 KGE (Gupta et al., 2009) sobre las 72 péntadas del año, en mm/día
-#   KGE = 1 - sqrt((r - 1)² + (α - 1)² + (β - 1)²)
-#   r = correlación, α = sd(predicho)/sd(observado), β = media(predicho)/media(observado)
-#   KGE = 1 es perfecto. Se usan péntadas (la resolución del satélite) y no días sueltos: la red
-#   predice la lluvia ESPERADA, una curva suave, y la lluvia de un día cualquiera es casi ruido.
+# Escala común: PÉNTADAS en mm/día (la resolución nativa del satélite). Observado y red se agregan de
+# sus días; el satélite es el total de su péntada dividido entre sus días.
 a_pentadas <- function(Y_dia, usar = NULL) {                              # N x 365 -> N x 72 (mm/día)
   if (is.null(usar)) usar <- matrix(TRUE, nrow(Y_dia), 365)
   Y_dia[!usar] <- 0
@@ -157,17 +155,33 @@ a_pentadas <- function(Y_dia, usar = NULL) {                              # N x 
   n    <- t(rowsum(t(usar * 1), pentada_de_dia))
   ifelse(n > 0, suma / n, NA)
 }
-kge <- function(s, o) {
-  ok <- !is.na(s) & !is.na(o)
-  s <- s[ok]; o <- o[ok]
-  if (length(o) < 3 || sd(o) == 0 || sd(s) == 0) return(NA_real_)
-  1 - sqrt((cor(s, o) - 1)^2 + (sd(s) / sd(o) - 1)^2 + (mean(s) / mean(o) - 1)^2)
-}
-kge_curvas <- function(P_mod, P_obs) sapply(seq_len(nrow(P_obs)), function(i) kge(P_mod[i, ], P_obs[i, ]))
-
 P_obs <- a_pentadas(Y_obs)
 P_mod <- c(list(satelite = SAT_mm / SAT_dias), lapply(Y_mm, a_pentadas))
-KGE   <- lapply(P_mod, kge_curvas, P_obs = P_obs)
+
+# ---- 3.1 Error L² relativo en mm:  e_i = Σ_p n_p (ŷ_ip - y_ip)²  ≈ ∫ (ŷ_i(t) - y_i(t))² dt
+# (n_p = días de la péntada). El L² RELATIVO de un grupo es 100 · sqrt(Σ e_i / Σ ‖y_i‖²).
+# Red: la curva en mm de la fase 4 (promedio de las 3 semillas + smearing).
+pesos  <- matrix(n_pent, N, 72, byrow = TRUE)
+norma  <- rowSums(pesos * P_obs^2)                                        # ‖y_i‖² en mm²/día
+err_L2 <- lapply(P_mod, function(P) rowSums(pesos * (P - P_obs)^2))
+
+# ---- 3.2 KGE (Gupta et al., 2009) sobre las 72 péntadas del año, en mm/día
+#   KGE = 1 - sqrt((r - 1)² + (α - 1)² + (β - 1)²)
+#   r = correlación, α = sd(predicho)/sd(observado), β = media(predicho)/media(observado)
+# Escala: péntadas y no días. La red predice la lluvia ESPERADA de cada día (una curva suave), y la
+# lluvia de un día cualquiera salta entre 0 y > 50 mm. Día a día, α de cualquier predicción suave
+# sale muy por debajo de 1 y el KGE cae por variabilidad, no por error de la forma de la curva. En
+# péntadas el ruido diario se promedia, y es la escala más fina en la que el satélite tiene dato.
+# La sección 5 muestra el KGE en las tres escalas (día, péntada, mes) con sus componentes.
+kge_comp <- function(s, o) {
+  ok <- !is.na(s) & !is.na(o)
+  s <- s[ok]; o <- o[ok]
+  if (length(o) < 3 || sd(o) == 0 || sd(s) == 0) return(c(KGE = NA, r = NA, alfa = NA, beta = NA))
+  r <- cor(s, o); a <- sd(s) / sd(o); b <- mean(s) / mean(o)
+  c(KGE = 1 - sqrt((r - 1)^2 + (a - 1)^2 + (b - 1)^2), r = r, alfa = a, beta = b)
+}
+kge_curvas <- function(P_m, P_o) t(sapply(seq_len(nrow(P_o)), function(i) kge_comp(P_m[i, ], P_o[i, ])))
+KGE <- lapply(P_mod, function(P) kge_curvas(P, P_obs)[, "KGE"])
 
 # ---- 3.3 Acumulado anual (mm). El sesgo de un grupo es 100 · (Σ predicho - Σ observado) / Σ observado
 tot_obs <- rowSums(Y_obs)
@@ -175,8 +189,8 @@ tot_mod <- c(list(satelite = rowSums(SAT_mm)), lapply(Y_mm, rowSums))   # satél
 
 # ---- 3.4 Fechas de los dos picos de lluvia (días del año)
 # Mismo criterio de la fase 2: máximo de la curva en [45, 200] (primera temporada, mar-may) y en
-# [230, 350] (segunda, sep-nov). Las fechas no cambian entre sqrt(mm) y mm (la raíz es creciente),
-# así que se usan las curvas de la fase 1. Para la red: el promedio de las 3 semillas.
+# [230, 350] (segunda, sep-nov). Las fechas de un máximo no cambian entre sqrt(mm) y mm (la raíz es
+# creciente), así que se usan las curvas suaves de la fase 1. Para la red: el promedio de las 3 semillas.
 # Un pico observado solo cuenta si es un máximo "real" (no queda pegado al borde de la ventana);
 # si la estación no tuvo ese pico ese año, no hay fecha que comparar y la curva sale de esa métrica.
 tt   <- seq(0, 365, by = 0.5)
@@ -200,19 +214,17 @@ for (t in MODELOS[-1]) pk_mod[[t]] <- abs(picos((Reduce(`+`, C_pred[[t]]) / leng
 err_pico <- lapply(pk_mod, function(p) ifelse(pico_real_obs, abs(p - pk_obs), NA))   # N x 2, en días
 
 # Control de las ventanas con la curva media de ENTRENAMIENTO (no se ajusta nada con val/prueba)
-media_tr <- colMeans(C_est[claves$particion == "entrenamiento", ]) %*% t(P_tt_est)
+media_tr <- colMeans(C_est[idx_de$entrenamiento, ]) %*% t(P_tt_est)
 cat("Picos de la curva media de entrenamiento: día", abs(picos(media_tr)), "\n")
-cat("Curvas de val+prueba con los dos picos observados bien definidos:",
-    round(100 * mean(rowSums(pico_real_obs[c(i_va, i_te), ]) == 2), 1), "%\n")
+cat("Curvas con los dos picos observados bien definidos:",
+    round(100 * mean(rowSums(pico_real_obs) == 2), 1), "%\n")
 
 
 #####################################################################################
-# 4. Resumen por grupo: valor, IC bootstrap del 95 % y Wilcoxon pareado contra el satélite
+# 4. Resumen por bloque: valor, IC bootstrap del 95 % y Wilcoxon pareado contra el satélite
 #####################################################################################
 # Las curvas de una misma estación no son independientes (comparten sitio, píxel y altitud), así que
 # el bootstrap remuestrea ESTACIONES con reemplazo y se lleva todas sus curvas del grupo.
-#
-# Resumen de cada métrica en un conjunto de curvas idx:
 resumen <- function(idx) {
   out <- list()
   for (m in MODELOS) {
@@ -238,7 +250,7 @@ por_estacion <- function(idx, m) {
     error_pico2_dias = tapply(err_pico[[m]][idx, 2], g, mean, na.rm = TRUE))
 }
 
-evaluar <- function(idx, particion, fase = "todas") {
+evaluar <- function(idx, bloque, fase = "todas") {
   estaciones <- unique(claves$STATION_ID[idx])
   curvas_de  <- split(idx, factor(claves$STATION_ID[idx], levels = estaciones))
   obs_val    <- resumen(idx)
@@ -260,7 +272,7 @@ evaluar <- function(idx, particion, fase = "todas") {
       p   <- if (m == "satelite" || sum(ok) < 5) NA else
         suppressWarnings(wilcox.test(est_m[[met]][ok], est_sat[[met]][ok], paired = TRUE)$p.value)
       filas[[clave]] <- data.frame(
-        particion = particion, fase_enso = fase, modelo = NOMBRE[[m]], metrica = met,
+        particion = bloque, fase_enso = fase, modelo = NOMBRE[[m]], metrica = met,
         valor = obs_val[[m]][[met]], IC95_inf = ic[1, clave], IC95_sup = ic[2, clave],
         n_curvas = length(idx), n_estaciones = length(estaciones),
         mediana_dif_estacion_vs_satelite = if (m == "satelite") NA else median(dif, na.rm = TRUE),
@@ -269,63 +281,89 @@ evaluar <- function(idx, particion, fase = "todas") {
   }
   do.call(rbind, filas)
 }
+ordenar <- function(tb) tb[order(match(tb$particion, BLOQUES), tb$metrica, match(tb$fase_enso, c("todas", "Niña", "Neutro", "Niño")),
+                                 match(tb$modelo, NOMBRE)), ]
 
-# ---- 4.1 Validación y prueba completas
-cat("\nBootstrap (", B_BOOT, " remuestreos de estaciones) en validación y prueba...\n", sep = "")
-tabla_eval1 <- rbind(evaluar(i_va, "validacion"), evaluar(i_te, "prueba"))
-tabla_eval1 <- tabla_eval1[order(tabla_eval1$particion != "validacion", tabla_eval1$metrica), ]
+# ---- 4.1 Los tres bloques completos
+# Entrenamiento = ajuste (dentro de muestra); validación = elección de hiperparámetros; prueba = desempeño.
+# En validación aparece la falla de la KAN en 1997 (explicada en el punto 6 del informe).
+cat("\nBootstrap (", B_BOOT, " remuestreos de estaciones) en los tres bloques...\n", sep = "")
+tabla_eval1 <- ordenar(do.call(rbind, lapply(BLOQUES, function(b) evaluar(idx_de[[b]], b))))
 print(format(tabla_eval1[, c("particion", "metrica", "modelo", "valor", "IC95_inf", "IC95_sup",
                              "wilcoxon_p_vs_satelite")], digits = 3), row.names = FALSE)
 guardar(tabla_eval1, "tabla_eval1_metricas")
 
-# ---- 4.2 Por fase ENSO (dentro de cada partición; la prueba no tiene años Niña)
+# ---- 4.2 Por fase ENSO dentro de cada bloque (la prueba 2001-2003 no tiene años Niña)
 cat("\nBootstrap por fase ENSO...\n")
 tabla_eval2 <- NULL
-for (part in c("validacion", "prueba")) {
-  idx_p <- if (part == "validacion") i_va else i_te
-  for (f in c("Niña", "Neutro", "Niño")) {
-    idx_f <- idx_p[fase_enso[idx_p] == f]
-    if (length(idx_f) == 0) next
-    tabla_eval2 <- rbind(tabla_eval2, evaluar(idx_f, part, f))
-  }
+for (b in BLOQUES) for (f in c("Niña", "Neutro", "Niño")) {
+  idx_f <- idx_de[[b]][fase_enso[idx_de[[b]]] == f]
+  if (length(idx_f) > 0) tabla_eval2 <- rbind(tabla_eval2, evaluar(idx_f, b, f))
 }
-tabla_eval2 <- tabla_eval2[order(tabla_eval2$particion != "validacion", tabla_eval2$metrica,
-                                 tabla_eval2$fase_enso), ]
-print(format(tabla_eval2[tabla_eval2$metrica == "L2_relativo_pct",
+tabla_eval2 <- ordenar(tabla_eval2)
+print(format(tabla_eval2[tabla_eval2$metrica == "KGE_mediana",
                          c("particion", "fase_enso", "modelo", "valor", "IC95_inf", "IC95_sup", "n_curvas")],
              digits = 3), row.names = FALSE)
 guardar(tabla_eval2, "tabla_eval2_metricas_por_enso")
 
 
 #####################################################################################
-# 5. Sensibilidad: KGE y sesgo anual usando solo los días MEDIDOS
+# 5. Escala del KGE: día, péntada y mes
 #####################################################################################
-# Cerca del 1 % de los días de validación y prueba fueron imputados en el preprocesamiento (CCW).
+# Justifica la escala de 3.2. Para cada escala: mediana por curva del KGE y de sus tres componentes.
+# Si el KGE diario de la red sale bajo con α << 1 mientras r y β están bien, la caída es por la
+# variabilidad diaria que una predicción suave (valor esperado) no puede ni debe reproducir.
+mes_de_dia <- mes_dia$mes
+a_meses <- function(Y_dia) t(rowsum(t(Y_dia), mes_de_dia)) / matrix(dias_mes, nrow(Y_dia), 12, byrow = TRUE)
+Y_mod_dia <- c(list(satelite = SAT_dia), Y_mm)
+escalas <- list(
+  `diaria (365 días)`    = list(obs = Y_obs, mod = Y_mod_dia),
+  `péntadas (72)`        = list(obs = P_obs, mod = P_mod),
+  `mensual (12 meses)`   = list(obs = a_meses(Y_obs), mod = lapply(Y_mod_dia, a_meses)))
+tabla_eval4 <- NULL
+for (e in names(escalas)) for (m in MODELOS) {
+  comp <- kge_curvas(escalas[[e]]$mod[[m]], escalas[[e]]$obs)
+  for (b in BLOQUES) {
+    cb <- comp[idx_de[[b]], , drop = FALSE]
+    tabla_eval4 <- rbind(tabla_eval4, data.frame(
+      particion = b, escala = e, modelo = NOMBRE[[m]],
+      KGE_mediana = median(cb[, "KGE"], na.rm = TRUE), r_mediana = median(cb[, "r"], na.rm = TRUE),
+      alfa_mediana = median(cb[, "alfa"], na.rm = TRUE), beta_mediana = median(cb[, "beta"], na.rm = TRUE)))
+  }
+}
+tabla_eval4 <- tabla_eval4[order(match(tabla_eval4$particion, BLOQUES), match(tabla_eval4$modelo, NOMBRE)), ]
+print(format(tabla_eval4, digits = 3), row.names = FALSE)
+guardar(tabla_eval4, "tabla_eval4_KGE_por_escala")
+
+
+#####################################################################################
+# 6. Sensibilidad: KGE y sesgo anual usando solo los días MEDIDOS
+#####################################################################################
+# Una parte de los días fue imputada en el preprocesamiento (IDW_altitud) o desagregada de acumulados.
 # Si se quitan, ¿cambian las conclusiones? Se usa la misma máscara para observado, satélite y red.
 diario <- read.csv(file.path(PRE, "estaciones_diario_limpio.csv"))[, c("STATION_ID", "YEAR", "MONTH", "DAY", "origen")]
-diario <- diario[diario$YEAR >= 1996, ]
 cum_mes <- cumsum(c(0, head(dias_mes, -1)))
 diario$doy <- ifelse(diario$MONTH == 2 & diario$DAY == 29, 59, cum_mes[diario$MONTH] + diario$DAY)
-diario$fila <- match(paste(diario$STATION_ID, diario$YEAR), paste(claves$STATION_ID, claves$YEAR))
-stopifnot(!anyNA(diario$fila))
+diario$fila <- match(clave_de(diario), clave_de(claves))
+diario <- diario[!is.na(diario$fila), ]
+if (length(unique(diario$fila)) != N)
+  stop("estaciones_diario_limpio.csv no tiene todas las curvas de la fase 4: corra de nuevo las fases 1-4.")
 medido <- matrix(TRUE, N, 365)
 no_med <- diario[diario$origen != "medido", ]
 medido[cbind(no_med$fila, no_med$doy)] <- FALSE                 # 29 feb imputado -> el 28 tampoco cuenta
 rm(diario, no_med)
 
-Y_mod_dia <- c(list(satelite = SAT_dia), Y_mm)
-P_obs_m   <- a_pentadas(Y_obs, medido)
+P_obs_m <- a_pentadas(Y_obs, medido)
 tabla_eval3 <- NULL
-for (part in c("validacion", "prueba")) {
-  idx <- if (part == "validacion") i_va else i_te
+for (b in BLOQUES) {
+  idx <- idx_de[[b]]
   for (m in MODELOS) {
-    k_todos <- median(KGE[[m]][idx], na.rm = TRUE)
-    k_med   <- median(kge_curvas(a_pentadas(Y_mod_dia[[m]], medido)[idx, ], P_obs_m[idx, ]), na.rm = TRUE)
+    k_med <- median(kge_curvas(a_pentadas(Y_mod_dia[[m]], medido)[idx, ], P_obs_m[idx, ])[, "KGE"], na.rm = TRUE)
     o <- sum((Y_obs * medido)[idx, ]); s <- sum((Y_mod_dia[[m]] * medido)[idx, ])
     tabla_eval3 <- rbind(tabla_eval3, data.frame(
-      particion = part, modelo = NOMBRE[[m]],
-      pct_dias_imputados = 100 * mean(!medido[idx, ]),
-      KGE_mediana_todos_los_dias = k_todos, KGE_mediana_solo_medidos = k_med,
+      particion = b, modelo = NOMBRE[[m]],
+      pct_dias_no_medidos = 100 * mean(!medido[idx, ]),
+      KGE_mediana_todos_los_dias = median(KGE[[m]][idx], na.rm = TRUE), KGE_mediana_solo_medidos = k_med,
       sesgo_anual_pct_todos_los_dias = 100 * (sum(tot_mod[[m]][idx]) - sum(tot_obs[idx])) / sum(tot_obs[idx]),
       sesgo_anual_pct_solo_medidos = 100 * (s - o) / o))
   }
@@ -335,21 +373,45 @@ guardar(tabla_eval3, "tabla_eval3_solo_dias_medidos")
 
 
 #####################################################################################
-# 6. Control: las cifras coinciden con las de la fase 4
+# 7. Control: las cifras coinciden con las de la fase 4
 #####################################################################################
-# L² relativo del satélite y diferencias entre cabezas en prueba (ablacion_comparaciones_bootstrap.csv)
-# y sesgo agregado (reconstruccion_mm.csv). Si algo no coincide, el script se detiene.
-comp4 <- read.csv(file.path(F4, "ablacion_comparaciones_bootstrap.csv"))
-rec4  <- read.csv(file.path(F4, "reconstruccion_mm.csv"))
-L2te  <- sapply(MODELOS, function(m) 100 * sqrt(sum(err_L2[[m]][i_te]) / sum(norma[i_te])))
+# La fase 4 reporta el L² en sqrt(mm/día) (la escala de entrenamiento de la red); aquí se recalcula en
+# esa escala SOLO para comprobar que se leen las mismas curvas, y se imprime al lado del L² en mm para
+# mostrar cuánto infla la escala raíz el error del satélite (Jensen, ver encabezado).
+W_est  <- gram(K_est, K_est); W_sat <- gram(K_sat, K_sat); W_cruz <- gram(K_sat, K_est)
+stopifnot(abs(sum(W_est) - 365) < 1e-9, abs(sum(W_sat) - 365) < 1e-9)   # ∫ 1 dt = 365
+forma <- function(A, W, B) rowSums((A %*% W) * B)                        # aᵢᵀ W bᵢ por fila
+norma_r <- forma(C_est, W_est, C_est)
+err_r <- list(satelite = forma(C_sat, W_sat, C_sat) - 2 * forma(C_sat, W_cruz, C_est) + norma_r)
+for (t in MODELOS[-1])
+  err_r[[t]] <- Reduce(`+`, lapply(C_pred[[t]], function(C) forma(C - C_est, W_est, C - C_est))) / length(SEMILLAS)
+L2_raiz <- function(m, idx) 100 * sqrt(sum(err_r[[m]][idx]) / sum(norma_r[idx]))
+L2_mm   <- function(m, idx) 100 * sqrt(sum(err_L2[[m]][idx]) / sum(norma[idx]))
+cat("\nL² relativo (%) en escala raíz (fase 4) y en mm (esta evaluación):\n")
+print(do.call(rbind, lapply(BLOQUES, function(b) data.frame(
+  particion = b, modelo = NOMBRE[MODELOS],
+  L2_raiz_pct = sapply(MODELOS, L2_raiz, idx = idx_de[[b]]),
+  L2_mm_pct   = sapply(MODELOS, L2_mm,   idx = idx_de[[b]]), row.names = NULL))), digits = 3, row.names = FALSE)
+
+avisos <- character(0)
 abl4  <- read.csv(file.path(F4, "ablacion_resultados.csv"))
-stopifnot(abs(L2te[["satelite"]] - abl4$prueba_media[1]) < 1e-6,
-          abs((L2te[["kan"]] - L2te[["lineal"]]) - comp4$dif_L2rel_pp[comp4$comparacion == "kan - lineal"]) < 1e-6,
-          abs((L2te[["mlp"]] - L2te[["lineal"]]) - comp4$dif_L2rel_pp[comp4$comparacion == "mlp - lineal"]) < 1e-6)
-for (m in MODELOS[-1]) for (part in c("validacion", "prueba")) {
-  idx <- if (part == "validacion") i_va else i_te
-  ref <- rec4$sesgo_anual_agregado[rec4$modelo == paste("red - cabeza", m) & rec4$particion == part]
-  stopifnot(abs(100 * (sum(tot_mod[[m]][idx]) - sum(tot_obs[idx])) / sum(tot_obs[idx]) - ref) < 1e-2)
+comp4 <- read.csv(file.path(F4, "ablacion_comparaciones_bootstrap.csv"))
+if ("subconjunto" %in% names(comp4)) comp4 <- comp4[comp4$subconjunto == "Todas", ]
+i_te <- idx_de$prueba
+if (abs(L2_raiz("satelite", i_te) - abl4$prueba_media[1]) > 1e-6) avisos <- c(avisos, "L² del satélite en prueba")
+for (m in c("kan", "mlp")) {
+  ref <- comp4$dif_L2rel_pp[comp4$comparacion == paste(m, "- lineal")]
+  if (length(ref) != 1 || abs((L2_raiz(m, i_te) - L2_raiz("lineal", i_te)) - ref) > 1e-6)
+    avisos <- c(avisos, paste("diferencia de L²", m, "- lineal en prueba"))
 }
-cat("\nControl OK: L² relativo y sesgo anual coinciden con la fase 4.\n")
+rec4 <- read.csv(file.path(F4, "reconstruccion_mm.csv"))
+for (m in MODELOS[-1]) for (b in BLOQUES) {
+  ref <- rec4$sesgo_anual_agregado[rec4$modelo == paste("red - cabeza", m) & rec4$particion == b]
+  idx <- idx_de[[b]]
+  if (length(ref) == 1 && abs(100 * (sum(tot_mod[[m]][idx]) - sum(tot_obs[idx])) / sum(tot_obs[idx]) - ref) > 1e-2)
+    avisos <- c(avisos, paste("sesgo anual", m, b))
+}
+if (length(avisos) == 0) cat("\nControl OK: L² (escala raíz) y sesgo anual coinciden con la fase 4.\n") else
+  warning("No coincide con la fase 4: ", paste(avisos, collapse = "; "),
+          ". Revise que todas las salidas de la fase 4 sean de la misma corrida.")
 cat("Tablas guardadas en", OUT, "\n")
