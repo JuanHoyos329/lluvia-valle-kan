@@ -1,6 +1,6 @@
 "modelo","L2rel_validacion","L2rel_prueba","sd_semillas_prueba","pct_negativos_prueba"
-"satélite sin corregir",65.66,84.48,NA,NA
-"regresión funcional (linmod)",44.6,43.5,NA,0.13
-"red - cabeza lineal",43.52,43.35,0.15,1.52
-"red - cabeza KAN",38.59,37.11,0.22,0
-"red - cabeza MLP",37.85,37.56,0.35,0.19
+"satélite sin corregir",69.17,76.05,NA,NA
+"regresión funcional (linmod)",35.13,39.71,NA,1.15
+"red - cabeza lineal",34.53,37.77,0.02,0.7
+"red - cabeza KAN",30.9,34.58,1.1,0
+"red - cabeza MLP",28.19,34.16,0.37,0.06

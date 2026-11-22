@@ -1,11 +1,11 @@
 "grupo","temporada","estaciones","lluvia_estacion_mm_dia","cambio_d_media","IC95_inf","IC95_sup","d_mediana","cambio_pct_de_lluvia_neutra","pct_estaciones_subestima"
-"Cauca: cambio del sesgo Niño - Neutro","Dic-Feb (seca)",177,3.97,-0.464,-0.581,-0.347,-0.567,-11.7,16.4
-"Cauca: cambio del sesgo Niño - Neutro","Mar-May (lluvias)",177,5.65,-0.336,-0.442,-0.231,-0.284,-6,29.9
-"Cauca: cambio del sesgo Niño - Neutro","Jun-Ago (seca)",177,2.66,-0.553,-0.657,-0.449,-0.554,-20.8,6.8
-"Cauca: cambio del sesgo Niño - Neutro","Sep-Nov (lluvias)",177,5.6,-0.651,-0.8,-0.502,-0.635,-11.6,14.1
-"Cauca: cambio del sesgo Niño - Neutro","Año completo",177,4.5,-0.503,-0.583,-0.423,-0.515,-11.2,7.9
-"Cauca: cambio del sesgo Niña - Neutro","Dic-Feb (seca)",172,3.99,0.52,0.421,0.619,0.425,13,82
-"Cauca: cambio del sesgo Niña - Neutro","Mar-May (lluvias)",172,5.65,0.467,0.341,0.594,0.461,8.3,77.9
-"Cauca: cambio del sesgo Niña - Neutro","Jun-Ago (seca)",172,2.68,0.63,0.495,0.765,0.594,23.5,89.5
-"Cauca: cambio del sesgo Niña - Neutro","Sep-Nov (lluvias)",172,5.65,0.713,0.581,0.845,0.679,12.6,85.5
-"Cauca: cambio del sesgo Niña - Neutro","Año completo",172,4.52,0.586,0.499,0.673,0.54,13,91.9
+"Cuenca del río Cauca: cambio del sesgo Niño - Neutro","Dic-Feb (seca)",168,4,-0.466,-0.586,-0.346,-0.535,-11.7,19
+"Cuenca del río Cauca: cambio del sesgo Niño - Neutro","Mar-May (lluvias)",168,5.63,-0.29,-0.402,-0.177,-0.274,-5.1,31.5
+"Cuenca del río Cauca: cambio del sesgo Niño - Neutro","Jun-Ago (seca)",168,2.66,-0.584,-0.673,-0.495,-0.551,-22,7.1
+"Cuenca del río Cauca: cambio del sesgo Niño - Neutro","Sep-Nov (lluvias)",168,5.61,-0.681,-0.793,-0.568,-0.614,-12.1,14.3
+"Cuenca del río Cauca: cambio del sesgo Niño - Neutro","Año completo",168,4.5,-0.507,-0.58,-0.433,-0.48,-11.3,7.1
+"Cuenca del río Cauca: cambio del sesgo Niña - Neutro","Dic-Feb (seca)",163,4,0.492,0.392,0.592,0.422,12.3,81
+"Cuenca del río Cauca: cambio del sesgo Niña - Neutro","Mar-May (lluvias)",163,5.6,0.51,0.376,0.644,0.502,9.1,79.8
+"Cuenca del río Cauca: cambio del sesgo Niña - Neutro","Jun-Ago (seca)",163,2.67,0.623,0.517,0.728,0.591,23.4,90.8
+"Cuenca del río Cauca: cambio del sesgo Niña - Neutro","Sep-Nov (lluvias)",163,5.62,0.713,0.581,0.846,0.72,12.7,84.7
+"Cuenca del río Cauca: cambio del sesgo Niña - Neutro","Año completo",163,4.5,0.59,0.501,0.678,0.526,13.1,93.9

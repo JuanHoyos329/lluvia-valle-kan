@@ -34,9 +34,19 @@ FIG  <- file.path(OUT, "figuras")
 dir.create(FIG, showWarnings = FALSE, recursive = TRUE)
 
 set.seed(2026)
-ENTRENA <- 1981:1995                     # misma partición que las demás fases
+# ENTRENA (años de entrenamiento) se toma de la partición de la fase 1, más abajo (sección 0.1)
 
-guardar <- function(df, nombre) write.csv(df, file.path(OUT, paste0(nombre, ".csv")), row.names = FALSE)
+# Nombres de las zonas (acuerdo del grupo, 21 nov): "Cauca" y "Pacífico" solos se confunden con otros
+# departamentos. Internamente se usan las claves cortas; en tablas y figuras se muestran los nombres completos.
+ZONA <- c("Cauca" = "Cuenca del río Cauca", "Pacífico" = "Vertiente del Pacífico")
+nombre_zona <- function(x) {
+  x <- gsub("Pacífico", ZONA[["Pacífico"]], x, fixed = TRUE)
+  gsub("(?<!del )(?<!río )\\bCauca\\b", ZONA[["Cauca"]], x, perl = TRUE)
+}
+guardar <- function(df, nombre) {
+  for (v in names(df)) if (is.character(df[[v]]) || is.factor(df[[v]])) df[[v]] <- nombre_zona(as.character(df[[v]]))
+  write.csv(df, file.path(OUT, paste0(nombre, ".csv")), row.names = FALSE)
+}
 
 # Dibuja en pantalla (si hay) y guarda el PNG en salidas_fase3/figuras
 figura <- function(nombre, codigo, ancho = 10, alto = 4.5) {
@@ -55,6 +65,15 @@ figura <- function(nombre, codigo, ancho = 10, alto = 4.5) {
 # ---- 0.1 Curvas estación-año, en el mismo orden que la fase 1 (y que la fase 4)
 ce     <- read.csv(file.path(ENT1, "coeficientes_estaciones.csv"))
 claves <- ce[, c("STATION_ID", "YEAR", "particion")]
+# Partición oficial del grupo (Fabián, 21 nov): la columna "particion" de salidas_fase4/pred_coef_*.csv
+# (entrenamiento 1981-1993, validación 1994-1996, prueba 1997-2003). Se toma de ahí para que todos
+# evaluemos con el mismo examen; el orden de las curvas es el mismo de la fase 1.
+part4 <- read.csv(file.path(".", "salidas_fase4", "pred_coef_lineal_semilla0.csv"))
+stopifnot(nrow(part4) == nrow(claves), all(part4$STATION_ID == claves$STATION_ID), all(part4$YEAR == claves$YEAR))
+claves$particion <- part4$particion
+ENTRENA <- sort(unique(claves$YEAR[claves$particion == "entrenamiento"]))   # misma partición que las demás fases
+ANIOS   <- function(part) paste(range(claves$YEAR[claves$particion == part]), collapse = "-")
+cat("Partición: entrenamiento", ANIOS("entrenamiento"), "| validación", ANIOS("validacion"), "| prueba", ANIOS("prueba"), "\n")
 N      <- nrow(claves)
 
 # ---- 0.2 Péntadas: lluvia de la estación y del satélite en su píxel (misma péntada)
@@ -113,7 +132,7 @@ guardar(vcg, "tabla_f3_02_vcg_K_comun")
 figura("fig_f3_01_vcg_K_comun", {
   matplot(vcg$K, vcg[, c("rel_estacion", "rel_satelite")], type = "b", pch = 19, lty = 1,
           col = c("slategray", "darkturquoise"), xlab = "K (número de funciones base)",
-          ylab = "VCG / mínimo", main = "Selección de una base común (péntadas, 1981-1995)")
+          ylab = "VCG / mínimo", main = paste0("Selección de una base común (péntadas, ", ANIOS("entrenamiento"), ")"))
   abline(v = K_com, lty = 2, col = "red")
   legend("top", c("Estación", "Satélite", paste("K común =", K_com)),
          col = c("slategray", "darkturquoise", "red"), lty = c(1, 1, 2), pch = c(19, 19, NA), bty = "n")
@@ -171,14 +190,24 @@ stopifnot(!anyNA(emp$STATION_ID))
 i <- match(emp$STATION_ID, rk$STATION_ID)
 emp$altitud    <- round(rk$altitud[i])
 emp$fuente_alt <- rk$fuente_alt[i]
-emp$confianza  <- rk$confianza[i]
+# (la columna "confianza" ya no existe en el preprocesamiento del 21 nov: todas las coordenadas son reales)
 emp$curvas     <- tabulate(match(claves$STATION_ID, emp$STATION_ID), nbins = nrow(emp))
 
 # ---- 1.1 Regla de asignación: el píxel que CONTIENE la estación
 # Malla de 0,05° (37 x 39), esquina superior izquierda en (-77,55; 5,00); fila 1 = norte
 col_r  <- floor((emp$Lon + 77.55) / 0.05) + 1
 fila_r <- floor((5.00 - emp$lat) / 0.05) + 1
-stopifnot(all(col_r == emp$col), all(fila_r == emp$fila))
+# Una estación que cae EXACTAMENTE sobre el borde entre píxeles (coordenadas redondeadas al minuto, como
+# 5300000202 Colpuertos: 3°48' N, 77°06' W = esquina de 4 píxeles) puede asignarse a cualquiera de ellos según
+# la convención. Se acepta la asignación de Hoyos (con ella se extrajo el satélite) y se deja anotada.
+en_borde <- function(v) abs(v - round(v)) < 1e-6
+emp$en_borde_pixel <- en_borde((emp$Lon + 77.55) / 0.05) | en_borde((5.00 - emp$lat) / 0.05)
+dif_regla <- col_r != emp$col | fila_r != emp$fila
+if (any(dif_regla)) {
+  cat("Estaciones sobre el borde entre píxeles (se conserva el píxel del preprocesamiento):\n")
+  print(data.frame(emp[dif_regla, c("STATION_ID", "Lon", "lat", "fila", "col")], fila_regla = fila_r[dif_regla], col_regla = col_r[dif_regla]))
+}
+stopifnot(all(!dif_regla | emp$en_borde_pixel))   # cualquier otra diferencia sí es un error
 emp$lon_pixel      <- -77.55 + (emp$col - 0.5) * 0.05
 emp$lat_pixel      <-   5.00 - (emp$fila - 0.5) * 0.05
 emp$dist_centro_km <- round(111.32 * sqrt(((emp$Lon - emp$lon_pixel) * cos(emp$lat * pi / 180))^2 +
@@ -187,12 +216,9 @@ emp$dist_centro_km <- round(111.32 * sqrt(((emp$Lon - emp$lon_pixel) * cos(emp$l
 # ---- 1.2 Estaciones que comparten píxel (reciben la MISMA curva satelital)
 emp$pixel        <- paste0("F", emp$fila, "-C", emp$col)
 emp$est_en_pixel <- ave(rep(1, nrow(emp)), emp$pixel, FUN = sum)
-# Coordenadas no confiables (Hoyos, 17 nov): la triangulación por lluvia las ubicó mal (correlación
-# con las estaciones de referencia <= 0,30). Lista PENDIENTE de confirmar con Hoyos; por ahora solo se
-# marcan, no se excluyen.
-NO_CONFIABLES <- c(5300800101, 5300900102, 5300600101, 5300000203, 2621500105, 5300000202,
-                   5301300101, 5301000103, 5400000201, 2621500104, 5300900101)
-emp$coord_no_confiable <- emp$STATION_ID %in% NO_CONFIABLES
+# (En la corrida del 17 nov había 11 estaciones con coordenadas trianguladas "no confiables". Desde el
+# preprocesamiento del 21 nov todas las coordenadas son reales y las estaciones sin coordenadas se
+# excluyeron, así que esa lista se eliminó del script.)
 guardar(emp, "tabla_f3_03_emparejamiento_estacion_pixel")
 
 # ---- 1.3 Verificación: el satélite del archivo de péntadas es el del píxel asignado
@@ -211,29 +237,28 @@ guardar(verif_px, "tabla_f3_04_verificacion_extraccion_pixel")
 resumen_emp <- data.frame(
   concepto = c("Estaciones", "Píxeles distintos", "Estaciones que comparten píxel",
                "Máximo de estaciones en un píxel", "Distancia mediana al centro del píxel (km)",
-               "Coordenadas de catálogo", "Coordenadas estimadas por lluvia",
-               "Coordenadas estimadas por lluvia + altitud", "Ubicadas solo por su código",
+               paste("Coordenadas:", names(table(emp$fuente_coord))),
                "Altitud de la grilla (no de catálogo)"),
   valor = c(nrow(emp), length(unique(emp$pixel)), sum(emp$est_en_pixel > 1),
             max(emp$est_en_pixel), median(emp$dist_centro_km),
-            sum(emp$fuente_coord == "catálogo"), sum(emp$fuente_coord == "lluvia"),
-            sum(emp$fuente_coord == "lluvia + altitud"), sum(emp$fuente_coord == "ID"),
+            as.vector(table(emp$fuente_coord)),
             sum(emp$fuente_alt != "catálogo")))
 print(resumen_emp)
 guardar(resumen_emp, "tabla_f3_05_resumen_emparejamiento")
 
 figura("fig_f3_03_mapa_emparejamiento", {
-  cols <- c("catálogo" = "black", "lluvia" = "orange", "lluvia + altitud" = "steelblue", "ID" = "red")
+  fuentes <- sort(unique(emp$fuente_coord))
+  cols <- setNames(c("black", "steelblue", "orange", "red", "purple")[seq_along(fuentes)], fuentes)
   par(mar = c(4.2, 4.2, 2.5, 1))
   plot(emp$Lon, emp$lat, type = "n", xlim = c(-77.55, -75.70), ylim = c(3.05, 5.00),
        asp = 1 / cos(4 * pi / 180), xlab = "Longitud", ylab = "Latitud",
        main = "Estaciones y malla del satélite (píxeles de 0,05°)")
   abline(v = -77.55 + 0.05 * (0:37), h = 5 - 0.05 * (0:39), col = "grey88")
-  o <- order(emp$fuente_coord == "ID")                                  # las ubicadas por código, encima
+  o <- order(emp$fuente_coord != "archivo original")                    # las coordenadas rescatadas, encima
   points(emp$Lon[o], emp$lat[o], pch = ifelse(emp$est_en_pixel[o] > 1, 17, 19),
-         cex = ifelse(emp$fuente_coord[o] == "ID", 1.4, 0.9), col = cols[emp$fuente_coord[o]])
+         cex = ifelse(emp$fuente_coord[o] == "archivo original", 0.9, 1.1), col = cols[emp$fuente_coord[o]])
   legend("topleft", c(names(cols), "comparte píxel (triángulo)"), col = c(cols, "grey40"),
-         pch = c(19, 19, 19, 19, 17), bg = "white", cex = 0.8)
+         pch = c(rep(19, length(cols)), 17), bg = "white", cex = 0.8)
 }, ancho = 6.5, alto = 7.5)
 
 
@@ -252,7 +277,8 @@ figura("fig_f3_03_mapa_emparejamiento", {
 #   - La media de d(t) con todas las estaciones la dominan ~10 estaciones de la vertiente pacífica,
 #     casi todas con coordenadas estimadas por lluvia, que quedaron en píxeles del lado del valle.
 #     Por eso el análisis se separa por REGIÓN (valle del Cauca / vertiente pacífica), se agrega la
-#     MEDIANA por estación y el % de estaciones con d > 0, y se repite solo con coordenadas de catálogo.
+#     MEDIANA por estación y el % de estaciones con d > 0, y se repite solo con las coordenadas del
+#     archivo original de la CVC (sin las coordenadas rescatadas el 21 nov), como prueba de sensibilidad.
 #   - Los primeros y últimos BORDE días del año se excluyen de los resúmenes (borde de los B-splines).
 
 # ---- 2.1 Curvas de diferencia (resta de objetos fd, como en el script de clase)
@@ -284,15 +310,15 @@ ids <- colnames(G_dmm)
 ie  <- match(ids, as.character(emp$STATION_ID)); stopifnot(!anyNA(ie))
 info_est <- data.frame(STATION_ID = emp$STATION_ID[ie],
                        region = ifelse(substr(ids, 1, 2) == "26", "Cauca", "Pacífico"),   # zona hidrográfica
-                       coord  = ifelse(emp$fuente_coord[ie] == "catálogo", "catálogo", "estimada"))
+                       coord  = ifelse(emp$fuente_coord[ie] == "archivo original", "original", "rescatada"))
 
 grupos <- list(
   "Todas"               = rep(TRUE, n_est),
-  "Solo catálogo"       = info_est$coord == "catálogo",
+  "Solo originales"     = info_est$coord == "original",
   "Cauca"               = info_est$region == "Cauca",
-  "Cauca - catálogo"    = info_est$region == "Cauca" & info_est$coord == "catálogo",
+  "Cauca - originales"  = info_est$region == "Cauca" & info_est$coord == "original",
   "Pacífico"            = info_est$region == "Pacífico",
-  "Pacífico - catálogo" = info_est$region == "Pacífico" & info_est$coord == "catálogo")
+  "Pacífico - originales" = info_est$region == "Pacífico" & info_est$coord == "original")
 print(sapply(grupos, sum))
 
 bandas <- lapply(grupos, function(g) banda(G_dmm[, g, drop = FALSE]))
@@ -359,9 +385,9 @@ d_anual <- colMeans(G_dmm[1:365, , drop = FALSE][interior, , drop = FALSE])
 y_anual <- colMeans(G_ymm[1:365, , drop = FALSE][interior, , drop = FALSE])
 x_anual <- colMeans(G_xmm[1:365, , drop = FALSE][interior, , drop = FALSE])
 influ <- data.frame(STATION_ID = info_est$STATION_ID, nombre = emp$STATION_NAME[ie], region = info_est$region,
-                    fuente_coord = emp$fuente_coord[ie], confianza = emp$confianza[ie],
+                    fuente_coord = emp$fuente_coord[ie],
                     altitud = emp$altitud[ie], Lon = round(emp$Lon[ie], 3), lat = round(emp$lat[ie], 3),
-                    pixel = emp$pixel[ie], curvas = emp$curvas[ie], coord_no_confiable = emp$coord_no_confiable[ie],
+                    pixel = emp$pixel[ie], curvas = emp$curvas[ie],
                     estacion_mm_dia = round(y_anual, 2), satelite_mm_dia = round(x_anual, 2),
                     d_mm_dia = round(d_anual, 2), razon_est_sat = round(y_anual / x_anual, 2))
 influ <- influ[order(-abs(influ$d_mm_dia)), ]
@@ -402,7 +428,7 @@ comparar_bandas <- function(b1, b2, et1, et2, main) {
   abline(h = 0, lty = 3)
   legend("topright", c(et1, et2), col = c("darkred", "darkgreen"), lwd = 3, bty = "n", cex = 0.75)
 }
-etiq <- function(g) paste0(g, " (n = ", sum(grupos[[g]]), ")")
+etiq <- function(g) nombre_zona(paste0(g, " (n = ", sum(grupos[[g]]), ")"))
 
 figura("fig_f3_04_diferencia_mm", {
   par(mfrow = c(1, 2))
@@ -412,7 +438,7 @@ figura("fig_f3_04_diferencia_mm", {
   lines(t_eval, bandas$Todas$media, lwd = 3, col = "darkred")
   lines(t_eval, bandas$Todas$mediana, lwd = 2, lty = 2)
   abline(h = 0, lty = 3)
-  legend("topright", c("valle del Cauca", "vertiente pacífica", "media", "mediana"),
+  legend("topright", c("cuenca del río Cauca", "vertiente del Pacífico", "media", "mediana"),
          col = c("grey60", "orange", "darkred", "black"), lty = c(1, 1, 1, 2), lwd = c(1, 1, 3, 2), bty = "n", cex = 0.75)
   dibujar_banda(bandas$Todas, "mm/día", paste("Todas las estaciones (n =", n_est, ")"), espacio = 0.6)
   leyenda_banda()
@@ -420,13 +446,13 @@ figura("fig_f3_04_diferencia_mm", {
 
 figura("fig_f3_05_diferencia_por_region", {
   par(mfrow = c(2, 2))
-  dibujar_banda(bandas$Cauca, "mm/día", paste("Valle del Cauca:", etiq("Cauca")), espacio = 0.6)
+  dibujar_banda(bandas$Cauca, "mm/día", etiq("Cauca"), espacio = 0.6)
   leyenda_banda()
-  dibujar_banda(bandas$`Pacífico`, "mm/día", paste("Vertiente pacífica:", etiq("Pacífico")))
-  comparar_bandas(bandas$Cauca, bandas$`Cauca - catálogo`, etiq("Cauca"), etiq("Cauca - catálogo"),
-                  "Cauca: todas vs. solo catálogo")
-  comparar_bandas(bandas$`Pacífico`, bandas$`Pacífico - catálogo`, etiq("Pacífico"), etiq("Pacífico - catálogo"),
-                  "Pacífico: todas vs. solo catálogo")
+  dibujar_banda(bandas$`Pacífico`, "mm/día", etiq("Pacífico"))
+  comparar_bandas(bandas$Cauca, bandas$`Cauca - originales`, etiq("Cauca"), etiq("Cauca - originales"),
+                  "Río Cauca: todas vs. coord. originales")
+  comparar_bandas(bandas$`Pacífico`, bandas$`Pacífico - originales`, etiq("Pacífico"), etiq("Pacífico - originales"),
+                  "V. del Pacífico: todas vs. coord. originales")
 }, ancho = 12, alto = 8.5)
 
 figura("fig_f3_06_diferencia_sqrt_y_pct", {
@@ -435,9 +461,9 @@ figura("fig_f3_06_diferencia_sqrt_y_pct", {
   plot(t_eval, bandas$Cauca$pct_subestima, type = "l", lwd = 3, col = "grey40", ylim = c(0, 100),
        xlab = "Día del año", ylab = "% de estaciones", main = "Estaciones donde el satélite subestima", cex.main = 0.95)
   lines(t_eval, bandas$`Pacífico`$pct_subestima, lwd = 3, col = "orange")
-  lines(t_eval, bandas$`Solo catálogo`$pct_subestima, lwd = 2, lty = 2, col = "darkgreen")
+  lines(t_eval, bandas$`Solo originales`$pct_subestima, lwd = 2, lty = 2, col = "darkgreen")
   abline(h = 50, lty = 3)
-  legend("topright", c(etiq("Cauca"), etiq("Pacífico"), etiq("Solo catálogo")),
+  legend("topright", c(etiq("Cauca"), etiq("Pacífico"), etiq("Solo originales")),
          col = c("grey40", "orange", "darkgreen"), lty = c(1, 1, 2), lwd = c(3, 3, 2), bty = "n", cex = 0.75)
 })
 
@@ -510,7 +536,7 @@ figura("fig_f3_07_correlacion_cruzada", {
   for (a in c("Cauca - total", "Cauca - anomalías")) {
     image(t_eval, t_eval, analisis_cc[[a]], zlim = c(-1, 1), col = hcl.colors(40, "Blue-Red 3"),
           xlab = "s: satélite (día del año)", ylab = "t: estación (día del año)",
-          main = paste0("r(s,t) ", a, " (", n_cc[a], " curvas)"), cex.main = 0.95)
+          main = paste0("r(s,t) río Cauca, ", sub("Cauca - ", "", a, fixed = TRUE), " (", n_cc[a], " curvas)"), cex.main = 0.95)
     contour(t_eval, t_eval, analisis_cc[[a]], levels = seq(-1, 1, 0.2), labcex = 0.6, add = TRUE)
     abline(0, 1, lty = 3, col = "black")
   }
@@ -520,7 +546,7 @@ figura("fig_f3_07_correlacion_cruzada", {
           main = "Diagonal de la correlación cruzada", cex.main = 0.95)
   rect(c(0, 365 - BORDE), -2, c(BORDE, 365), 2, col = adjustcolor("grey90", 0.6), border = NA)
   abline(h = 0, lty = 3)
-  legend("bottomright", colnames(diagonales), col = rep(cols_g, each = 2), lty = rep(c(1, 2), 3),
+  legend("bottomright", nombre_zona(colnames(diagonales)), col = rep(cols_g, each = 2), lty = rep(c(1, 2), 3),
          lwd = 2, bty = "n", cex = 0.7)
 }, ancho = 15, alto = 5)
 
@@ -581,8 +607,8 @@ figura("fig_f3_08_covarianzas", {
   par(mfrow = c(2, 2), mar = c(4.2, 4.2, 2.5, 1))
   CY <- cov_grupo[["Cauca - total"]]$Y; CX <- cov_grupo[["Cauca - total"]]$X
   niveles <- pretty(range(CY, CX), 12)
-  for (q in list(list(CY, "Covarianza estación - Cauca, total (mm²/día²)"),
-                 list(CX, "Covarianza satélite - Cauca, total (misma escala)"))) {
+  for (q in list(list(CY, "Covarianza estación - río Cauca, total (mm²/día²)"),
+                 list(CX, "Covarianza satélite - río Cauca, total (misma escala)"))) {
     image(t_eval, t_eval, q[[1]], zlim = range(niveles), col = hcl.colors(40, "YlOrRd", rev = TRUE),
           xlab = "s (día)", ylab = "t (día)", main = q[[2]], cex.main = 0.95)
     contour(t_eval, t_eval, q[[1]], levels = niveles, labcex = 0.6, add = TRUE)
@@ -592,7 +618,7 @@ figura("fig_f3_08_covarianzas", {
   de <- matrix(de, ncol = 4)
   matplot(t_eval, de, type = "l", lty = c(1, 2, 1, 2), lwd = c(3, 3, 1.5, 1.5),
           col = c("slategray", "darkturquoise", "slategray", "darkturquoise"), ylim = c(0, max(de)),
-          xlab = "Día del año", ylab = "mm/día", main = "Desviación estándar funcional - Cauca", cex.main = 0.95)
+          xlab = "Día del año", ylab = "mm/día", main = "Desviación estándar funcional - río Cauca", cex.main = 0.95)
   rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = adjustcolor("grey90", 0.6), border = NA)
   legend("topright", c("estación total", "satélite total", "estación anomalías", "satélite anomalías"),
          col = c("slategray", "darkturquoise", "slategray", "darkturquoise"), lty = c(1, 2, 1, 2),
@@ -600,7 +626,7 @@ figura("fig_f3_08_covarianzas", {
   pc <- rbind(pct_componentes(cov_grupo[["Cauca - anomalías"]]$Y)[1:6],
               pct_componentes(cov_grupo[["Cauca - anomalías"]]$X)[1:6])
   barplot(pc, beside = TRUE, names.arg = 1:6, col = c("slategray", "darkturquoise"),
-          xlab = "Componente", ylab = "% de varianza", main = "Componentes de la covarianza - Cauca, anomalías",
+          xlab = "Componente", ylab = "% de varianza", main = "Componentes de la covarianza - río Cauca, anomalías",
           cex.main = 0.95, legend.text = c("Estación", "Satélite"), args.legend = list(x = "topright", bty = "n"))
 }, ancho = 12, alto = 9)
 
@@ -657,20 +683,18 @@ info_est$d_anual    <- d_anual
 info_est$sesgo_pct  <- 100 * d_anual / y_anual
 info_est$lluvia_est <- y_anual
 info_est$razon      <- y_anual / x_anual
-info_est$no_conf    <- info_est$STATION_ID %in% NO_CONFIABLES
 cor_alt <- cor.test(info_est$altitud[cauca], info_est$sesgo_pct[cauca], method = "spearman", exact = FALSE)
 # Compresión espacial: ¿el satélite reproduce las diferencias de lluvia entre sitios?
-# Se ajusta log(satélite) ~ log(estación) con la lluvia media de cada estación (sin las no confiables).
+# Se ajusta log(satélite) ~ log(estación) con la lluvia media de cada estación (todas).
 # Pendiente = 1: el satélite reproduce las diferencias; pendiente < 1: las comprime (sobreestima los
 # sitios secos y subestima los lluviosos). No se correlaciona la razón est/sat con la lluvia de la
 # estación porque esa correlación es en parte espuria (la estación está en los dos lados).
-ok_conf  <- !info_est$no_conf
-fit_comp <- lm(log(x_anual[ok_conf]) ~ log(y_anual[ok_conf]))
+fit_comp <- lm(log(x_anual) ~ log(y_anual))
 ic_comp  <- confint(fit_comp)[2, ]
 tabla_cor_alt <- data.frame(
   relacion   = c("Cauca: altitud vs. sesgo anual (%) - rho de Spearman",
-                 "Todas sin no confiables: pendiente de log(satélite) ~ log(estación)"),
-  estaciones = c(sum(cauca), sum(ok_conf)),
+                 "Todas: pendiente de log(satélite) ~ log(estación)"),
+  estaciones = c(sum(cauca), length(y_anual)),
   valor      = round(c(cor_alt$estimate, coef(fit_comp)[2]), 3),
   IC95_inf   = c(NA, round(ic_comp[1], 3)),
   IC95_sup   = c(NA, round(ic_comp[2], 3)),
@@ -771,7 +795,7 @@ figura("fig_f3_09_sesgo_altitud", {
   med_fr <- sapply(franjas_cauca, function(fr) rowMeans(G_dmm[, cauca & info_est$franja == fr, drop = FALSE]))
   yl <- range(med_fr); yl[2] <- yl[2] + 0.6 * diff(yl)
   matplot(t_eval, med_fr, type = "l", lty = 1, lwd = 2.5, col = cols_fr, xlab = "Día del año", ylab = "mm/día",
-          ylim = yl, main = "Cauca: d(t) medio por franja de altitud", cex.main = 0.95)
+          ylim = yl, main = "Cuenca del río Cauca: d(t) por franja de altitud", cex.main = 0.95)
   rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = adjustcolor("grey90", 0.6), border = NA)
   abline(h = 0, lty = 3)
   legend("topright", paste0(franjas_cauca, " (n = ", sapply(franjas_cauca, function(fr) sum(cauca & info_est$franja == fr)), ")"),
@@ -781,20 +805,20 @@ figura("fig_f3_09_sesgo_altitud", {
        ylim = c(0, max(an_alt$F_t, an_alt$c_max) * 1.45))
   abline(h = an_alt$c_max, lty = 2, col = "red")
   legend("topright", c("F(t) observado", "valor crítico máximo (5 %)"), col = c("black", "red"), lty = 1:2, bty = "n", cex = 0.75)
-  plot(info_est$altitud, info_est$sesgo_pct, pch = ifelse(info_est$no_conf, 4, 19), cex = 0.8,
+  plot(info_est$altitud, info_est$sesgo_pct, pch = 19, cex = 0.8,
        col = ifelse(cauca, "grey40", "orange"), xlab = "Altitud (m)", ylab = "Sesgo anual (%)",
-       main = paste0("Sesgo anual por estación (Cauca: rho = ", round(cor_alt$estimate, 2), ")"), cex.main = 0.95)
+       main = paste0("Sesgo anual por estación (río Cauca: rho = ", round(cor_alt$estimate, 2), ")"), cex.main = 0.95)
   abline(h = 0, lty = 3)
-  legend("bottomright", c("valle del Cauca", "vertiente pacífica", "coordenadas no confiables"),
-         col = c("grey40", "orange", "black"), pch = c(19, 19, 4), bg = "white", cex = 0.75)
-  plot(y_anual, x_anual, log = "xy", pch = ifelse(info_est$no_conf, 4, 19), cex = 0.8,
+  legend("bottomright", c("cuenca del río Cauca", "vertiente del Pacífico"),
+         col = c("grey40", "orange"), pch = c(19, 19), bg = "white", cex = 0.75)
+  plot(y_anual, x_anual, log = "xy", pch = 19, cex = 0.8,
        col = ifelse(cauca, "grey40", "orange"), xlab = "Lluvia media de la estación (mm/día, log)",
        ylab = "Lluvia media del satélite en su píxel (mm/día, log)",
        main = paste0("Compresión espacial: pendiente = ", round(coef(fit_comp)[2], 2), " (1 = sin compresión)"),
        cex.main = 0.95)
   abline(0, 1, lty = 3)
-  xs <- range(y_anual[ok_conf]); lines(xs, exp(coef(fit_comp)[1]) * xs^coef(fit_comp)[2], lwd = 2, col = "darkred")
-  legend("topleft", c("1:1 (sin sesgo)", "ajuste sin no confiables"), lty = c(3, 1), lwd = c(1, 2),
+  xs <- range(y_anual); lines(xs, exp(coef(fit_comp)[1]) * xs^coef(fit_comp)[2], lwd = 2, col = "darkred")
+  legend("topleft", c("1:1 (sin sesgo)", "ajuste log-log"), lty = c(3, 1), lwd = c(1, 2),
          col = c("black", "darkred"), bty = "n", cex = 0.75)
 }, ancho = 12, alto = 9)
 
@@ -803,12 +827,12 @@ figura("fig_f3_10_sesgo_enso", {
   par(mfrow = c(1, 3))
   med_fase <- sapply(fases, function(f) rowMeans(G_fase_d[[f]][, es_cauca(G_fase_d[[f]]), drop = FALSE]))
   matplot(t_eval, med_fase, type = "l", lty = 1, lwd = 2.5, col = cols_fase, xlab = "Día del año", ylab = "mm/día",
-          main = "Cauca: d(t) medio por fase ENSO", cex.main = 0.95)
+          main = "Cuenca del río Cauca: d(t) por fase ENSO", cex.main = 0.95)
   rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = adjustcolor("grey90", 0.6), border = NA)
   abline(h = 0, lty = 3)
   legend("topright", fases, col = cols_fase, lwd = 2.5, bty = "n", cex = 0.8)
-  dibujar_banda(b_nino, "mm/día", paste0("Cauca: Niño - Neutro, pareado (n = ", ncol(par_nino$D), ")"), col = "firebrick")
-  dibujar_banda(b_nina, "mm/día", paste0("Cauca: Niña - Neutro, pareado (n = ", ncol(par_nina$D), ")"), col = "steelblue")
+  dibujar_banda(b_nino, "mm/día", paste0("Río Cauca: Niño - Neutro, pareado (n = ", ncol(par_nino$D), ")"), col = "firebrick")
+  dibujar_banda(b_nina, "mm/día", paste0("Río Cauca: Niña - Neutro, pareado (n = ", ncol(par_nina$D), ")"), col = "steelblue")
 }, ancho = 15, alto = 5)
 
 
@@ -818,12 +842,12 @@ figura("fig_f3_10_sesgo_enso", {
 # Y_i(t) = beta0(t) + ∫ beta1(s, t) X_i(s) ds + e_i(t)       (script de clase: linmod)
 #
 # Para que sea comparable con las redes de la fase 4 se usan EXACTAMENTE sus entradas y su métrica:
-#   - X = curva satelital de la fase 1 (K = 12, sqrt(mm/día)); Y = curva de la estación de la fase 1
-#     (K = 8, sqrt(mm), diaria). Mismo orden de curvas y misma partición.
+#   - X = curva satelital de la fase 1; Y = curva de la estación de la fase 1 (sqrt, diaria). Los K se
+#     leen de base_info.csv. Mismo orden de curvas y misma partición.
 #   - Error L² relativo = 100 * sqrt( suma ||y_hat - y||² / suma ||y||² ), con la matriz de Gram de la
 #     base de las estaciones (igual que error_L2 y L2_relativo en fase4_red_funcional.py).
-# beta1 en base B-spline (12 en s x 8 en t), penalización de la segunda derivada en s y en t con un
-# lambda común elegido con VALIDACIÓN (1996-2000). La prueba (2001-2003) solo se usa para reportar.
+# beta1 en base B-spline (K_s1 en s x K_e1 en t), penalización de la segunda derivada en s y en t con un
+# lambda común elegido con VALIDACIÓN. La PRUEBA solo se usa para reportar (años: ver ANIOS()).
 # Diferencia con la cabeza lineal de Fabián: linmod no admite covariables escalares (altitud, ONI).
 
 # ---- 6.1 Curvas de la fase 1
@@ -853,9 +877,12 @@ err_sat <- function(idx) {                               # satélite SIN corregi
   cs_ <- C_s1[, idx, drop = FALSE]; ce_ <- C_e1[, idx, drop = FALSE]
   colSums(cs_ * (W_s %*% cs_)) - 2 * colSums(cs_ * (W_se %*% ce_)) + colSums(ce_ * (W_e %*% ce_))
 }
-# Control de consistencia con la fase 4 (Fabián reporta 65,66 % en validación y 84,48 % en prueba)
+# Control de consistencia con la fase 4: el satélite sin corregir debe dar lo mismo que en
+# salidas_fase4/ablacion_resultados.csv (si no, las curvas o la partición no son las mismas)
+abl4 <- read.csv(file.path(".", "salidas_fase4", "ablacion_resultados.csv"), fileEncoding = "UTF-8")
 cat("Satélite sin corregir: validación", round(L2rel(err_sat(i_va), i_va), 2),
-    "% | prueba", round(L2rel(err_sat(i_te), i_te), 2), "%\n")
+    "% | prueba", round(L2rel(err_sat(i_te), i_te), 2), "%  (fase 4:",
+    round(abl4$val_media[1], 2), "% |", round(abl4$prueba_media[1], 2), "%)\n")
 
 # ---- 6.3 Ajuste con linmod y predicción paso a paso
 # Con beta1(s,t) = phi_s(s)' B phi_t(t) y X(s) = phi_s(s)' c:  ∫ X(s) beta1(s,t) ds = c' W_s B phi_t(t),
@@ -921,6 +948,16 @@ tabla_mod$pct_negativos_prueba <- c(NA, pct_neg(C_hat_ff), pct_neg(leer_pred("li
 print(tabla_mod, row.names = FALSE)
 guardar(tabla_mod, "tabla_f3_19_regresion_vs_redes")
 
+# Error en prueba por bloque ENSO (misma división que la fase 4: Niño 1997, Niña 1998-2000, Neutro 2001-2003)
+bloques <- list("Niño 1997" = 1997, "Niña 1998-2000" = 1998:2000, "Neutro 2001-2003" = 2001:2003)
+tabla_bloq <- do.call(rbind, lapply(names(bloques), function(b) {
+  idx <- i_te[claves$YEAR[i_te] %in% bloques[[b]]]
+  data.frame(bloque = b, curvas = length(idx), estaciones = length(unique(claves$STATION_ID[idx])),
+             t(sapply(err_todos, function(e) round(L2rel(e[idx], idx), 2))), check.names = FALSE)
+}))
+print(tabla_bloq, row.names = FALSE)
+guardar(tabla_bloq, "tabla_f3_19b_regresion_por_bloque_enso")
+
 # IC bootstrap por estación (prueba) y Wilcoxon pareado, con el mismo esquema de la fase 4
 est_te <- claves$STATION_ID[i_te]
 sum_est <- function(e) tapply(e[i_te], est_te, sum)
@@ -930,10 +967,9 @@ cont   <- t(replicate(2000, tabulate(sample(length(nor_te), replace = TRUE), nbi
 l2b    <- function(E) 100 * sqrt(as.vector(cont %*% E) / as.vector(cont %*% nor_te))
 # Además del agregado (bootstrap) se reporta lo que pasa en la estación TÍPICA (mediana de la diferencia
 # de error relativo por estación y % de estaciones donde gana el modelo a), y se repite por subconjunto:
-# así se ve si una ganancia viene de toda la región o de unas pocas estaciones (p. ej. las no confiables).
+# así se ve si una ganancia viene de toda la zona o de unas pocas estaciones.
 ids_te <- as.numeric(names(nor_te))
 subconj <- list("Todas"            = rep(TRUE, length(nor_te)),
-                "Sin no confiables" = !(ids_te %in% NO_CONFIABLES),
                 "Cauca"            = substr(names(nor_te), 1, 2) == "26",
                 "Pacífico"         = substr(names(nor_te), 1, 2) != "26")
 comparar <- function(a, b, sub = "Todas") {
@@ -989,7 +1025,7 @@ figura("fig_f3_11_regresion_funcional", {
   abline(0, 1, lty = 2)
   matplot(t_eval, cbind(R2_ff, R2_lin, R2_kan), type = "l", lty = c(1, 2, 2), lwd = c(3, 2, 2),
           col = c("darkred", "grey40", "darkgreen"), ylim = c(min(0, R2_ff, R2_lin, R2_kan), 1),
-          xlab = "Día del año", ylab = expression(R^2*(t)), main = "R²(t) en prueba (2001-2003)", cex.main = 0.95)
+          xlab = "Día del año", ylab = expression(R^2*(t)), main = paste0("R²(t) en prueba (", ANIOS("prueba"), ")"), cex.main = 0.95)
   rect(c(0, 365 - BORDE), -10, c(BORDE, 365), 10, col = adjustcolor("grey90", 0.6), border = NA)
   abline(h = 0, lty = 3)
   legend("bottomright", c("regresión funcional", "red lineal", "red KAN"), col = c("darkred", "grey40", "darkgreen"),

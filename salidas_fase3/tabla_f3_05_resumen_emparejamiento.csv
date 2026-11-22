@@ -1,11 +1,11 @@
 "concepto","valor"
-"Estaciones",244
-"Píxeles distintos",174
-"Estaciones que comparten píxel",116
-"Máximo de estaciones en un píxel",6
-"Distancia mediana al centro del píxel (km)",2.22
-"Coordenadas de catálogo",158
-"Coordenadas estimadas por lluvia",49
-"Coordenadas estimadas por lluvia + altitud",35
-"Ubicadas solo por su código",2
-"Altitud de la grilla (no de catálogo)",98
+"Estaciones",215
+"Píxeles distintos",173
+"Estaciones que comparten píxel",74
+"Máximo de estaciones en un píxel",4
+"Distancia mediana al centro del píxel (km)",2.23
+"Coordenadas: archivo original",165
+"Coordenadas: catálogo CVC",42
+"Coordenadas: documentos PDF",7
+"Coordenadas: estaciones automáticas CVC",1
+"Altitud de la grilla (no de catálogo)",58
