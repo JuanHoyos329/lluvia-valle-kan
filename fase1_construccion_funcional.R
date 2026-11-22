@@ -42,6 +42,16 @@ library(fda)
 ENT <- "./salidas_preprocesamiento"    # datos limpios de la fase 0 (Hoyos)
 OUT <- "./salidas_fase1"               # salidas de esta fase
 dir.create(OUT, showWarnings = FALSE, recursive = TRUE)
+FIG <- file.path(OUT, "figuras")       # figuras del informe (sección 4)
+dir.create(FIG, showWarnings = FALSE, recursive = TRUE)
+
+# Copia la gráfica que está en pantalla a un PNG de salidas_fase1/figuras
+guardar_png <- function(nombre, ancho = 9, alto = 4.5) {
+  dev.copy(png, file.path(FIG, paste0(nombre, ".png")), width = ancho, height = alto,
+           units = "in", res = 200)
+  dev.off()
+  invisible(NULL)
+}
 
 ENTRENA <- 1981:1996                   # años fuera de la prueba (1997-2003): se usan para elegir K
 ORDEN   <- 4                           # B-splines cúbicos
@@ -161,8 +171,9 @@ stopifnot(max(abs(rowSums(Phi_ej) - 1)) < 1e-12)       # las piezas suman 1 en t
 
 matplot(t_fino, Phi_ej, type = "l", lty = 1, lwd = 2, col = rainbow(8),
         xlab = "Día del año", ylab = "Valor de la función base",
-        main = "Base B-spline cúbica con K = 8 (programada con Cox-de Boor)")
+        main = "")                                     # el título va en el pie de figura del informe
 abline(v = nudos_bspline(8), lty = 3, col = "grey50")
+guardar_png("fase1_fig01_base_bspline", 9, 4.5)
 par(mfrow = c(1, 1))
 
 
@@ -227,21 +238,23 @@ print(round(tabla_est, 4)); print(round(tabla_sat, 4))
 grafica_K <- function(tabla, K_elegido, fuente) {
   par(mfrow = c(1, 3))
   plot(tabla$K, tabla$ECM, type = "b", pch = 19, xlab = "Número de bases (K)", ylab = "ECM",
-       main = paste("ECM de ajuste -", fuente))
+       main = "(a) ECM")
   grid(5, 5, lwd = 2)
   plot(tabla$K, tabla$VC, type = "b", pch = 19, xlab = "Número de bases (K)", ylab = "VC",
-       main = paste("Validación cruzada -", fuente))
+       main = "(b) VC")
   abline(v = tabla$K[which.min(tabla$VC)], lty = 3, col = "red")
   grid(5, 5, lwd = 2)
   plot(tabla$K, tabla$VCG, type = "b", pch = 19, xlab = "Número de bases (K)", ylab = "VCG",
-       main = paste("VCG -", fuente))
+       main = "(c) VCG")
   abline(v = K_elegido, lty = 3, col = "red")
   abline(h = min(tabla$VCG), lty = 2, col = "red")
   grid(5, 5, lwd = 2)
 }
 grafica_K(tabla_est, K_est, "estaciones")
+guardar_png("fase1_fig02_seleccion_K_estaciones", 10, 3.5)
 par(mfrow = c(1, 1))
 grafica_K(tabla_sat, K_sat, "satélite")
+guardar_png("fase1_fig03_seleccion_K_satelite", 10, 3.5)
 par(mfrow = c(1, 1))
 # Nota: el ECM baja siempre al subir K (sobreajuste). La VC y la VCG penalizan la complejidad
 # y tienen un mínimo interior. Con datos diarios la lluvia es muy intermitente: la VCG prefiere
@@ -286,14 +299,16 @@ curvas_sat <- Phi_fino_sat %*% C_sat
 par(mfrow = c(1, 2))
 set.seed(2026)
 m <- sample(which(tr), 200)
-matplot(t_fino, curvas_est[, m], type = "l", lty = 1, col = adjustcolor("steelblue", 0.25),
-        xlab = "Día del año", ylab = "sqrt(mm/día)",
-        main = paste0("Estaciones: 200 curvas (K = ", K_est, ")"))
-lines(t_fino, rowMeans(curvas_est[, tr]), lwd = 3, col = "navy")
-matplot(t_fino, curvas_sat[, m], type = "l", lty = 1, col = adjustcolor("darkorange", 0.25),
-        xlab = "Día del año", ylab = "sqrt(mm/día)",
-        main = paste0("Satélite: las mismas 200 curvas (K = ", K_sat, ")"))
-lines(t_fino, rowMeans(curvas_sat[, tr]), lwd = 3, col = "darkred")
+# Estilo de Ospina-Galindez et al. (2019): curvas en gris y la media en negro
+matplot(t_fino, curvas_est[, m], type = "l", lty = 1, col = adjustcolor("grey55", 0.35),
+        xlab = "Día del año", ylab = "Precipitación, √(mm/día)", main = "(a) Estaciones")
+lines(t_fino, rowMeans(curvas_est[, tr]), lwd = 2.5, col = "black")
+legend("topleft", c("Curvas individuales", "Media 1981-1996"), col = c("grey55", "black"),
+       lwd = c(1, 2.5), bty = "n", cex = 0.8)
+matplot(t_fino, curvas_sat[, m], type = "l", lty = 1, col = adjustcolor("grey55", 0.35),
+        xlab = "Día del año", ylab = "Precipitación, √(mm/día)", main = "(b) Satélite")
+lines(t_fino, rowMeans(curvas_sat[, tr]), lwd = 2.5, col = "black")
+guardar_png("fase1_fig04_curvas_estaciones_satelite", 10, 4)
 par(mfrow = c(1, 1))
 
 
@@ -326,27 +341,37 @@ Cor_res <- cor(t(E_est))                                   # 365 x 365
 cor_lag1 <- mean(diag(Cor_res[-1, -365]))
 cat("Correlación media entre residuos de días consecutivos (estaciones):", round(cor_lag1, 3), "\n")
 
+# Correlación media según la distancia en días (rezago): resume el mapa en una sola curva
+rezagos <- 1:30
+cor_rezago <- sapply(rezagos, function(L) mean(diag(Cor_res[-(1:L), -((366 - L):365)])))
+par(mfrow = c(1, 2))
 image(t_est, t_est, Cor_res, col = hcl.colors(50, "Blue-Red 3"), zlim = c(-1, 1),
-      xlab = "Día s", ylab = "Día t", main = "Correlación residual entre días (estaciones, 1981-1996)")
+      xlab = "Día s", ylab = "Día t", main = "(a)")
+plot(rezagos, cor_rezago, type = "h", lwd = 3, col = "grey30", ylim = c(-0.05, 0.3),
+     xlab = "Distancia entre días (rezago)", ylab = "Correlación media", main = "(b)")
+abline(h = 0, col = "grey40")
+abline(h = c(-0.1, 0.1), lty = 3, col = "red")
+guardar_png("fase1_fig05_correlacion_residual", 10, 4.5)
 par(mfrow = c(1, 1))
 
 # Ejemplo de bandas: una estación-año de entrenamiento, ambas fuentes
 j <- which(tr)[1]
 grafica_banda <- function(t_obs, y_obs, curva, sig2, h, titulo, unidad) {
   ee <- sqrt(sig2 * h)
-  plot(t_obs, y_obs, pch = 19, cex = 0.5, col = "grey40", xlab = "Día del año", ylab = unidad,
+  plot(t_obs, y_obs, pch = 19, cex = 0.5, col = "grey60", xlab = "Día del año", ylab = unidad,
        ylim = range(y_obs, curva + 2 * ee, curva - 2 * ee), main = titulo)
-  lines(t_fino, curva, lwd = 2, col = "blue")
-  lines(t_fino, curva + 2 * ee, lty = 2, col = "blue")
-  lines(t_fino, curva - 2 * ee, lty = 2, col = "blue")
+  lines(t_fino, curva, lwd = 2, col = "black")
+  lines(t_fino, curva + 2 * ee, lty = 2, col = "black")
+  lines(t_fino, curva - 2 * ee, lty = 2, col = "black")
   legend("topleft", c("Observado", "Curva estimada", "Banda +/- 2 EE (punto a punto)"),
-         pch = c(19, NA, NA), lty = c(NA, 1, 2), col = c("grey40", "blue", "blue"), bty = "n", cex = 0.8)
+         pch = c(19, NA, NA), lty = c(NA, 1, 2), col = c("grey60", "black", "black"), bty = "n", cex = 0.8)
 }
 par(mfrow = c(1, 2))
 grafica_banda(t_est, Y[, j], curvas_est[, j], sig2_est[j], h_est,
-              paste("Estación", claves$STATION_ID[j], "-", claves$YEAR[j]), "sqrt(mm/día)")
+              paste0("(a) Estación ", claves$STATION_ID[j], ", ", claves$YEAR[j]), "Precipitación, √(mm/día)")
 grafica_banda(t_sat, X[, j], curvas_sat[, j], sig2_sat[j], h_sat,
-              paste("Satélite en su píxel -", claves$YEAR[j]), "sqrt(mm/día)")
+              paste0("(b) Satélite en su píxel, ", claves$YEAR[j]), "Precipitación, √(mm/día)")
+guardar_png("fase1_fig06_bandas_ejemplo", 10, 4.5)
 par(mfrow = c(1, 1))
 
 
