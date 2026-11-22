@@ -1,12 +1,48 @@
 
+# Análisis exploratorio de datos funcionales 
+# Proyecto final de Analítica de Datos: lluvia del Valle del Cauca, 1981-2003
+#
+# Nos guiamos con la estructura del Script_AnalisisExploratorio.R del profesor Johann Ospina Galindez, es una adaptación 
+# de lo visto en clase a los requerimientos del presente proyecto. 
+
+# En este script vamos a manejar la siguiente estructura:
+#   0. Carga: coeficientes de la fase 1 -> objetos fd (estaciones y satélite)
+#   1. Representatividad: se usan TODAS las curvas de 1981-2003 (tope de la rúbrica)
+#   2. Media funcional: paso a paso 
+#   3. Varianza, desviación estándar y coeficiente de variación funcional
+#   4. Covarianza y correlación funcional de cada fuente (paso a paso y con var.fd / cor.fd)
+#   5. Derivadas
+#   6. Profundidad (Fraiman-Muniz, modal y MBD), mediana, media recortada y boxplot funcional
+#      - curvas crudas      -> atípicos explicados por la ubicación (orografía)
+#      - anomalías por sitio -> atípicos explicados por el año (ENSO)
+#   7. Orografía (franjas de altitud) y ENSO (fase del año)
+#   8. Tabla resumen
+#
+# Entradas (rutas relativas a la carpeta del repositorio):
+#   salidas_fase1/coeficientes_estaciones.csv, coeficientes_satelite.csv, base_info.csv 
+#   salidas_preprocesamiento/ranking_estaciones.xlsx (coordenadas y altitud), estacion_pixel.xlsx,
+#                            estaciones_diario_limpio.csv, estaciones_pentadas_limpio.csv 
+#   Datos/oni_cpc.csv (ONI de la NOAA CPC). La fase ENSO de cada año se calcula aquí con la misma
+#     regla de la fase 4, para que el script de R no dependa de una salida de Python; si existe
+#     salidas_fase4/fase_enso_por_anio.csv, se comprueba que las dos clasificaciones coinciden.
+
+#Limpiar área de trabajo
+rm(list=ls())
+
+# Instalar los paquetes solo si faltan (fda.usc necesita dependencias como SuppDists y kSamples)
+for (pq in c("fda", "fda.usc", "readxl")) {
+  if (!requireNamespace(pq, quietly = TRUE)) install.packages(pq, dependencies = TRUE)
+}
 library(fda)
 library(fda.usc)
 library(readxl)
 
-ENT0 <- "./salidas_preprocesamiento"   # Hoyos
-ENT1 <- "./salidas_fase1"              # Daniela
-ENT4 <- "./salidas_fase4"              # Fabián (solo para comprobar la fase ENSO)
+ENT0 <- "./salidas_preprocesamiento"  
+ENT1 <- "./salidas_fase1"              
+ENT4 <- "./salidas_fase4"              
 DATOS <- "./Datos"                     # ONI de la NOAA CPC
+
+#Carpeta para guardar las figuras y tablas 
 OUT  <- "./salidas_fase2"
 FIG  <- file.path(OUT, "figuras")
 dir.create(FIG, showWarnings = FALSE, recursive = TRUE)
@@ -15,8 +51,7 @@ GUARDAR_FIGURAS <- TRUE                # FALSE: las figuras solo se imprimen en 
 set.seed(2026)
 
 # Dibuja una figura en pantalla (si la sesión es interactiva) y la guarda en salidas_fase2/figuras
-# Si la sesión no tiene pantalla gráfica (R en terminal, servidor, VS Code sin visor), no se detiene:
-# avisa y la figura se guarda igual en PNG.
+# Si la sesión no tiene pantalla gráfica, no se detiene:
 figura <- function(nombre, codigo, ancho = 10, alto = 4.5) {
   codigo <- substitute(codigo); entorno <- parent.frame()
   if (interactive()) tryCatch({
@@ -40,11 +75,8 @@ fecha <- function(t) {
 }
 
 
-#####################################################################################
-# 0. Carga de datos y construcción de los objetos funcionales
-#####################################################################################
+#Cargar Datos 
 
-# ---- Coeficientes de la fase 1 (una fila por estación-año)
 ce   <- read.csv(file.path(ENT1, "coeficientes_estaciones.csv"))
 cs   <- read.csv(file.path(ENT1, "coeficientes_satelite.csv"))
 info <- read.csv(file.path(ENT1, "base_info.csv"))
@@ -56,7 +88,7 @@ C_est <- t(as.matrix(ce[, paste0("c", 1:K_est)]))     # K_est x N
 C_sat <- t(as.matrix(cs[, paste0("c", 1:K_sat)]))     # K_sat x N
 N <- ncol(C_est)
 
-# ---- Información de cada estación (Hoyos) y fase ENSO de cada año (Fabián)
+# Información de cada estacióny fase ENSO de cada año
 ranking <- as.data.frame(read_excel(file.path(ENT0, "ranking_estaciones.xlsx")))   # altitud y coordenadas
 pixeles <- as.data.frame(read_excel(file.path(ENT0, "estacion_pixel.xlsx")))       # fila y columna del píxel
 
@@ -91,10 +123,16 @@ meta$altitud    <- ranking$altitud[im]
 meta$fuente_alt <- ranking$fuente_alt[im]
 meta$Lon        <- ranking$Lon[im]
 meta$lat        <- ranking$lat[im]
+
+# Nombres de las zonas acordados por el grupo (zona hidrográfica IDEAM por los 2 primeros dígitos del código)
+REG_CAUCA  <- "Cuenca del río Cauca"                              # 26
+REG_CALIMA <- "Vertiente del Pacífico del Valle: Calima-Garrapatas" # 54
+REG_DAGUA  <- "Vertiente del Pacífico del Valle: Dagua-Anchicayá"   # 53
+ETQ_REGION <- c("Cuenca del río Cauca", "Pacífico: Calima-Garrapatas", "Pacífico: Dagua-Anchicayá")  # etiquetas cortas para leyendas
 zona_a_region <- function(id) {
   z <- substr(as.character(id), 1, 2)
-  factor(ifelse(z == "26", "Cauca", ifelse(z == "53", "Pacífico Dagua-Anchicayá", "Pacífico Calima-Garrapatas")),
-         levels = c("Cauca", "Pacífico Calima-Garrapatas", "Pacífico Dagua-Anchicayá"))
+  factor(ifelse(z == "26", REG_CAUCA, ifelse(z == "53", REG_DAGUA, REG_CALIMA)),
+         levels = c(REG_CAUCA, REG_CALIMA, REG_DAGUA))
 }
 meta$region     <- zona_a_region(meta$STATION_ID)
 cortes_alt <- c(-Inf, 800, 1100, 1500, 2000, Inf)
@@ -106,7 +144,7 @@ ip <- match(meta$STATION_ID, pixeles$STATION_ID); stopifnot(!anyNA(ip))
 meta$pixel <- paste(pixeles$fila[ip], pixeles$col[ip], sep = "-")
 stopifnot(!anyNA(meta$altitud), !anyNA(meta$fase_enso))
 
-# ---- Bases (las mismas de la fase 1) y objetos fd
+# Bases (las mismas de la fase 1) y objetos fd
 rangval  <- c(0, 365)
 base_est <- create.bspline.basis(rangval, nbasis = K_est, norder = 4)
 base_sat <- create.bspline.basis(rangval, nbasis = K_sat, norder = 4)
@@ -129,7 +167,7 @@ meta_sat$franja <- cut(meta_sat$altitud, cortes_alt, labels = nombres_franja, ri
 N_sat <- ncol(X_fd$coefs)
 cat("Curvas: estaciones =", N, "| satélite (píxel-año únicos) =", N_sat, "\n")
 
-# ---- Verificación de coherencia con la fase 1: smooth.basis() sobre los datos de Hoyos
+# Verificación de coherencia con la fase 1: smooth.basis() 
 d <- read.csv(file.path(ENT0, "estaciones_diario_limpio.csv"))
 d <- d[order(d$STATION_ID, d$YEAR, d$MONTH, d$DAY), ]
 es29  <- d$MONTH == 2 & d$DAY == 29                   # misma convención de la fase 1
@@ -137,8 +175,10 @@ clave <- paste(d$STATION_ID, d$YEAR, d$MONTH, d$DAY)
 pos28 <- match(paste(d$STATION_ID[es29], d$YEAR[es29], 2, 28), clave)
 d$VALUE[pos28] <- d$VALUE[pos28] + d$VALUE[es29]
 d <- d[!es29, ]
-# Los coeficientes de la fase 1 deben venir de ESTOS datos: mismas estaciones-año y en el mismo orden.
-# Si falla, el preprocesamiento cambió después de la fase 1: hay que volver a correr la fase 1.
+
+
+# Los coeficientes de la fase 1 deben venir de los datos del preprocesamiento: mismas estaciones-año y en el mismo orden.
+
 pares_d <- unique(d[, c("STATION_ID", "YEAR")])
 stopifnot("Los coeficientes de la fase 1 no corresponden a los datos del preprocesamiento: vuelva a correr la fase 1" =
             nrow(pares_d) == N && all(pares_d$STATION_ID == ce$STATION_ID) && all(pares_d$YEAR == ce$YEAR))
@@ -157,11 +197,8 @@ Y_eval <- eval.fd(t_fino, Y_fd)                            # 731 x N
 X_eval <- eval.fd(t_fino, X_fd)                            # 731 x N_sat
 
 
-#####################################################################################
-# 1. Representatividad: se analizan todas las curvas de 1981-2003
-#####################################################################################
-# La rúbrica limita a 2 la nota si se analiza un subconjunto sin justificar. Aquí entran
-# TODAS las curvas que dejó el preprocesamiento, de los 23 años y de todas las altitudes.
+# Representatividad: se analizan todas las curvas de 1981-2003
+# Aquí entran todas las curvas que dejó el preprocesamiento, de los 23 años y de todas las altitudes.
 
 repres <- data.frame(
   fuente = c("Estaciones", "Satélite"),
@@ -190,32 +227,31 @@ figura("fase2_fig01_representatividad", {
   par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
   tab_anio <- t(table(meta$YEAR, meta$region))
   barplot(tab_anio, col = cols_region, border = NA, las = 2, cex.names = 0.7,
-          ylim = c(0, max(colSums(tab_anio)) * 1.3),              # espacio arriba para la leyenda
+          ylim = c(0, max(colSums(tab_anio)) * 1.45),             # espacio arriba para la leyenda
           ylab = "Curvas estación-año", main = "Curvas por año (estaciones)")
-  legend("top", levels(meta$region), fill = cols_region, border = NA, bty = "n", cex = 0.7, ncol = 2)
+  legend("topleft", ETQ_REGION, fill = cols_region, border = NA, bty = "n", cex = 0.7)
   box()
   est1 <- !duplicated(meta$STATION_ID)
   plot(meta$Lon[est1], meta$altitud[est1], pch = 19, col = cols_region[as.integer(meta$region[est1])],
        xlab = "Longitud", ylab = "Altitud (m)", main = "Estaciones: longitud y altitud")
-  legend("topleft", levels(meta$region), col = cols_region, pch = 19, bty = "n", cex = 0.7)
+  legend("topleft", ETQ_REGION, col = cols_region, pch = 19, bty = "n", cex = 0.7)
 })
 
 
-#####################################################################################
-# 2. Media funcional: x_barra(t) = c_barra' phi(t)
-#####################################################################################
+#Media funcional: x_barra(t) = c_barra' phi(t)
 
-# ---- Paso a paso: media de los coeficientes por la matriz de bases
-bvals_est <- eval.basis(t_fino, base_est)                  # 731 x K_est (matriz phi)
+# Paso a paso: media de los coeficientes por la matriz de bases
+bvals_est <- eval.basis(t_fino, base_est)                
 bvals_sat <- eval.basis(t_fino, base_sat)
 media_est_paso <- bvals_est %*% rowMeans(C_est)
 media_sat_paso <- bvals_sat %*% rowMeans(X_fd$coefs)
 
-# ---- Con la librería: mean.fd()
+# Ahora Media funcional con la función mean.fd()
 media_est_fd <- mean.fd(Y_fd); media_sat_fd <- mean.fd(X_fd)
 media_est <- as.vector(eval.fd(t_fino, media_est_fd))
 media_sat <- as.vector(eval.fd(t_fino, media_sat_fd))
 
+#Comprobación: la diferencia debe ser cero
 verif_media <- data.frame(
   fuente = c("Estaciones", "Satélite"),
   dif_paso_vs_mean.fd = c(max(abs(media_est_paso - media_est)), max(abs(media_sat_paso - media_sat))),
@@ -223,6 +259,8 @@ verif_media <- data.frame(
                                    max(abs(media_sat_paso - rowMeans(X_eval)))))
 print(verif_media)
 guardar(verif_media, "tabla03_verificacion_media")
+
+
 # El suavizado por mínimos cuadrados no impone positividad: en meses secos algunas curvas bajan de 0
 cat("Valores negativos de las curvas suavizadas (% de la malla) -> estaciones:", round(100 * mean(Y_eval < 0), 2),
     "| satélite:", round(100 * mean(X_eval < 0), 2), "\n")
@@ -237,7 +275,7 @@ figura("fase2_fig02_media_funcional", {
   lines(t_fino, media_sat, lwd = 3, col = "darkred"); abline(h = 0, lty = 3)
 })
 
-# ---- Climatología en mm/día con los DATOS OBSERVADOS (no con las curvas al cuadrado)
+# Climatología en mm/día con los DATOS OBSERVADOS (no con las curvas al cuadrado)
 mes_dia <- as.integer(format(as.Date(0:364, origin = "2019-01-01"), "%m"))     # mes de cada día
 p <- read.csv(file.path(ENT0, "estaciones_pentadas_limpio.csv"))
 p <- p[order(p$STATION_ID, p$YEAR, p$PENTADA), ]
@@ -247,12 +285,12 @@ p$mes <- ceiling(p$PENTADA / 6)
 clim_mm <- data.frame(
   mes = meses,
   estaciones_mm_dia = as.vector(tapply(as.vector(Y_obs^2), rep(mes_dia, N), mean)),
-  estaciones_cauca = as.vector(tapply(as.vector(Y_obs[, meta$region == "Cauca"]^2),
-                                      rep(mes_dia, sum(meta$region == "Cauca")), mean)),
-  estaciones_calima_garrapatas = as.vector(tapply(as.vector(Y_obs[, meta$region == "Pacífico Calima-Garrapatas"]^2),
-                                                  rep(mes_dia, sum(meta$region == "Pacífico Calima-Garrapatas")), mean)),
-  estaciones_dagua_anchicaya = as.vector(tapply(as.vector(Y_obs[, meta$region == "Pacífico Dagua-Anchicayá"]^2),
-                                                rep(mes_dia, sum(meta$region == "Pacífico Dagua-Anchicayá")), mean)),
+  estaciones_cauca = as.vector(tapply(as.vector(Y_obs[, meta$region == REG_CAUCA]^2),
+                                      rep(mes_dia, sum(meta$region == REG_CAUCA)), mean)),
+  estaciones_calima_garrapatas = as.vector(tapply(as.vector(Y_obs[, meta$region == REG_CALIMA]^2),
+                                                  rep(mes_dia, sum(meta$region == REG_CALIMA)), mean)),
+  estaciones_dagua_anchicaya = as.vector(tapply(as.vector(Y_obs[, meta$region == REG_DAGUA]^2),
+                                                rep(mes_dia, sum(meta$region == REG_DAGUA)), mean)),
   satelite_mm_dia = as.vector(tapply(p$satelite_mm, p$mes, sum) / tapply(p$dias, p$mes, sum)))
 clim_mm[, -1] <- round(clim_mm[, -1], 2)
 print(clim_mm)
@@ -269,15 +307,21 @@ figura("fase2_fig03_climatologia_mm", {
           legend.text = c("Estaciones", "Satélite"), args.legend = list(x = "topleft", bty = "n", cex = 0.8))
   barplot(t(as.matrix(clim_mm[, c("estaciones_cauca", "estaciones_calima_garrapatas", "estaciones_dagua_anchicaya")])),
           beside = TRUE, names.arg = meses, col = cols_region, ylab = "mm/día", cex.names = 0.8, las = 2,
-          main = "Estaciones por región (zona hidrográfica)", legend.text = levels(meta$region),
+          ylim = c(0, max(clim_mm[, 3:5]) * 1.35),
+          main = "Estaciones por región (zona hidrográfica)", legend.text = ETQ_REGION,
           args.legend = list(x = "topleft", bty = "n", cex = 0.8))
 })
 
 
-#####################################################################################
-# 3. Varianza, desviación estándar y coeficiente de variación funcional
-#####################################################################################
-# Var(t) = (N-1)^{-1} sum_i [x_i(t) - x_barra(t)]^2 = phi(t)' Sigma_c phi(t)
+
+
+
+#Varianza y desviación estándar funcional
+#Var(t) = (N-1)^{-1} sum_i [x_i(t) - x_barra(t)]^2
+
+#coeficiente de variación funcional
+#Var(t) = (N-1)^{-1} sum_i [x_i(t) - x_barra(t)]^2 = phi(t)' Sigma_c phi(t)
+
 
 Sigma_c_est <- cov(t(C_est))                               # K x K, denominador N - 1
 Sigma_c_sat <- cov(t(X_fd$coefs))
@@ -289,8 +333,7 @@ var_sat_coef <- rowSums((bvals_sat %*% Sigma_c_sat) * bvals_sat)
 de_est <- sqrt(var_est_paso); de_sat <- sqrt(var_sat_paso)
 cv_est <- de_est / media_est;  cv_sat <- de_sat / media_sat
 
-# Efecto de borde: en los extremos del dominio (1 ene, 31 dic) la curva no tiene datos a un lado y
-# la varianza de un B-spline se infla. Los máximos se reportan en el interior [15, 350].
+
 interior <- t_fino >= 15 & t_fino <= 350
 tabla_de <- data.frame(
   fuente = c("Estaciones", "Satélite"),
@@ -306,7 +349,7 @@ tabla_de <- data.frame(
 print(tabla_de)
 guardar(tabla_de, "tabla05b_DE_CV_extremos")
 
-# std.fd() devuelve una versión SUAVIZADA de la DE (no es exactamente la raíz punto a punto)
+#Con la función std.fd() se obtiene una versión suavizada de la desviación estándar
 de_est_stdfd <- as.vector(eval.fd(t_fino, std.fd(Y_fd)))
 de_sat_stdfd <- as.vector(eval.fd(t_fino, std.fd(X_fd)))
 verif_var <- data.frame(
@@ -346,10 +389,8 @@ figura("fase2_fig05_DE_CV", {
 })
 
 
-#####################################################################################
-# 4. Covarianza y correlación funcional de cada fuente
-#####################################################################################
-# v(s,t) = phi(s)' Sigma_c phi(t);  r(s,t) = v(s,t) / sqrt(v(s,s) v(t,t))
+# Covarianza funcional paso a paso: Cov(s,t) = phi(s)' Sigma_c phi(t)
+# correlación funcional de cada fuente: r(s,t) = v(s,t) / sqrt(v(s,s) v(t,t))
 
 t_cov <- seq(0, 365, length.out = 147)                     # malla para las superficies
 b_cov_est <- eval.basis(t_cov, base_est); b_cov_sat <- eval.basis(t_cov, base_sat)
@@ -357,11 +398,11 @@ cov_est_paso <- b_cov_est %*% Sigma_c_est %*% t(b_cov_est)
 cov_sat_paso <- b_cov_sat %*% Sigma_c_sat %*% t(b_cov_sat)
 cov_est <- eval.bifd(t_cov, t_cov, var.fd(Y_fd))
 cov_sat <- eval.bifd(t_cov, t_cov, var.fd(X_fd))
-
 cor_est <- cor.fd(t_cov, Y_fd)
 cor_sat <- cor.fd(t_cov, X_fd)
 cor_est_paso <- cov_est_paso / sqrt(diag(cov_est_paso) %o% diag(cov_est_paso))
 
+#Covarianza funcional con la función var.fd()
 verif_cov <- data.frame(
   fuente = c("Estaciones", "Satélite"),
   dif_cov_paso_vs_var.fd = c(max(abs(cov_est_paso - cov_est)), max(abs(cov_sat_paso - cov_sat))),
@@ -393,12 +434,13 @@ memoria <- function(R, tt) mean(sapply(seq_along(tt), function(i) {
 cat("Memoria (r >= 0.5) -> estaciones:", round(memoria(cor_est, t_cov)), "días | satélite:",
     round(memoria(cor_sat, t_cov)), "días\n")
 
-# Descomposición espectral de la covarianza (diapositiva 6): ¿cuántos modos dominan?
+# Descomposición espectral de la covarianza 
 pca_est <- pca.fd(Y_fd, nharm = 4); pca_sat <- pca.fd(X_fd, nharm = 4)
 var_modos <- data.frame(modo = 1:4, estaciones_pct = round(100 * pca_est$varprop, 1),
                         satelite_pct = round(100 * pca_sat$varprop, 1))
 print(var_modos)
 guardar(var_modos, "tabla08_modos_covarianza")
+
 # Correlación del puntaje del modo 1 con el nivel medio de cada curva y con la región
 nivel_est <- colMeans(Y_eval)
 cat("Estaciones: cor(puntaje modo 1, nivel medio de la curva) =",
@@ -422,20 +464,10 @@ figura("fase2_fig07_cov_cor_satelite", {
   contour(t_cov, t_cov, cor_sat, levels = seq(-1, 1, 0.2), labcex = 0.6, add = TRUE)
 }, ancho = 10, alto = 4.8)
 
+# Derivadas de los datos funcionales: D x(t) = c' D phi(t)
+# inicio, pico y fin de las temporadas de lluvia
 
-#####################################################################################
-# 5. Derivadas: inicio, pico y fin de las temporadas de lluvia
-#####################################################################################
-# D x(t) = c' D phi(t). Con B-splines cúbicos la primera derivada es continua.
-# Lectura (las curvas son lluvia diaria en sqrt, no acumulada):
-#   - pico de temporada  : D x(t) pasa de + a - (máximo de la curva)
-#   - inicio de temporada: máximo de D x(t) antes del pico (la lluvia sube más rápido)
-#   - fin de temporada   : mínimo de D x(t) después del pico (la lluvia cae más rápido)
-#   - temporada seca de mitad de año: mínimo de la curva entre los dos picos
 
-# OJO: deriv.fd() no devuelve la derivada exacta: la vuelve a expresar en la MISMA base de la curva
-# (K funciones de orden 4), y con K = 8 esa proyección es una aproximación pobre. La derivada exacta
-# de la representación en bases, D x(t) = c' D phi(t), se evalúa con eval.fd(t, fdobj, 1).
 D_media_est <- as.vector(eval.fd(t_fino, media_est_fd, 1))
 D_media_sat <- as.vector(eval.fd(t_fino, media_sat_fd, 1))
 DY_fino <- eval.fd(t_fino, Y_fd, 1); DX_fino <- eval.fd(t_fino, X_fd, 1)
@@ -443,10 +475,11 @@ verif_deriv <- data.frame(
   fuente = c("Estaciones", "Satélite"),
   media_derivadas_vs_derivada_media = c(max(abs(rowMeans(DY_fino) - D_media_est)),
                                         max(abs(rowMeans(DX_fino) - D_media_sat))),
-  # Lo mismo con deriv.fd(), como en el script de clase: también se cumple (es lineal)...
+  
+  # Lo mismo con deriv.fd()
   igualdad_con_deriv.fd = c(max(abs(eval.fd(t_fino, mean.fd(deriv.fd(Y_fd, 1))) - eval.fd(t_fino, deriv.fd(media_est_fd, 1)))),
                             max(abs(eval.fd(t_fino, mean.fd(deriv.fd(X_fd, 1))) - eval.fd(t_fino, deriv.fd(media_sat_fd, 1))))),
-  # ...pero se aleja de la derivada exacta
+  # pero se aleja de la derivada exacta
   deriv.fd_vs_derivada_exacta = c(max(abs(eval.fd(t_fino, deriv.fd(media_est_fd, 1)) - D_media_est)),
                                   max(abs(eval.fd(t_fino, deriv.fd(media_sat_fd, 1)) - D_media_sat))),
   derivada_media_max_abs = c(max(abs(D_media_est)), max(abs(D_media_sat))))
@@ -454,9 +487,7 @@ print(verif_deriv)
 guardar(verif_deriv, "tabla09a_verificacion_derivadas")
 
 # Fechas de una curva x (con su derivada D) evaluadas en la malla tt.
-# Ventanas: primer pico en [45, 200] y segundo en [230, 350] (alrededor de los picos de la media).
-# Los extremos de la derivada se buscan en [10, 355]: cerca de los bordes del dominio no hay datos
-# a un lado y la derivada de un B-spline se vuelve inestable (efecto de borde).
+
 fechas_temporadas <- function(x, D, tt) {
   en <- function(a, b) which(tt >= a & tt <= b)
   w1 <- en(45, 200);  i_p1 <- w1[which.max(x[w1])]
@@ -466,8 +497,10 @@ fechas_temporadas <- function(x, D, tt) {
   wb <- en(tt[i_p1], tt[i_v]);  i_f1 <- wb[which.min(D[wb])]
   wc <- en(tt[i_v], tt[i_p2]);  i_i2 <- wc[which.max(D[wc])]
   wd <- en(tt[i_p2], 355);      i_f2 <- wd[which.min(D[wd])]
+  
   # un pico es "real" si la derivada cambia de signo (no queda pegado al borde de la ventana)
   real <- function(i) i > 1 && i < length(tt) && D[i - 1] > 0 && D[i + 1] < 0
+  
   # si el extremo de la derivada cae en el límite de la búsqueda (10 o 355), la fecha no queda
   # determinada dentro del año (la lluvia sigue cayendo hacia el borde): se deja como NA
   paso <- tt[2] - tt[1]
@@ -555,18 +588,16 @@ figura("fase2_fig09_fechas_por_enso", {
   }
 }, ancho = 11, alto = 4)
 
-
-#####################################################################################
-# 6. Profundidad funcional, mediana, media recortada y boxplot funcional
-#####################################################################################
-# Fraiman-Muniz (diapositiva 25): D_FM(x_i) = integral de 1 - |1/2 - F_{N,t}(x_i(t))| dt
+# Profundidad funcional, mediana, media recortada y boxplot funcional
+# Fraiman-Muniz 
 # fda.usc::depth.FM devuelve la versión reescalada a [0, 1]: 2 * D_FM - 1 (se verifica abajo).
 # MBD: proporción promedio del dominio en que la curva queda dentro de la banda de cada par.
 
 Y_prof <- eval.fd(t_prof, Y_fd)                            # 73 x N
 X_prof <- eval.fd(t_prof, X_fd)                            # 73 x N_sat
 
-# ---- Fraiman-Muniz paso a paso y con fda.usc
+# Fraiman-Muniz paso a paso y con fda.usc
+
 FM_paso <- function(M) {                                   # M: puntos x curvas
   Fn <- t(apply(M, 1, function(v) rank(v, ties.method = "max") / length(v)))
   colMeans(1 - abs(0.5 - Fn))                              # regla del rectángulo en malla regular
@@ -577,7 +608,7 @@ verif_FM <- c(estaciones = max(abs(fm_est$dep - (2 * FM_paso(Y_prof) - 1))),
               satelite   = max(abs(fm_sat$dep - (2 * FM_paso(X_prof) - 1))))
 cat("FM: depth.FM vs 2*D_FM(paso a paso) - 1 (max |dif|):\n"); print(verif_FM)
 
-# ---- MBD por definición (pares de curvas) en una submuestra, contra fda:::fMBD
+#MBD por definición (pares de curvas) en una submuestra, contra fda:::fMBD
 MBD_definicion <- function(M) {
   n <- ncol(M); dep <- numeric(n); np <- 0
   for (a in 1:(n - 1)) for (b in (a + 1):n) {
@@ -590,10 +621,11 @@ sub <- sample(N, 80)
 verif_MBD <- max(abs(MBD_definicion(Y_prof[, sub]) - fbplot(Y_prof[, sub], t_prof, plot = FALSE)$depth))
 cat("MBD por definición vs fbplot (80 curvas, max |dif|):", signif(verif_MBD, 3), "\n")
 
-# ---- Profundidad modal (Cuevas et al., 2007), como en clase
+# Profundidad modal
 mode_est <- depth.mode(fdata(t(Y_prof), t_prof, rangval), trim = 0.25)
 mode_sat <- depth.mode(fdata(t(X_prof), t_prof, rangval), trim = 0.25)
-# ¿Ordenan igual las tres profundidades? (correlación de rangos de Spearman; MBD sale de fbplot)
+
+# ¿Ordenan igual las tres profundidades? 
 mbd_est <- fbplot(Y_prof, t_prof, method = "MBD", plot = FALSE)$depth
 mbd_sat <- fbplot(X_prof, t_prof, method = "MBD", plot = FALSE)$depth
 concordancia <- data.frame(
@@ -608,7 +640,7 @@ concordancia[, 2:4] <- round(concordancia[, 2:4], 3)
 print(concordancia)
 guardar(concordancia, "tabla11b_concordancia_profundidades")
 
-# ---- Medidas de centralidad: media, mediana (curva más profunda FM) y media recortada al 25 %
+#Medidas de centralidad: media, mediana (curva más profunda FM) y media recortada al 25 %
 centralidad <- function(fm, M, tt, media_vec, tf) data.frame(
   medida = c("Media", "Mediana FM", "Media recortada 25 %"),
   maximo = c(max(media_vec), max(fm$median$data), max(fm$mtrim$data)),
@@ -621,8 +653,9 @@ cat("Curva mediana FM de estaciones:", meta$STATION_ID[fm_est$lmed], meta$nombre
     meta$YEAR[fm_est$lmed], "\n")
 guardar(cent, "tabla11_centralidad")
 
-# ---- Boxplot funcional con MBD sobre las curvas crudas
-#      (fbplot recibe una matriz puntos x curvas, como en el script de clase)
+# Boxplot funcional con MBD sobre las curvas crudas
+# fbplot recibe una matriz puntos x curvas
+
 figura("fase2_fig10_boxplot_crudo", {
   par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
   bx_est <- fbplot(Y_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(0, 7),
@@ -669,7 +702,7 @@ atipicos_sat_crudo <- data.frame(meta_sat[bx_sat$outpoint, ], prof_MBD = round(b
 guardar(atipicos_sat_crudo, "tabla14_atipicos_satelite_crudo")
 cat("Atípicos (crudo, satélite):", nrow(atipicos_sat_crudo), "de", N_sat, "\n")
 
-# ---- Anomalías: curva menos la curva media de su propio sitio
+# Anomalías: curva menos la curva media de su propio sitio
 # Quita la diferencia de nivel entre sitios (orografía) y deja la variación de un año a otro.
 # Se usan los sitios con al menos 3 años (con 1 o 2 años la anomalía es casi nula por construcción).
 anomalias <- function(C, sitio, min_anios = 3) {
@@ -691,20 +724,21 @@ bxa_est <- fbplot(A_prof, t_prof, method = "MBD", plot = FALSE)
 bxa_sat <- fbplot(AX_prof, t_prof, method = "MBD", plot = FALSE)
 cat("Atípicos por la regla del boxplot en anomalías -> estaciones:", length(bxa_est$outpoint), "de", ncol(A_prof),
     "| satélite:", length(bxa_sat$outpoint), "de", ncol(AX_prof), "\n")
-# Al quitar el nivel de cada sitio casi ninguna estación-año sale de los bigotes: los atípicos de
-# las curvas crudas eran de NIVEL (ubicación), no de forma ni de año. Las que queden se listan aquí.
+
 atip_an_box <- data.frame(meta_an[bxa_est$outpoint, c("STATION_ID", "nombre", "YEAR", "altitud", "region", "fase_enso")],
                           prof_MBD = round(bxa_est$depth[bxa_est$outpoint], 4),
                           anomalia_media = round(colMeans(A_prof)[bxa_est$outpoint], 3))
 print(atip_an_box)
 guardar(atip_an_box, "tabla15b_atipicos_boxplot_anomalias")
 
+
 # (a) Una curva por AÑO: anomalía media de las estaciones de la cuenca del Cauca (y de sus píxeles) en ese año.
 #     Con 23 curvas, el boxplot funcional señala los años atípicos de toda la región.
+
 anom_anual <- function(A_eval, anios) sapply(split(seq_along(anios), anios), function(j) rowMeans(A_eval[, j, drop = FALSE]))
-and_an   <- meta_an$region == "Cauca"
+and_an   <- meta_an$region == REG_CAUCA
 anual_and_prof <- anom_anual(A_prof[, and_an], meta_an$YEAR[and_an])        # 73 x 23
-and_an_sat <- meta_an_sat$region == "Cauca"                                # mismos criterios que las estaciones
+and_an_sat <- meta_an_sat$region == REG_CAUCA                                # mismos criterios que las estaciones
 anual_sat_prof <- anom_anual(AX_prof[, and_an_sat], meta_an_sat$YEAR[and_an_sat])
 bx_anio_est <- fbplot(anual_and_prof, t_prof, method = "MBD", plot = FALSE)
 bx_anio_sat <- fbplot(anual_sat_prof, t_prof, method = "MBD", plot = FALSE)
@@ -729,6 +763,7 @@ cat("Correlación de la anomalía media anual de estaciones con el ONI medio del
 
 # Correlación funcional de las ANOMALÍAS: sin la diferencia de nivel entre sitios, ¿cuánta memoria
 # temporal queda dentro del año?
+
 cor_an_est <- cor.fd(t_cov, A_fd); cor_an_sat <- cor.fd(t_cov, AX_fd)
 cat("Memoria (r >= 0.5) de las anomalías -> estaciones:", round(memoria(cor_an_est, t_cov)), "días | satélite:",
     round(memoria(cor_an_sat, t_cov)), "días\n")
@@ -744,6 +779,7 @@ figura("fase2_fig07b_correlacion_anomalias", {
 
 # (b) Estación-año: el 5 % de curvas de anomalía MENOS profundas (MBD). No es la regla del boxplot,
 #     sino la cola de la profundidad; sirve para ver en qué años y fases se concentran los casos extremos.
+
 signo_an <- colMeans(A_prof)                               # >0: año más lluvioso que lo normal en esa estación
 cola <- bxa_est$depth <= quantile(bxa_est$depth, 0.05)
 extremas_an <- data.frame(meta_an[cola, c("STATION_ID", "nombre", "YEAR", "altitud", "region", "fase_enso")],
@@ -770,7 +806,7 @@ figura("fase2_fig11_boxplot_anomalias", {
   title(paste0("Estaciones: anomalía de cada estación-año (", ncol(A_prof), ")")); abline(h = 0, lty = 3)
   fbplot(anual_and_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Cauca, estaciones: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
+  title("Cuenca del río Cauca, estaciones: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
   at <- anios_tab$YEAR[anios_tab$atipico_estaciones]
   legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
   fbplot(AX_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-3, 3), xlab = "Día del año",
@@ -778,7 +814,7 @@ figura("fase2_fig11_boxplot_anomalias", {
   title(paste0("Satélite: anomalía de cada píxel-año (", ncol(AX_prof), ")")); abline(h = 0, lty = 3)
   fbplot(anual_sat_prof, t_prof, method = "MBD", xlim = rangval, ylim = c(-0.8, 0.8), xlab = "Día del año",
          ylab = "Anomalía sqrt(mm/día)")
-  title("Cauca, satélite: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
+  title("Cuenca del río Cauca, satélite: anomalía media anual (23 años)"); abline(h = 0, lty = 3)
   at <- anios_tab$YEAR[anios_tab$atipico_satelite]
   legend("topleft", paste("Años atípicos:", if (length(at)) paste(at, collapse = ", ") else "ninguno"), bty = "n", cex = 0.8)
 }, ancho = 11, alto = 8)
@@ -801,11 +837,9 @@ figura("fase2_fig12_profundidad_centralidad", {
 })
 
 
-#####################################################################################
-# 7. Orografía y ENSO
-#####################################################################################
 
-# ---- Orografía: media y DE por franja de altitud y por región, y lluvia anual observada en mm
+#Orografía: media y DE por franja de altitud y por región, y lluvia anual observada en mm
+
 media_franja <- sapply(levels(meta$franja), function(f) rowMeans(Y_eval[, meta$franja == f, drop = FALSE]))
 de_franja    <- sapply(levels(meta$franja), function(f) apply(Y_eval[, meta$franja == f, drop = FALSE], 1, sd))
 anual_obs <- colSums(Y_obs^2)                                # mm/año observados de cada curva (con 29 feb)
@@ -831,15 +865,19 @@ region_tab <- data.frame(
   razon_pico_valle = round(apply(media_region, 2, function(m) {
     f <- fechas_temporadas(m, c(diff(m), 0), t_fino)
     mean(m[t_fino %in% f[c("pico1", "pico2")]]) / m[t_fino == f["valle"]] }), 2))
+
 # dentro de la cuenca del Cauca: ¿crece la lluvia con la altitud?
-cauca <- meta$region == "Cauca"
+
+cauca <- meta$region == REG_CAUCA
 alt_cauca <- data.frame(franja = levels(meta$franja),
   estaciones = as.integer(tapply(meta$STATION_ID[cauca], meta$franja[cauca], function(s) length(unique(s)))),
   lluvia_anual_mediana_mm = round(as.vector(tapply(anual_obs[cauca], meta$franja[cauca], median))))
 print(region_tab); print(alt_cauca)
 guardar(region_tab, "tabla19b_region")
 guardar(alt_cauca, "tabla19c_altitud_dentro_del_cauca")
+
 # Robustez: solo estaciones con altitud de catálogo (las demás vienen de la grilla corregida)
+
 es_cat <- grepl("^cat", meta$fuente_alt)
 orografia_cat <- tapply(anual_obs[es_cat], meta$franja[es_cat], median)
 cat("Lluvia anual mediana por franja, solo altitud de catálogo:\n"); print(round(orografia_cat))
@@ -854,12 +892,13 @@ figura("fase2_fig13_orografia", {
           xlab = "Día del año", ylab = "sqrt(mm/día)", main = "Desviación estándar por franja de altitud")
 })
 
-# ---- ENSO: curva de anomalía media de cada año (unidad de réplica = año) y media por fase
+# ENSO: curva de anomalía media de cada año (unidad de réplica = año) y media por fase
 # Promediar primero por año evita contar 160 veces el mismo año: las bandas usan los 23 años.
+
 A_eval  <- eval.fd(t_fino, A_fd)
 AX_eval <- eval.fd(t_fino, AX_fd)
-anual_and <- anom_anual(A_eval[, meta_an$region == "Cauca"], meta_an$YEAR[meta_an$region == "Cauca"])
-anual_sat <- anom_anual(AX_eval[, meta_an_sat$region == "Cauca"], meta_an_sat$YEAR[meta_an_sat$region == "Cauca"])
+anual_and <- anom_anual(A_eval[, meta_an$region == REG_CAUCA], meta_an$YEAR[meta_an$region == REG_CAUCA])
+anual_sat <- anom_anual(AX_eval[, meta_an_sat$region == REG_CAUCA], meta_an_sat$YEAR[meta_an_sat$region == REG_CAUCA])
 fase_anio <- enso$fase_enso[match(as.integer(colnames(anual_and)), enso$YR)]
 
 banda_fase <- function(M, fase) lapply(c("Niño", "Neutro", "Niña"), function(f) {
@@ -874,7 +913,7 @@ figura("fase2_fig14_enso", {
   for (k in 1:2) {
     bf <- if (k == 1) bf_and else bf_sat
     plot(NA, xlim = rangval, ylim = c(-0.6, 0.6), xlab = "Día del año", ylab = "Anomalía sqrt(mm/día)",
-         main = if (k == 1) "Estaciones (cuenca del Cauca) por fase" else "Satélite (píxeles del Cauca) por fase")
+         main = if (k == 1) "Estaciones (cuenca del río Cauca) por fase" else "Satélite (píxeles de la cuenca del río Cauca)")
     for (f in 1:3) {
       polygon(c(t_fino, rev(t_fino)), c(bf[[f]]$media + 2 * bf[[f]]$ee, rev(bf[[f]]$media - 2 * bf[[f]]$ee)),
               col = adjustcolor(cols_enso[f], 0.15), border = NA)
@@ -888,23 +927,26 @@ figura("fase2_fig14_enso", {
 
 # ENSO en mm con los datos observados: anomalía porcentual de la lluvia por trimestre
 # (cada estación contra su propio promedio; se promedia por año y luego por fase)
+
 trim_dia <- c(DEF = 1, MAM = 2, JJA = 3, SON = 4)[c(1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 1)][mes_dia]
 lluvia_trim <- sapply(1:4, function(q) colSums(Y_obs[trim_dia == q, ]^2))      # N x 4 (mm)
 colnames(lluvia_trim) <- c("DEF", "MAM", "JJA", "SON")
 lluvia_trim <- cbind(lluvia_trim, anual = rowSums(lluvia_trim))
 clim_est <- apply(lluvia_trim, 2, function(v) tapply(v, meta$STATION_ID, mean))
 anom_pct <- 100 * (lluvia_trim / clim_est[as.character(meta$STATION_ID), ] - 1)
-anom_pct <- anom_pct[an_est$usar & meta$region == "Cauca", ]
-anios_and <- meta$YEAR[an_est$usar & meta$region == "Cauca"]
+anom_pct <- anom_pct[an_est$usar & meta$region == REG_CAUCA, ]
+anios_and <- meta$YEAR[an_est$usar & meta$region == REG_CAUCA]
 anom_pct_anio <- apply(anom_pct, 2, function(v) tapply(v, anios_and, mean))
 enso_mm <- aggregate(anom_pct_anio, list(fase_enso = enso$fase_enso[match(as.integer(rownames(anom_pct_anio)), enso$YR)]), mean)
 enso_mm[, -1] <- round(enso_mm[, -1], 1)
 print(enso_mm)
 guardar(enso_mm, "tabla20_enso_anomalia_pct_por_trimestre")
+
 # Lo mismo para el satélite en los píxeles de la cuenca del Cauca (datos observados por péntada)
+
 p$region <- meta_sat$region[match(paste(p$pixel, p$YEAR), paste(meta_sat$pixel, meta_sat$YEAR))]
 p$trim <- c("DEF", "DEF", "MAM", "MAM", "MAM", "JJA", "JJA", "JJA", "SON", "SON", "SON", "DEF")[p$mes]
-pc <- p[p$region == "Cauca", ]
+pc <- p[p$region == REG_CAUCA, ]
 tot_sat <- tapply(pc$satelite_mm, list(paste(pc$pixel, pc$YEAR), pc$trim), sum)[, c("DEF", "MAM", "JJA", "SON")]
 tot_sat <- cbind(tot_sat, anual = rowSums(tot_sat))
 px_sat <- sub(" .*", "", rownames(tot_sat)); anio_sat <- as.integer(sub(".* ", "", rownames(tot_sat)))
@@ -913,9 +955,9 @@ an_sat_pct <- 100 * (tot_sat / clim_px[px_sat, ] - 1)
 an_sat_anio <- apply(an_sat_pct, 2, function(v) tapply(v, anio_sat, mean))
 enso_mm_sat <- aggregate(an_sat_anio, list(fase_enso = enso$fase_enso[match(as.integer(rownames(an_sat_anio)), enso$YR)]), mean)
 enso_mm_sat[, -1] <- round(enso_mm_sat[, -1], 1)
-cat("ENSO en mm: estaciones (arriba) vs satélite (abajo), cuenca del Cauca:\n"); print(enso_mm); print(enso_mm_sat)
+cat("ENSO en mm: estaciones (arriba) vs satélite (abajo), cuenca del río Cauca:\n"); print(enso_mm); print(enso_mm_sat)
 guardar(enso_mm_sat, "tabla20b_enso_anomalia_pct_satelite")
-cat("Correlación año a año de la anomalía anual en mm, estaciones vs satélite (Cauca):",
+cat("Correlación año a año de la anomalía anual en mm, estaciones vs satélite (cuenca del río Cauca):",
     round(cor(anom_pct_anio[, "anual"], an_sat_anio[rownames(anom_pct_anio), "anual"]), 3), "\n")
 anom_anio_txt <- data.frame(YEAR = as.integer(rownames(anom_pct_anio)), round(anom_pct_anio, 1))
 anom_anio_txt$satelite_anual <- round(an_sat_anio[as.character(anom_anio_txt$YEAR), "anual"], 1)
@@ -923,9 +965,8 @@ anom_anio_txt$fase_enso <- enso$fase_enso[match(anom_anio_txt$YEAR, enso$YR)]
 guardar(anom_anio_txt, "tabla21_anomalia_pct_por_anio_cauca")
 
 
-#####################################################################################
-# 8. Tabla resumen
-#####################################################################################
+#Resumen 
+
 resumen <- data.frame(
   fuente = c("Estaciones", "Satélite"),
   curvas = c(N, N_sat),

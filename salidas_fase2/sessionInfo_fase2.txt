@@ -1,0 +1,37 @@
+R version 4.5.1 (2025-06-13 ucrt)
+Platform: x86_64-w64-mingw32/x64
+Running under: Windows 11 x64 (build 26200)
+
+Matrix products: default
+  LAPACK version 3.12.1
+
+locale:
+[1] LC_COLLATE=English_United States.utf8 
+[2] LC_CTYPE=English_United States.utf8   
+[3] LC_MONETARY=English_United States.utf8
+[4] LC_NUMERIC=C                          
+[5] LC_TIME=English_United States.utf8    
+
+time zone: America/Bogota
+tzcode source: internal
+
+attached base packages:
+[1] splines   stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] readxl_1.4.5  fda.usc_2.2.0 knitr_1.50    mgcv_1.9-3    nlme_3.1-168 
+ [6] fda_6.3.0     deSolve_1.42  fds_2.0       rainbow_3.8   pcaPP_2.0-7  
+[11] MASS_7.3-65  
+
+loaded via a namespace (and not attached):
+ [1] Matrix_1.7-3       jsonlite_2.0.0     compiler_4.5.1     Rcpp_1.1.0        
+ [5] ks_1.15.3          parallel_4.5.1     later_1.4.4        cluster_2.1.8.1   
+ [9] lattice_0.22-7     kSamples_1.2-12    sess_3.4.0         iterators_1.0.14  
+[13] tibble_3.3.0       pillar_1.11.0      rlang_1.1.6        SuppDists_1.1-9.9 
+[17] hdrcde_3.5.0       xfun_0.52          doParallel_1.0.17  cli_3.6.5         
+[21] magrittr_2.0.3     ps_1.9.1           foreach_1.5.2      grid_4.5.1        
+[25] processx_3.8.6     rstudioapi_0.17.1  mvtnorm_1.3-3      mclust_6.1.3      
+[29] lifecycle_1.0.4    vctrs_0.6.5        KernSmooth_2.23-26 glue_1.8.0        
+[33] evaluate_1.0.5     pracma_2.4.4       cellranger_1.1.0   codetools_0.2-20  
+[37] colorspace_2.1-1   pkgconfig_2.0.3    tools_4.5.1       

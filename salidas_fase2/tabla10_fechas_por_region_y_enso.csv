@@ -1,7 +1,7 @@
 "tipo","grupo","inicio1","pico1","fin1","valle","inicio2","pico2","fin2","n_curvas"
-"region","Cauca","28 feb","17 abr","15 jun","31 jul","14 sep","27 oct","19 nov",2775
-"region","Pacífico Calima-Garrapatas","3 mar","30 abr","19 jun","31 jul","12 sep","24 oct","19 nov",327
-"region","Pacífico Dagua-Anchicayá","1 abr","19 may","26 jun","1 ago","12 sep","25 oct","16 nov",227
-"enso","Niño","28 feb","17 abr","14 jun","1 ago","14 sep","29 oct","22 nov",975
-"enso","Neutro","1 mar","22 abr","18 jun","1 ago","14 sep","26 oct","18 nov",1621
-"enso","Niña","28 feb","19 abr","14 jun","29 jul","12 sep","26 oct","16 nov",733
+"region","Cuenca del río Cauca","28 feb","17 abr","15 jun","31 jul","14 sep","27 oct","18 nov",2671
+"region","Vertiente del Pacífico del Valle: Calima-Garrapatas","3 mar","29 abr","19 jun","31 jul","12 sep","26 oct","21 nov",256
+"region","Vertiente del Pacífico del Valle: Dagua-Anchicayá","29 mar","18 may","26 jun","2 ago","13 sep","26 oct","16 nov",140
+"enso","Niño","28 feb","16 abr","14 jun","31 jul","14 sep","29 oct","22 nov",893
+"enso","Neutro","1 mar","20 abr","18 jun","1 ago","14 sep","26 oct","18 nov",1487
+"enso","Niña","28 feb","19 abr","14 jun","29 jul","12 sep","26 oct","16 nov",687
