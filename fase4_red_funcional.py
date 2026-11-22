@@ -48,7 +48,7 @@ REENTRENAR = True
 
 # Partición temporal.
 #   "ferro":   recomendación del profesor Ferro (asesoría del 20 de noviembre). Prueba 1997-2003, que
-#              contiene El Niño 1997, La Niña 1998-2000 y años neutros 2001-2003. Los hiperparámetros y la
+#              contiene El Niño 1997, La Niña 1998-2000 y 2001-2003 (neutros y Niño moderado 2002). Los hiperparámetros y la
 #              arquitectura se eligen con VALIDACIÓN CRUZADA TEMPORAL de pliegues expansivos dentro de
 #              1981-1996 (nunca se valida con años anteriores a los de entrenamiento). El modelo final se
 #              entrena con 1981-1993 y se detiene con 1994-1996 (el último pliegue).
@@ -1050,7 +1050,7 @@ tabla_abl.to_csv(OUT / "ablacion_resultados.csv", index=False)
 # --- Resultados en PRUEBA por bloque climático (Ferro: El Niño, La Niña y años neutros por separado)
 if PARTICION == "ferro":
     BLOQUES_ENSO = {"Niño 1997": anio == 1997, "Niña 1998-2000": (anio >= 1998) & (anio <= 2000),
-                    "Neutro 2001-2003": (anio >= 2001) & (anio <= 2003)}
+                    "2001-2003 (neutros y Niño moderado 2002)": (anio >= 2001) & (anio <= 2003)}
 else:
     BLOQUES_ENSO = {f"{f} (ONI)": fase_enso == f for f in ("Niño", "Niña", "Neutro")}
 filas_bl = []
@@ -1434,7 +1434,7 @@ for tipo in ("lineal", "kan", "mlp"):
     pd.concat([base_ancha, pd.DataFrame(np.round(Y_mm_pred[tipo], 3), columns=dias_cols)], axis=1).to_csv(
         OUT / f"mm_diario_pred_{tipo}.csv", index=False)
 
-# Mientras se conocen las estaciones reservadas, se deja el CSV de la prueba (2001-2003) con la KAN
+# Mientras se conocen las estaciones reservadas, se deja el CSV de la prueba (1997-2003 con la partición de Ferro) con la KAN
 # (el objetivo general del proyecto). El mismo exportar_csv_mm sirve para las reservadas.
 exportar_csv_mm("kan", idx_te, OUT / "predicciones_prueba_kan_mm.csv")
 
