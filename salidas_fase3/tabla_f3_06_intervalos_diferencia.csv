@@ -1,21 +1,21 @@
 "analisis","sentido","desde","hasta","dias","d_media","d_mediana","toca_borde"
-"mm/día - Todas","satélite subestima (d > 0)","1 ene","9 abr",98,0.687,0.147,TRUE
-"mm/día - Todas","satélite sobreestima (d < 0)","15 may","17 jun",33,-0.477,-0.936,FALSE
-"mm/día - Todas","satélite subestima (d > 0)","1 ago","28 ago",27,0.483,-0.109,FALSE
-"mm/día - Todas","satélite sobreestima (d < 0)","25 dic","31 dic",7,-0.697,-1.265,TRUE
-"mm/día - Solo originales","satélite subestima (d > 0)","1 ene","29 mar",87,0.536,0.068,TRUE
-"mm/día - Solo originales","satélite sobreestima (d < 0)","8 may","26 jun",49,-0.572,-0.887,FALSE
-"mm/día - Solo originales","satélite sobreestima (d < 0)","22 dic","31 dic",10,-0.816,-1.303,TRUE
-"mm/día - Cuenca del río Cauca","satélite subestima (d > 0)","1 ene","29 mar",87,0.389,0.115,TRUE
-"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","26 abr","28 jul",93,-0.548,-0.712,FALSE
-"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","31 ago","9 nov",70,-0.384,-0.596,FALSE
-"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","4 dic","31 dic",28,-0.754,-0.946,TRUE
-"mm/día - Cuenca del río Cauca - originales","satélite subestima (d > 0)","1 ene","26 ene",25,0.546,0.108,TRUE
-"mm/día - Cuenca del río Cauca - originales","satélite subestima (d > 0)","17 feb","24 mar",35,0.337,0.143,FALSE
-"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","26 abr","24 jul",89,-0.559,-0.705,FALSE
-"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","1 sep","3 nov",63,-0.41,-0.651,FALSE
-"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","8 dic","31 dic",24,-0.824,-1.091,TRUE
-"mm/día - Vertiente del Pacífico","satélite subestima (d > 0)","1 ene","13 abr",102,2.174,0.543,TRUE
-"mm/día - Vertiente del Pacífico","satélite subestima (d > 0)","6 jul","24 dic",171,2.877,0.463,TRUE
-"mm/día - Vertiente del Pacífico - originales","satélite subestima (d > 0)","1 ene","10 ene",9,2.505,0.553,TRUE
-"sqrt(mm/día) - Todas","satélite sobreestima (d < 0)","4 ene","31 dic",362,-0.337,-0.435,TRUE
+"mm/día - Todas","satélite subestima (d > 0)","1 ene","9 abr",98,0.69,0.15,TRUE
+"mm/día - Todas","satélite sobreestima (d < 0)","14 may","17 jun",34,-0.479,-0.918,FALSE
+"mm/día - Todas","satélite subestima (d > 0)","1 ago","29 ago",28,0.487,-0.11,FALSE
+"mm/día - Todas","satélite sobreestima (d < 0)","25 dic","31 dic",7,-0.692,-1.257,TRUE
+"mm/día - Solo originales","satélite subestima (d > 0)","1 ene","29 mar",87,0.539,0.066,TRUE
+"mm/día - Solo originales","satélite sobreestima (d < 0)","7 may","26 jun",50,-0.572,-0.866,FALSE
+"mm/día - Solo originales","satélite sobreestima (d < 0)","22 dic","31 dic",10,-0.811,-1.306,TRUE
+"mm/día - Cuenca del río Cauca","satélite subestima (d > 0)","1 ene","30 mar",88,0.392,0.117,TRUE
+"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","26 abr","28 jul",93,-0.547,-0.704,FALSE
+"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","31 ago","9 nov",70,-0.381,-0.595,FALSE
+"mm/día - Cuenca del río Cauca","satélite sobreestima (d < 0)","4 dic","31 dic",28,-0.753,-0.948,TRUE
+"mm/día - Cuenca del río Cauca - originales","satélite subestima (d > 0)","1 ene","27 ene",26,0.54,0.111,TRUE
+"mm/día - Cuenca del río Cauca - originales","satélite subestima (d > 0)","16 feb","24 mar",36,0.34,0.138,FALSE
+"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","27 abr","24 jul",88,-0.558,-0.692,FALSE
+"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","1 sep","2 nov",62,-0.406,-0.648,FALSE
+"mm/día - Cuenca del río Cauca - originales","satélite sobreestima (d < 0)","8 dic","31 dic",24,-0.819,-1.095,TRUE
+"mm/día - Vertiente del Pacífico","satélite subestima (d > 0)","1 ene","13 abr",102,2.168,0.541,TRUE
+"mm/día - Vertiente del Pacífico","satélite subestima (d > 0)","6 jul","24 dic",171,2.886,0.448,TRUE
+"mm/día - Vertiente del Pacífico - originales","satélite subestima (d > 0)","1 ene","10 ene",9,2.51,0.558,TRUE
+"sqrt(mm/día) - Todas","satélite sobreestima (d < 0)","4 ene","31 dic",362,-0.337,-0.434,TRUE

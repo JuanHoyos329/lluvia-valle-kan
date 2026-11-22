@@ -49,10 +49,10 @@ guardar <- function(df, nombre) {
 }
 
 # Dibuja en pantalla (si hay) y guarda el PNG en salidas_fase3/figuras
-figura <- function(nombre, codigo, ancho = 10, alto = 4.5) {
+figura <- function(nombre, codigo, ancho = 10, alto = 4.5, res = 150) {
   codigo <- substitute(codigo); entorno <- parent.frame()
   if (interactive()) { eval(codigo, entorno); par(mfrow = c(1, 1)) }
-  png(file.path(FIG, paste0(nombre, ".png")), width = ancho, height = alto, units = "in", res = 150)
+  png(file.path(FIG, paste0(nombre, ".png")), width = ancho, height = alto, units = "in", res = res)
   on.exit(dev.off())
   eval(codigo, entorno)
 }
@@ -958,7 +958,7 @@ tabla_bloq <- do.call(rbind, lapply(names(bloques), function(b) {
 print(tabla_bloq, row.names = FALSE)
 guardar(tabla_bloq, "tabla_f3_19b_regresion_por_bloque_enso")
 
-# IC bootstrap por estación (prueba) y Wilcoxon pareado, con el mismo esquema de la fase 4
+# IC bootstrap por estación (prueba), con el mismo esquema de la fase 4
 est_te <- claves$STATION_ID[i_te]
 sum_est <- function(e) tapply(e[i_te], est_te, sum)
 E_est  <- lapply(err_todos, sum_est)
@@ -982,8 +982,7 @@ comparar <- function(a, b, sub = "Todas") {
              dif_L2rel_pp = round(100 * (sqrt(sum(Ea) / sum(nt)) - sqrt(sum(Eb) / sum(nt))), 2),
              IC95_inf = round(ic[1], 2), IC95_sup = round(ic[2], 2), IC_excluye_0 = ic[1] > 0 | ic[2] < 0,
              mediana_dif_por_estacion_pp = round(100 * median(ra - rb), 2),
-             pct_estaciones_gana_a = round(100 * mean(ra < rb), 1),
-             wilcoxon_p = signif(wilcox.test(ra, rb, paired = TRUE)$p.value, 3), row.names = NULL)
+             pct_estaciones_gana_a = round(100 * mean(ra < rb), 1), row.names = NULL)
 }
 tabla_comp_ff <- do.call(rbind, lapply(names(subconj), function(sb)
   rbind(comparar("regresion", "satelite", sb), comparar("lineal", "regresion", sb),
@@ -1039,3 +1038,77 @@ figura("fig_f3_11_regresion_funcional", {
   legend("top", c("estación", "satélite sin corregir", "regresión funcional"), ncol = 3,
          col = c("slategray", "darkturquoise", "darkred"), lty = c(1, 2, 1), lwd = c(3, 2, 2), bty = "n", cex = 0.8)
 }, ancho = 12, alto = 9)
+
+
+#####################################################################################
+# Figuras para el informe (leyenda dentro del panel del río Cauca, en la esquina superior derecha)
+#####################################################################################
+# fig_informe_6_1: bandas de d(t) de las dos zonas (los dos paneles de arriba de fig_f3_05).
+# Se guardan a 300 dpi para pegarlas en el informe.
+
+# 'espacio' agranda el eje y por arriba (fracción del rango) para que quepa la leyenda sin tapar las curvas
+panel_banda <- function(b, main, col = "darkred", espacio = 0) {
+  yl <- range(b$inf, b$sup, b$mediana, 0)
+  yl[1] <- yl[1] - 0.08 * diff(yl)                           # espacio abajo para las barras de tramos
+  yl[2] <- yl[2] + espacio * diff(yl)                        # espacio arriba para la leyenda
+  plot(b$t, b$media, type = "n", ylim = yl, xaxs = "i", xlab = "Día del año", ylab = "mm/día",
+       main = main, cex.main = 1)
+  rect(c(0, 365 - BORDE), -1e6, c(BORDE, 365), 1e6, col = "grey90", border = NA)
+  polygon(c(b$t, rev(b$t)), c(b$inf, rev(b$sup)), col = adjustcolor(col, 0.25), border = NA)
+  lines(b$t, b$media, lwd = 2.5, col = col)
+  lines(b$t, b$mediana, lwd = 2, lty = 2)
+  abline(h = 0, col = "grey60")
+  y0 <- par("usr")[3] + 0.04 * diff(par("usr")[3:4])
+  lines(b$t, ifelse(b$inf > 0, y0, NA), lwd = 5, col = "steelblue", lend = 1)    # subestima
+  lines(b$t, ifelse(b$sup < 0, y0, NA), lwd = 5, col = "orange", lend = 1)       # sobreestima
+  box()
+}
+leyenda_informe <- function() {
+  legend("topright", c("mediana", "subestima", "sobreestima"),
+         col = c("black", "steelblue", "orange"), lty = c(2, 1, 1), lwd = c(2, 5, 5), seg.len = 2.2,
+         bty = "n", cex = 0.8, inset = c(0.01, 0.01))
+}
+panel_diagonal <- function() {
+  sel <- c("Cauca - total", "Cauca - anomalías", "Pacífico - total", "Pacífico - anomalías")
+  cols <- c("grey20", "grey20", "#1b9e77", "#1b9e77")         # gris: río Cauca; verde: Pacífico
+  matplot(t_eval, diagonales[, sel], type = "n", ylim = c(-0.2, 1.75), xaxs = "i", yaxt = "n",
+          xlab = "Día del año", ylab = "r(t, t)", main = "a) Diagonal de la correlación cruzada", cex.main = 1)
+  axis(2, at = seq(-0.2, 1, 0.2))
+  rect(c(0, 365 - BORDE), -2, c(BORDE, 365), 3, col = "grey90", border = NA)
+  abline(h = 0, col = "grey60")
+  matlines(t_eval, diagonales[, sel], lty = c(1, 2, 1, 2), lwd = 2.5, col = cols)
+  legend("topright", c("río Cauca, total", "río Cauca, anomalías", "Pacífico, total", "Pacífico, anomalías"),
+         col = cols, lty = c(1, 2, 1, 2), lwd = 2.5, seg.len = 2.2, bty = "n", cex = 0.8,
+         y.intersp = 0.9, inset = c(0.01, 0.01))
+  box()
+}
+
+figura("fig_informe_6_1", {
+  par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
+  panel_banda(bandas$Cauca, etiq("Cauca"), espacio = 0.45); leyenda_informe()
+  panel_banda(bandas$`Pacífico`, etiq("Pacífico"))
+}, ancho = 12, alto = 4.2, res = 300)
+
+# fig_informe_6_2: (a) diagonal de la correlación cruzada r(t, t) por zona; (b) desviación estándar
+# funcional de cada fuente en la cuenca del río Cauca. Juntas responden si el satélite sigue a la
+# estación (correlación) y con qué amplitud (desviación estándar).
+panel_de <- function() {
+  de <- sapply(c("Cauca - total", "Cauca - anomalías"), function(a)
+    cbind(sqrt(diag(cov_grupo[[a]]$Y)), sqrt(diag(cov_grupo[[a]]$X))))
+  de <- matrix(de, ncol = 4)                    # estación total, satélite total, estación anom., satélite anom.
+  cols <- c("grey20", "#7570b3", "grey20", "#7570b3")          # gris: estación; morado: satélite
+  matplot(t_eval, de, type = "n", ylim = c(0, 1.6 * max(de[t_eval >= BORDE & t_eval <= 365 - BORDE, ])), xaxs = "i",
+          xlab = "Día del año", ylab = "mm/día", main = "b) Desviación estándar - cuenca del río Cauca", cex.main = 1)
+  rect(c(0, 365 - BORDE), -1e3, c(BORDE, 365), 1e3, col = "grey90", border = NA)
+  matlines(t_eval, de, lty = c(1, 1, 2, 2), lwd = 2.5, col = cols)
+  legend("topright", c("estación, total", "satélite, total", "estación, anomalías", "satélite, anomalías"),
+         col = cols, lty = c(1, 1, 2, 2), lwd = 2.5, seg.len = 2.2, bty = "n", cex = 0.8,
+         y.intersp = 0.9, inset = c(0.01, 0.01))
+  box()
+}
+
+figura("fig_informe_6_2", {
+  par(mfrow = c(1, 2), mar = c(4.2, 4.2, 2.5, 1))
+  panel_diagonal()
+  panel_de()
+}, ancho = 12, alto = 4.2, res = 300)

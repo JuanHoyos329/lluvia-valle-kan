@@ -1,13 +1,13 @@
-"comparacion","estaciones","n","dif_L2rel_pp","IC95_inf","IC95_sup","IC_excluye_0","mediana_dif_por_estacion_pp","pct_estaciones_gana_a","wilcoxon_p"
-"regresión funcional (linmod) - satélite sin corregir","Todas",164,-36.34,-44.31,-29.24,TRUE,-52.33,90.2,4.74e-26
-"red - cabeza lineal - regresión funcional (linmod)","Todas",164,-1.94,-2.23,-1.64,TRUE,-2.1,90.9,1.04e-22
-"red - cabeza KAN - regresión funcional (linmod)","Todas",164,-5.13,-6.83,-3.3,TRUE,-2.93,67.7,3.05e-07
-"red - cabeza MLP - regresión funcional (linmod)","Todas",164,-5.55,-7.55,-3.38,TRUE,-2.88,69.5,1.04e-06
-"regresión funcional (linmod) - satélite sin corregir","Cuenca del río Cauca",145,-41.4,-47.95,-35.5,TRUE,-50.4,92.4,6.63e-24
-"red - cabeza lineal - regresión funcional (linmod)","Cuenca del río Cauca",145,-2.15,-2.4,-1.9,TRUE,-2.13,91.7,7.29e-21
-"red - cabeza KAN - regresión funcional (linmod)","Cuenca del río Cauca",145,-3.49,-4.7,-2.23,TRUE,-2.6,66.2,1.08e-05
-"red - cabeza MLP - regresión funcional (linmod)","Cuenca del río Cauca",145,-4.02,-5.57,-2.42,TRUE,-2.69,69,1.37e-05
-"regresión funcional (linmod) - satélite sin corregir","Vertiente del Pacífico",19,-19.29,-46.2,-4.48,TRUE,-64.44,73.7,0.00117
-"red - cabeza lineal - regresión funcional (linmod)","Vertiente del Pacífico",19,-1.34,-2.05,-0.64,TRUE,-1.23,84.2,0.00392
-"red - cabeza KAN - regresión funcional (linmod)","Vertiente del Pacífico",19,-10.27,-15.79,-4.68,TRUE,-6.43,78.9,0.00458
-"red - cabeza MLP - regresión funcional (linmod)","Vertiente del Pacífico",19,-10.33,-15.59,-2.67,TRUE,-4.15,73.7,0.0181
+comparacion,estaciones,n,dif_L2rel_pp,IC95_inf,IC95_sup,IC_excluye_0,mediana_dif_por_estacion_pp,pct_estaciones_gana_a
+regresión funcional (linmod) - satélite sin corregir,Todas,164,-36.27,-44.35,-29.21,True,-51.11,90.2
+red - cabeza lineal - regresión funcional (linmod),Todas,164,-1.89,-2.18,-1.58,True,-2.08,89.6
+red - cabeza KAN - regresión funcional (linmod),Todas,164,-4.56,-6.38,-2.68,True,-1.54,57.9
+red - cabeza MLP - regresión funcional (linmod),Todas,164,-5.71,-7.67,-3.67,True,-2.78,69.5
+regresión funcional (linmod) - satélite sin corregir,Cuenca del río Cauca,145,-41.32,-47.93,-35.42,True,-50.31,92.4
+red - cabeza lineal - regresión funcional (linmod),Cuenca del río Cauca,145,-2.13,-2.37,-1.88,True,-2.12,91.0
+red - cabeza KAN - regresión funcional (linmod),Cuenca del río Cauca,145,-2.64,-3.81,-1.45,True,-1.11,55.2
+red - cabeza MLP - regresión funcional (linmod),Cuenca del río Cauca,145,-4.08,-5.5,-2.62,True,-2.28,69.7
+regresión funcional (linmod) - satélite sin corregir,Vertiente del Pacífico,19,-19.42,-46.41,-4.51,True,-64.5,73.7
+red - cabeza lineal - regresión funcional (linmod),Vertiente del Pacífico,19,-1.24,-1.93,-0.55,True,-1.22,78.9
+red - cabeza KAN - regresión funcional (linmod),Vertiente del Pacífico,19,-10.63,-16.22,-4.58,True,-4.66,78.9
+red - cabeza MLP - regresión funcional (linmod),Vertiente del Pacífico,19,-10.76,-15.66,-3.62,True,-3.41,68.4
